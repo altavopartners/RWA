@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Maritime Export Design System - Global Trade Web3 Aesthetics */
+
+@layer base {
+  :root {
+    /* Maritime & Export Colors */
+    --background: 216 33% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 216 28% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 216 28% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Deep Ocean Blue */
+    --primary: 216 95% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 216 85% 68%;
+
+    /* Secondary: Port Gray */
+    --secondary: 215 15% 35%;
+    --secondary-foreground: 210 40% 98%;
+
+    /* Muted: Deep Sea */
+    --muted: 216 20% 15%;
+    --muted-foreground: 215 16% 70%;
+
+    /* Accent: Sky Blue */
+    --accent: 198 88% 55%;
+    --accent-foreground: 216 33% 4%;
+    --accent-glow: 198 78% 65%;
+
+    /* Success: Seafoam Green */
+    --success: 170 65% 45%;
+    --success-foreground: 216 33% 4%;
+
+    /* Warning: Sunset Orange */
+    --warning: 25 85% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 216 15% 25%;
+    --input: 216 20% 12%;
+    --ring: 198 88% 55%;
+
+    --radius: 0.75rem;
+
+    /* Maritime Gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(var(--primary-glow))
+    );
+    --gradient-ocean: linear-gradient(
+      135deg,
+      hsl(216 95% 58%),
+      hsl(198 88% 55%),
+      hsl(170 65% 45%)
+    );
+    --gradient-deep: linear-gradient(180deg, hsl(216 28% 8%), hsl(216 33% 12%));
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(var(--accent)),
+      hsl(var(--accent-glow))
+    );
+
+    /* Nautical Shadows */
+    --shadow-primary: 0 10px 40px -10px hsl(var(--primary) / 0.4);
+    --shadow-accent: 0 10px 40px -10px hsl(var(--accent) / 0.3);
+    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.2);
+    --shadow-card: 0 8px 32px -8px hsl(216 33% 4% / 0.6);
+
+    /* Animations */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Sidebar - Shipping Container White */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 216 95% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 33% 97%;
+    --sidebar-accent-foreground: 216 95% 58%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 198 88% 55%;
+  }
+
+  .dark {
+    /* Dark Mode: Deep Sea Exploration */
+    --background: 216 33% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 216 28% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 216 28% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 198 88% 55%;
+    --primary-foreground: 216 33% 4%;
+
+    --secondary: 215 20% 25%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 216 20% 15%;
+    --muted-foreground: 215 16% 70%;
+
+    --accent: 216 95% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 20% 25%;
+    --input: 216 20% 15%;
+    --ring: 198 88% 55%;
+
+    /* Dark Mode Sidebar - Ship's Bridge */
+    --sidebar-background: 216 28% 8%;
+    --sidebar-foreground: 210 30% 88%;
+    --sidebar-primary: 198 88% 55%;
+    --sidebar-primary-foreground: 216 33% 4%;
+    --sidebar-accent: 216 25% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 20% 20%;
+    --sidebar-ring: 216 95% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+    background: var(--gradient-deep);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  /* Maritime Utility Classes */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-ocean {
+    background: var(--gradient-ocean);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .shadow-primary {
+    box-shadow: var(--shadow-primary);
+  }
+
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Glass morphism for modern trade UI */
+  .glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Navigation patterns */
+  .pattern-dots {
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--primary) / 0.1) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  .pattern-grid {
+    background-image: linear-gradient(
+        hsl(var(--border) / 0.3) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}

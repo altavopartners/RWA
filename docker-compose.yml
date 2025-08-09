@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15
@@ -49,9 +47,17 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:4000
     volumes:
       - ./client:/app
+      - /app/node_modules
     command: npm run dev
     depends_on:
       - backend
+    develop:
+      watch:
+        - action: sync
+          path: ./client
+          target: /app
+          ignore:
+            - node_modules/
 
 volumes:
   postgres_data:
