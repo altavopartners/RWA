@@ -1,28 +1,14 @@
-/*
- * ATTENTION: An "eval-source-map" devtool has been used.
- * This devtool is neither made for production nor for readable output files.
- * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
- * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
- * or disable the default devtool with "devtool: false".
- * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
- */
-(self["webpackChunk_N_E"] = self["webpackChunk_N_E"] || []).push([["pages/_app"],{
-
-/***/ "./node_modules/next/dist/build/webpack/loaders/next-client-pages-loader.js?absolutePagePath=private-next-pages%2F_app&page=%2F_app!":
-/*!*******************************************************************************************************************************************!*\
-  !*** ./node_modules/next/dist/build/webpack/loaders/next-client-pages-loader.js?absolutePagePath=private-next-pages%2F_app&page=%2F_app! ***!
-  \*******************************************************************************************************************************************/
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-eval(__webpack_require__.ts("\n    (window.__NEXT_P = window.__NEXT_P || []).push([\n      \"/_app\",\n      function () {\n        return __webpack_require__(/*! private-next-pages/_app */ \"./node_modules/next/dist/pages/_app.js\");\n      }\n    ]);\n    if(true) {\n      module.hot.dispose(function () {\n        window.__NEXT_P.push([\"/_app\"])\n      });\n    }\n  //# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9ub2RlX21vZHVsZXMvbmV4dC9kaXN0L2J1aWxkL3dlYnBhY2svbG9hZGVycy9uZXh0LWNsaWVudC1wYWdlcy1sb2FkZXIuanM/YWJzb2x1dGVQYWdlUGF0aD1wcml2YXRlLW5leHQtcGFnZXMlMkZfYXBwJnBhZ2U9JTJGX2FwcCEiLCJtYXBwaW5ncyI6IjtBQUNBO0FBQ0E7QUFDQTtBQUNBLGVBQWUsbUJBQU8sQ0FBQyx1RUFBeUI7QUFDaEQ7QUFDQTtBQUNBLE9BQU8sSUFBVTtBQUNqQixNQUFNLFVBQVU7QUFDaEI7QUFDQSxPQUFPO0FBQ1A7QUFDQSIsInNvdXJjZXMiOlsid2VicGFjazovL19OX0UvPzY3ODIiXSwic291cmNlc0NvbnRlbnQiOlsiXG4gICAgKHdpbmRvdy5fX05FWFRfUCA9IHdpbmRvdy5fX05FWFRfUCB8fCBbXSkucHVzaChbXG4gICAgICBcIi9fYXBwXCIsXG4gICAgICBmdW5jdGlvbiAoKSB7XG4gICAgICAgIHJldHVybiByZXF1aXJlKFwicHJpdmF0ZS1uZXh0LXBhZ2VzL19hcHBcIik7XG4gICAgICB9XG4gICAgXSk7XG4gICAgaWYobW9kdWxlLmhvdCkge1xuICAgICAgbW9kdWxlLmhvdC5kaXNwb3NlKGZ1bmN0aW9uICgpIHtcbiAgICAgICAgd2luZG93Ll9fTkVYVF9QLnB1c2goW1wiL19hcHBcIl0pXG4gICAgICB9KTtcbiAgICB9XG4gICJdLCJuYW1lcyI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///./node_modules/next/dist/build/webpack/loaders/next-client-pages-loader.js?absolutePagePath=private-next-pages%2F_app&page=%2F_app!\n"));
-
-/***/ })
-
-},
-/******/ function(__webpack_require__) { // webpackRuntimeModules
-/******/ var __webpack_exec__ = function(moduleId) { return __webpack_require__(__webpack_require__.s = moduleId); }
-/******/ __webpack_require__.O(0, ["main"], function() { return __webpack_exec__("./node_modules/next/dist/build/webpack/loaders/next-client-pages-loader.js?absolutePagePath=private-next-pages%2F_app&page=%2F_app!"), __webpack_exec__("./node_modules/next/dist/client/router.js"); });
-/******/ var __webpack_exports__ = __webpack_require__.O();
-/******/ _N_E = __webpack_exports__;
-/******/ }
-]);
+__turbopack_load_page_chunks__("/_app", [
+  "static/chunks/node_modules_next_dist_compiled_next-devtools_index_82a36480.js",
+  "static/chunks/node_modules_next_dist_compiled_ca41998d._.js",
+  "static/chunks/node_modules_next_dist_shared_lib_492fcef6._.js",
+  "static/chunks/node_modules_next_dist_client_becf32a6._.js",
+  "static/chunks/node_modules_next_dist_ad6392d3._.js",
+  "static/chunks/node_modules_next_app_95ea274f.js",
+  "static/chunks/[next]_entry_page-loader_ts_f9f6e84e._.js",
+  "static/chunks/node_modules_react-dom_82bb97c6._.js",
+  "static/chunks/node_modules_f2979c3a._.js",
+  "static/chunks/[root-of-the-server]__010dee56._.js",
+  "static/chunks/pages__app_5771e187._.js",
+  "static/chunks/pages__app_4b3c26ac._.js"
+])
