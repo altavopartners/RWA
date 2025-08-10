@@ -37,7 +37,7 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-4">
-            <span className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+            <span className="text-2xl font-bold">
               Hex-Port
             </span>
             <Badge variant="outline" className="hidden md:flex">

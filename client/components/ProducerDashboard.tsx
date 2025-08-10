@@ -80,7 +80,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Products</p>
-                <p className="text-2xl font-bold gradient-accent bg-clip-text text-transparent">12</p>
+                <p className="text-2xl font-bold ">12</p>
               </div>
               <Package className="w-8 h-8 text-primary" />
             </div>
@@ -90,7 +90,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Orders</p>
-                <p className="text-2xl font-bold gradient-accent bg-clip-text text-transparent">8</p>
+                <p className="text-2xl font-bold ">8</p>
               </div>
               <TrendingUp className="w-8 h-8 text-success" />
             </div>
@@ -100,7 +100,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-2xl font-bold gradient-accent bg-clip-text text-transparent">$25,400</p>
+                <p className="text-2xl font-bold ">$25,400</p>
               </div>
               <Coins className="w-8 h-8 text-accent" />
             </div>
@@ -110,7 +110,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Certificates</p>
-                <p className="text-2xl font-bold gradient-accent bg-clip-text text-transparent">15</p>
+                <p className="text-2xl font-bold ">15</p>
               </div>
               <FileCheck className="w-8 h-8 text-warning" />
             </div>

@@ -102,19 +102,19 @@ export default function HomePage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-bold gradient-accent bg-clip-text text-transparent">
+                <div className="text-3xl font-bold ">
                   500+
                 </div>
                 <div className="text-sm text-muted-foreground">Products Listed</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold gradient-accent bg-clip-text text-transparent">
+                <div className="text-3xl font-bold ">
                   50+
                 </div>
                 <div className="text-sm text-muted-foreground">Verified Producers</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold gradient-accent bg-clip-text text-transparent">
+                <div className="text-3xl font-bold ">
                   $2M+
                 </div>
                 <div className="text-sm text-muted-foreground">Volume Traded</div>

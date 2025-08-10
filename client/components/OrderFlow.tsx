@@ -146,7 +146,7 @@ const OrderFlow = () => {
                         <Badge variant="outline" className={getStatusColor(order.status)}>
                           {order.status.replace('_', ' ')}
                         </Badge>
-                        <span className="text-sm font-medium gradient-accent bg-clip-text text-transparent">
+                        <span className="text-sm font-medium ">
                           ${order.totalAmount}
                         </span>
                       </div>
@@ -186,7 +186,7 @@ const OrderFlow = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
-                      <p className="font-semibold gradient-accent bg-clip-text text-transparent">
+                      <p className="font-semibold ">
                         ${currentOrder.totalAmount}
                       </p>
                     </div>

@@ -229,7 +229,7 @@ const Marketplace = () => {
 
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-2xl font-bold gradient-accent bg-clip-text text-transparent">
+                    <span className="text-2xl font-bold ">
                       ${product.price}
                     </span>
                     <span className="text-sm text-muted-foreground ml-1">/kg</span>
