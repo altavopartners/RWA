@@ -2,7 +2,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Navigation from "@/components/Navigation";
 import ConnectWallet from "@/components/ConnectWallet";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ export default function HomePage() {
 
   return (
     <>
-      <Navigation currentPage="home" onPageChange={(page) => {}} />
 
       <div className="min-h-screen">
         {/* Hero Section */}
@@ -129,7 +127,7 @@ export default function HomePage() {
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold mb-4">
                 How{" "}
-                <span className="gradient-primary bg-clip-text text-transparent">
+                <span className=" ">
                   Hex-Port
                 </span>{" "}
                 Works
@@ -182,7 +180,7 @@ export default function HomePage() {
         <footer className="py-12 border-t border-border/50">
           <div className="container mx-auto px-6 text-center">
             <div className="mb-4">
-              <span className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+              <span className="text-2xl font-bold  ">
                 Hex-Port
               </span>
             </div>

@@ -1,34 +1,38 @@
+"use client";
+
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Menu, X, Package, ShoppingCart, TrendingUp, User, Truck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
-interface NavigationProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
-}
-
-const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
+export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
   const { user, walletAddress, isConnected, connectWallet, disconnectWallet, isLoading } = useAuth();
 
+  // Map to your actual routes
   const navItems = [
-    { id: "home", label: "Home", icon: TrendingUp },
-    { id: "marketplace", label: "Marketplace", icon: ShoppingCart },
-    { id: "producer", label: "Producer", icon: Package },
-    { id: "orders", label: "Orders", icon: ShoppingCart },
-    { id: "tracking", label: "Tracking", icon: Truck },
-    { id: "profile", label: "Profile", icon: User },
+    { href: "/",                 label: "Home",      icon: TrendingUp },
+    { href: "/marketplace",      label: "Marketplace", icon: ShoppingCart },
+    { href: "/producer-dashboard", label: "Producer",   icon: Package },
+    { href: "/order-flow",       label: "Orders",    icon: ShoppingCart },
+    { href: "/shipment-tracking", label: "Tracking",  icon: Truck },
+    { href: "/profile",          label: "Profile",   icon: User },
   ];
 
+  const isActive = (href: string) => {
+    // strict match; tweak to startsWith if you add nested routes later
+    return pathname === href;
+  };
+
   const handleWalletAction = () => {
-    if (isConnected) {
-      disconnectWallet();
-    } else {
-      connectWallet();
-    }
+    if (isConnected) disconnectWallet();
+    else connectWallet();
   };
 
   return (
@@ -37,39 +41,38 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-4">
-            <span className="text-2xl font-bold">
+            <Link href="/" className="text-2xl font-bold">
               Hex-Port
-            </span>
-            <Badge variant="outline" className="hidden md:flex">
-              Hedera Network
-            </Badge>
+            </Link>
+            <Badge variant="outline" className="hidden md:flex">Hedera Network</Badge>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onPageChange(item.id)}
+            {navItems.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={isActive(href) ? "page" : undefined}
                 className={cn(
                   "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth",
-                  currentPage === item.id
+                  isActive(href)
                     ? "bg-primary/20 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
                 )}
               >
-                <item.icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </button>
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+              </Link>
             ))}
           </div>
 
-          {/* Wallet Connection */}
+          {/* Wallet / Mobile toggle */}
           <div className="flex items-center space-x-4">
             {isConnected && user && (
               <div className="hidden md:flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium">{user.name || 'User'}</p>
+                  <p className="text-sm font-medium">{user.name || "User"}</p>
                   <p className="text-xs text-muted-foreground">
                     {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                   </p>
@@ -79,7 +82,7 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                 </Badge>
               </div>
             )}
-            
+
             <Button
               variant={isConnected ? "accent" : "hero"}
               onClick={handleWalletAction}
@@ -87,20 +90,15 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
               className="hidden md:flex"
             >
               {isConnected ? <LogOut className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
-              {isConnected 
-                ? "Disconnect" 
-                : isLoading 
-                  ? "Connecting..." 
-                  : "Connect Wallet"
-              }
+              {isConnected ? "Disconnect" : isLoading ? "Connecting..." : "Connect Wallet"}
             </Button>
 
-            {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
               className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -111,29 +109,29 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
             <div className="space-y-2">
-              {navItems.map((item) => (
+              {navItems.map(({ href, label, icon: Icon }) => (
                 <button
-                  key={item.id}
+                  key={href}
                   onClick={() => {
-                    onPageChange(item.id);
+                    router.push(href);
                     setIsMobileMenuOpen(false);
                   }}
                   className={cn(
                     "flex items-center space-x-3 w-full px-3 py-3 rounded-lg transition-smooth",
-                    currentPage === item.id
+                    isActive(href)
                       ? "bg-primary/20 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
                   )}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5" />
+                  <span>{label}</span>
                 </button>
               ))}
-              
+
               {isConnected && user && (
                 <div className="p-3 bg-muted/30 rounded-lg mb-3">
                   <div className="text-center">
-                    <p className="font-medium">{user.name || 'User'}</p>
+                    <p className="font-medium">{user.name || "User"}</p>
                     <p className="text-xs text-muted-foreground">
                       {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                     </p>
@@ -143,7 +141,7 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                   </div>
                 </div>
               )}
-              
+
               <Button
                 variant={isConnected ? "accent" : "hero"}
                 onClick={handleWalletAction}
@@ -151,12 +149,7 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                 className="w-full"
               >
                 {isConnected ? <LogOut className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
-                {isConnected 
-                  ? "Disconnect" 
-                  : isLoading 
-                    ? "Connecting..." 
-                    : "Connect Wallet"
-                }
+                {isConnected ? "Disconnect" : isLoading ? "Connecting..." : "Connect Wallet"}
               </Button>
             </div>
           </div>
@@ -164,6 +157,4 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       </div>
     </nav>
   );
-};
-
-export default Navigation;
+}
