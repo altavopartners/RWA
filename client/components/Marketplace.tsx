@@ -14,118 +14,292 @@ import {
   Globe
 } from "lucide-react";
 
+type Product = {
+  id: string;
+  name: string;
+  producer: string;
+  country: string;
+  price: number;
+  quantity: number;
+  rating: number;
+  reviews: number;
+  tokenId: string;
+  certified: boolean;
+  image: string;
+  description: string;
+  category: string;     // NEW
+  subcategory: string;  // NEW
+};
+
+const categories = [
+  { id: "agri", label: "Agricultural Products" },
+  { id: "raw", label: "Raw Materials" },
+  { id: "processed", label: "Processed Goods" },
+  { id: "manufactured", label: "Manufactured Items" },
+];
+
+const subcategories: Record<string, { id: string; label: string }[]> = {
+  agri: [
+    { id: "coffee", label: "Coffee Beans" },
+    { id: "cocoa", label: "Cocoa Beans" },
+    { id: "tea", label: "Tea Leaves" },
+    { id: "fruits", label: "Fruits & Vegetables" },
+    { id: "nuts-oilseeds", label: "Nuts & Oilseeds" },
+    { id: "spices", label: "Spices" },
+  ],
+  raw: [
+    { id: "crude-oil", label: "Crude Oil" },
+    { id: "natural-gas", label: "Natural Gas" },
+    { id: "gold", label: "Gold" },
+    { id: "diamonds", label: "Diamonds" },
+    { id: "copper", label: "Copper" },
+    { id: "iron-ore", label: "Iron Ore" },
+  ],
+  processed: [
+    { id: "edible-oils", label: "Edible Oils" },
+    { id: "cocoa-products", label: "Cocoa Products" },
+    { id: "roasted-coffee-tea", label: "Roasted Coffee & Tea" },
+    { id: "refined-sugar", label: "Refined Sugar" },
+    { id: "processed-fruits", label: "Processed Fruits" },
+    { id: "leather-tanned", label: "Leather (Tanned)" },
+    { id: "textile-yarn", label: "Textile Yarn & Fabrics" },
+  ],
+  manufactured: [
+    { id: "textiles-apparel", label: "Textiles & Apparel" },
+    { id: "footwear", label: "Footwear & Leather Goods" },
+    { id: "vehicles", label: "Vehicles & Parts" },
+    { id: "machinery", label: "Machinery & Equipment" },
+    { id: "electronics", label: "Electrical Equipment" },
+    { id: "building-materials", label: "Building Materials" },
+  ],
+};
+
+const mockProducts = [
+  {
+    id: "1",
+    name: "Premium Ghanaian Cocoa Beans",
+    producer: "Kwame Farms",
+    country: "Ghana",
+    price: 2.5,
+    quantity: 1000,
+    rating: 4.9,
+    reviews: 156,
+    tokenId: "0.0.1001",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/7/76/Cocoa_beans.jpg",
+    description: "Organic cocoa beans from sustainable farms in Ghana's Ashanti region.",
+    category: "agri",
+    subcategory: "cocoa"
+  },
+  {
+    id: "2",
+    name: "Ethiopian Arabica Coffee Beans",
+    producer: "Highland Coffee Co.",
+    country: "Ethiopia",
+    price: 8.5,
+    quantity: 500,
+    rating: 4.7,
+    reviews: 203,
+    tokenId: "0.0.1002",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/c/c5/Roasted_coffee_beans.jpg",
+    description: "Single-origin Arabica coffee from Ethiopian highlands.",
+    category: "agri",
+    subcategory: "coffee"
+  },
+  {
+    id: "3",
+    name: "Kenyan Black Tea",
+    producer: "Meru Tea Gardens",
+    country: "Kenya",
+    price: 12,
+    quantity: 750,
+    rating: 4.8,
+    reviews: 167,
+    tokenId: "0.0.1003",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Ceylon_black_tea_leaves.jpg",
+    description: "High-altitude black tea with a rich flavor profile.",
+    category: "agri",
+    subcategory: "tea"
+  },
+  {
+    id: "4",
+    name: "Zanzibar Whole Cloves",
+    producer: "Pemba Spice Collective",
+    country: "Tanzania",
+    price: 6,
+    quantity: 300,
+    rating: 4.8,
+    reviews: 92,
+    tokenId: "0.0.1004",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/3/33/Cloves.JPG",
+    description: "Aromatic whole cloves sun-dried on the Spice Islands.",
+    category: "agri",
+    subcategory: "spices"
+  },
+  {
+    id: "5",
+    name: "Sudan Sesame Seeds (Hulled)",
+    producer: "Nile Agritrade",
+    country: "Sudan",
+    price: 1.8,
+    quantity: 10000,
+    rating: 4.6,
+    reviews: 58,
+    tokenId: "0.0.1005",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/6/6c/Sesame_Seeds_-_NIAID.jpg",
+    description: "High-oil content sesame seeds for pressing or confectionery.",
+    category: "agri",
+    subcategory: "nuts-oilseeds"
+  },
+  {
+    id: "6",
+    name: "Refined Gold Bullion (995+)",
+    producer: "Ashanti Bullion",
+    country: "Ghana",
+    price: 65000,
+    quantity: 50,
+    rating: 4.9,
+    reviews: 61,
+    tokenId: "0.0.1006",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/a/af/Gold_bullion_bars.jpg",
+    description: "Standard bullion bars meeting international assay specs.",
+    category: "raw",
+    subcategory: "gold"
+  },
+  {
+    id: "7",
+    name: "Botswana Rough Diamonds",
+    producer: "Kgalagadi Traders",
+    country: "Botswana",
+    price: 4000,
+    quantity: 15,
+    rating: 4.9,
+    reviews: 77,
+    tokenId: "0.0.1007",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/f/f2/Diamonds.jpg",
+    description: "Uncut rough diamonds sourced ethically from Botswana.",
+    category: "raw",
+    subcategory: "diamonds"
+  },
+  {
+    id: "8",
+    name: "Copper Cathodes Grade A",
+    producer: "CopperBelt Metals Ltd.",
+    country: "Zambia",
+    price: 9100,
+    quantity: 20000,
+    rating: 4.7,
+    reviews: 74,
+    tokenId: "0.0.1008",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/8/8d/Copper_cathode_UMMCII_Uralelectromed.jpg",
+    description: "LME Grade A copper cathodes suitable for global smelters.",
+    category: "raw",
+    subcategory: "copper"
+  },
+  {
+    id: "9",
+    name: "Moroccan Argan Oil",
+    producer: "Atlas Cooperatives",
+    country: "Morocco",
+    price: 45,
+    quantity: 100,
+    rating: 4.9,
+    reviews: 178,
+    tokenId: "0.0.1009",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/a/a7/Argan_oil.jpg",
+    description: "Pure argan oil extracted using traditional methods.",
+    category: "processed",
+    subcategory: "edible-oils"
+  },
+  {
+    id: "10",
+    name: "Roasted Kenyan Coffee",
+    producer: "Nairobi Roasters",
+    country: "Kenya",
+    price: 14,
+    quantity: 300,
+    rating: 4.8,
+    reviews: 88,
+    tokenId: "0.0.1010",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/4/45/Coffee_beans.jpg",
+    description: "Dark roast Kenyan coffee with chocolatey notes.",
+    category: "processed",
+    subcategory: "roasted-coffee-tea"
+  },
+  {
+    id: "11",
+    name: "Authentic Kente Cloth",
+    producer: "Adoma Textiles",
+    country: "Ghana",
+    price: 150,
+    quantity: 25,
+    rating: 4.8,
+    reviews: 89,
+    tokenId: "0.0.1011",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/c/c4/Kentecloth.jpg",
+    description: "Handwoven Kente cloth made by skilled artisans.",
+    category: "manufactured",
+    subcategory: "textiles-apparel"
+  },
+  {
+    id: "12",
+    name: "Ethiopian Leather Handbag",
+    producer: "Addis Leatherworks",
+    country: "Ethiopia",
+    price: 85,
+    quantity: 60,
+    rating: 4.7,
+    reviews: 41,
+    tokenId: "0.0.1012",
+    certified: true,
+    image: "https://upload.wikimedia.org/wikipedia/commons/3/35/Leather_bag.jpg",
+    description: "Genuine leather handbag crafted by Ethiopian artisans.",
+    category: "manufactured",
+    subcategory: "footwear"
+  }
+];
+
+
+
+
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | string>("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<"all" | string>("all");
 
-  const categories = [
-    { id: "all", label: "All Products" },
-    { id: "cocoa", label: "Cocoa & Coffee" },
-    { id: "textiles", label: "Textiles" },
-    { id: "spices", label: "Spices & Herbs" },
-    { id: "crafts", label: "Handicrafts" },
-  ];
+  const handleSelectCategory = (id: string) => {
+    setSelectedCategory(id);
+    setSelectedSubcategory("all"); // reset subcategory whenever category changes
+  };
 
-  const mockProducts = [
-    {
-      id: "1",
-      name: "Premium Ghanaian Cocoa Beans",
-      producer: "Kwame Farms",
-      country: "Ghana",
-      price: 2.50,
-      quantity: 1000,
-      rating: 4.9,
-      reviews: 156,
-      tokenId: "0.0.123456",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "Organic cocoa beans from sustainable farms in Ghana's Ashanti region."
-    },
-    {
-      id: "2",
-      name: "Authentic Kente Cloth",
-      producer: "Adoma Textiles",
-      country: "Ghana",
-      price: 150,
-      quantity: 25,
-      rating: 4.8,
-      reviews: 89,
-      tokenId: "0.0.789012",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "Handwoven traditional Kente cloth made by skilled artisans."
-    },
-    {
-      id: "3",
-      name: "Ethiopian Coffee Beans",
-      producer: "Highland Coffee Co.",
-      country: "Ethiopia",
-      price: 8.50,
-      quantity: 500,
-      rating: 4.7,
-      reviews: 203,
-      tokenId: "0.0.345678",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "Single-origin Arabica coffee from Ethiopian highlands."
-    },
-    {
-      id: "4",
-      name: "Moroccan Argan Oil",
-      producer: "Atlas Cooperatives",
-      country: "Morocco",
-      price: 45,
-      quantity: 100,
-      rating: 4.9,
-      reviews: 178,
-      tokenId: "0.0.567890",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "Pure argan oil extracted using traditional methods."
-    },
-    {
-      id: "5",
-      name: "Nigerian Shea Butter",
-      producer: "Savanna Women's Coop",
-      country: "Nigeria",
-      price: 25,
-      quantity: 200,
-      rating: 4.6,
-      reviews: 134,
-      tokenId: "0.0.234567",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "Raw unrefined shea butter from Northern Nigeria."
-    },
-    {
-      id: "6",
-      name: "Kenyan Black Tea",
-      producer: "Meru Tea Gardens",
-      country: "Kenya",
-      price: 12,
-      quantity: 750,
-      rating: 4.8,
-      reviews: 167,
-      tokenId: "0.0.890123",
-      certified: true,
-      image: "/placeholder.svg",
-      description: "High-altitude grown black tea with rich flavor profile."
-    }
-  ];
+  const filteredProducts = mockProducts.filter((product) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      product.name.toLowerCase().includes(q) ||
+      product.producer.toLowerCase().includes(q) ||
+      product.country.toLowerCase().includes(q);
 
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.producer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.country.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === "all" || 
-                           (selectedCategory === "cocoa" && (product.name.includes("Cocoa") || product.name.includes("Coffee"))) ||
-                           (selectedCategory === "textiles" && product.name.includes("Kente")) ||
-                           (selectedCategory === "spices" && (product.name.includes("Oil") || product.name.includes("Butter"))) ||
-                           (selectedCategory === "crafts" && product.name.includes("Tea"));
-    
-    return matchesSearch && matchesCategory;
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    const matchesSubcategory =
+      selectedCategory === "all" ||
+      selectedSubcategory === "all" ||
+      product.subcategory === selectedSubcategory;
+
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
+
+  const activeSubcats = selectedCategory !== "all" ? subcategories[selectedCategory] ?? [] : [];
 
   return (
     <div className="pt-20 min-h-screen">
@@ -154,20 +328,60 @@ const Marketplace = () => {
             </Button>
           </div>
 
-          {/* Category Pills */}
+          {/* Category Pills (Top-Level) */}
           <div className="flex flex-wrap gap-2">
+            <Button
+              key="all"
+              variant={selectedCategory === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleSelectCategory("all")}
+              className="transition-smooth"
+            >
+              All Categories
+            </Button>
+
             {categories.map((category) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleSelectCategory(category.id)}
                 className="transition-smooth"
               >
                 {category.label}
               </Button>
             ))}
           </div>
+
+          {/* Subcategory Pills (Contextual, appears only when a category is selected) */}
+          {selectedCategory !== "all" && activeSubcats.length > 0 && (
+            <div className="space-y-2 animate-fade-in">
+              <div className="text-sm text-muted-foreground">Refine: Subcategories</div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  key="all-sub"
+                  variant={selectedSubcategory === "all" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedSubcategory("all")}
+                  className="transition-smooth"
+                >
+                  All Subcategories
+                </Button>
+
+                {activeSubcats.map((sub) => (
+                  <Button
+                    key={sub.id}
+                    variant={selectedSubcategory === sub.id ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedSubcategory(sub.id)}
+                    className="transition-smooth"
+                  >
+                    {sub.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Results Count */}

@@ -16,8 +16,11 @@ import {
   Plus,
   Camera
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import ProducerAddProduct from "@/components/ProducerAddProduct";
 
 const ProducerDashboard = () => {
+  const router = useRouter();
   const [isTokenizing, setIsTokenizing] = useState(false);
   const [tokenizationProgress, setTokenizationProgress] = useState(0);
 
@@ -116,99 +119,19 @@ const ProducerDashboard = () => {
             </div>
           </Card>
         </div>
-
+        
+              <Button
+                variant="glass"
+                size="xl"
+                onClick={() => router.push("/producer-add-product")}
+              >
+                Add New Product
+              </Button>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Tokenization Form */}
           <div className="lg:col-span-2">
-            <Card className="p-8 glass border-border/50">
-              <h2 className="text-2xl font-bold mb-6 flex items-center">
-                <Coins className="w-6 h-6 mr-2 text-primary" />
-                Tokenize New Product
-              </h2>
-
-              {isTokenizing ? (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full gradient-primary flex items-center justify-center animate-glow-pulse">
-                      <Coins className="w-8 h-8 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">Tokenizing Product...</h3>
-                    <p className="text-muted-foreground">Creating your HTS token on Hedera network</p>
-                  </div>
-                  <Progress value={tokenizationProgress} className="w-full" />
-                  <p className="text-center text-sm text-muted-foreground">
-                    {tokenizationProgress}% Complete
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="productName">Product Name</Label>
-                      <Input id="productName" placeholder="e.g., Premium Cocoa Beans" />
-                    </div>
-                    <div>
-                      <Label htmlFor="quantity">Quantity (kg)</Label>
-                      <Input id="quantity" type="number" placeholder="1000" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="price">Price per kg (USD)</Label>
-                      <Input id="price" type="number" placeholder="2.50" />
-                    </div>
-                    <div>
-                      <Label htmlFor="origin">Country of Origin</Label>
-                      <Input id="origin" placeholder="Ghana" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea 
-                      id="description" 
-                      placeholder="Describe your product, farming methods, certifications..."
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label>Product Images</Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                      <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground mb-2">Upload product images</p>
-                      <Button variant="outline">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Choose Files
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label>Certificates & Documentation</Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                      <FileCheck className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground mb-2">Upload certificates, quality reports, etc.</p>
-                      <Button variant="outline">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Documents
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Button 
-                    variant="hero" 
-                    size="lg" 
-                    className="w-full"
-                    onClick={handleTokenize}
-                  >
-                    <Coins className="w-5 h-5 mr-2" />
-                    Tokenize Product
-                  </Button>
-                </div>
-              )}
-            </Card>
+            
+            <ProducerAddProduct />
           </div>
 
           {/* Products List */}
