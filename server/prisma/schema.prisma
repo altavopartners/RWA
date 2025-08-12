@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgres://postgres:examplepassword@localhost:5432/hexport"
 }
 
 model User {
@@ -12,4 +12,27 @@ model User {
   name      String
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  name          String
+  quantity      Int
+  unit          String
+  pricePerUnit  Float
+  countryOfOrigin String
+  category      String
+  subcategory   String?
+  description   String
+  hsCode        String?
+  incoterm      String?
+  minOrderQty   Int?
+  leadTimeDays  Int?
+
+  // JSON arrays for storing file paths or metadata
+  images        Json?
+  documents     Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

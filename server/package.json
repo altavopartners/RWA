@@ -14,8 +14,10 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^4.16.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
+    "multer": "^2.0.2",
     "prisma": "^4.16.2"
   },
   "devDependencies": {
