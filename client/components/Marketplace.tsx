@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Filter,
@@ -123,6 +124,7 @@ function buildAssetUrl(path: string | undefined) {
 // 4) Component
 // =====================
 const Marketplace = () => {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"all" | string>("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<"all" | string>("all");
@@ -364,10 +366,18 @@ const Marketplace = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1">
+                    <Button
+                      variant="outline"
+                      className="flex-1 cursor-pointer"
+                      onClick={() => router.push(`/product-details/${product.id}`)}
+                    >
                       View Details
                     </Button>
-                    <Button variant="hero" className="flex-1">
+
+                    <Button 
+                      variant="hero" 
+                      className="flex-1 cursor-pointer"
+                    >
                       <Globe className="w-4 h-4 mr-2" />
                       Request Quote
                     </Button>
