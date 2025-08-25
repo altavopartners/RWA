@@ -11,8 +11,11 @@ import {
   MapPin,
   FileCheck,
   Coins,
+  ShoppingCart ,
   Globe,
+  PlusCircle
 } from "lucide-react";
+import AddToCartPopup from "@/components/AddToCartPopup";
 
 // =====================
 // 1) API types (from your example)
@@ -374,13 +377,17 @@ const Marketplace = () => {
                       View Details
                     </Button>
 
-                    <Button 
-                      variant="hero" 
-                      className="flex-1 cursor-pointer"
-                    >
-                      <Globe className="w-4 h-4 mr-2" />
-                      Request Quote
-                    </Button>
+                    <AddToCartPopup
+                      product={{
+                        id: String(product.id),
+                        name: product.name,                 // e.g. "Refined Gold Bullion"
+                        pricePerUnit: 65000,                // from your data
+                        unit: "kg",                         // or "ct"
+                        minOrder: 5,                        // from your data
+                        available: 50                       // from your data
+                      }}
+                      /*onConfirm={{(qty) => cart.add(product, qty)} */ // plug into your cart/store
+                    />
                   </div>
                 </div>
               </Card>
@@ -391,7 +398,7 @@ const Marketplace = () => {
         {/* Load More (placeholder) */}
         <div className="text-center mt-12">
           <Button variant="outline" size="lg">
-            <Globe className="w-4 h-4 mr-2" />
+            <PlusCircle className="w-4 h-4 mr-2" />
             Load More Products
           </Button>
         </div>
