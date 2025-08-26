@@ -73,7 +73,7 @@ export default function AddToCartPopup({
   // -------- overlay UI (portaled) --------
   const overlay = (
     <div
-      className="fixed inset-0 z-[9999] bg-background/80 backdrop-blur-sm
+      className="fixed inset-0 z-[9999] backdrop-blur-sm
                  flex items-center justify-center p-4"
       onClick={() => setOpen(false)}
       aria-hidden={!open}
@@ -83,6 +83,7 @@ export default function AddToCartPopup({
         onClick={(e) => e.stopPropagation()} // keep clicks inside
         role="dialog"
         aria-modal="true"
+        style={{backgroundColor: 'lab(12 -1.2 -9.41)'}}
         aria-labelledby="add-to-cart-title"
       >
         {/* Header */}
@@ -148,7 +149,7 @@ export default function AddToCartPopup({
 
           <div className="flex gap-2 pt-2">
             <Button
-              className="flex-1"
+              className="flex-1 bg-green-600 text-white hover:bg-green-700 cursor-pointer"
               onClick={confirm}
               disabled={saving || qty < product.minOrder || qty > product.available}
             >

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Menu, X, Package, ShoppingCart, TrendingUp, User, Truck, LogOut } from "lucide-react";
+import { Wallet, Menu, X, Package, ShoppingCart, TrendingUp, User, Truck, LogOut, Store, Receipt  } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -18,11 +18,11 @@ export default function Navigation() {
   // Map to your actual routes
   const navItems = [
     { href: "/",                 label: "Home",      icon: TrendingUp },
-    { href: "/marketplace",      label: "Marketplace", icon: ShoppingCart },
+    { href: "/marketplace",      label: "Marketplace", icon: Store },
     { href: "/producer-dashboard", label: "Producer",   icon: Package },
-    { href: "/order-flow",       label: "Orders",    icon: ShoppingCart },
+    { href: "/order-flow",       label: "Orders",    icon: Receipt },
     { href: "/shipment-tracking", label: "Tracking",  icon: Truck },
-    { href: "/profile",          label: "Profile",   icon: User },
+    { href: "/profile",          label: "Profile",   icon: User }
   ];
 
   const isActive = (href: string) => {
@@ -65,6 +65,25 @@ export default function Navigation() {
                 <span>{label}</span>
               </Link>
             ))}
+            <Link
+              key="/cart"
+              href="/cart"
+              aria-current={isActive("/cart") ? "page" : undefined}
+              className={cn(
+              "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth relative",
+              isActive("/cart")
+                ? "bg-primary/20 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
+              )}
+            >
+              <ShoppingCart className="w-4 h-4" />
+                <span
+                  className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  style={{ background: "lab(56 6.99 -64.99)", minWidth: 20, minHeight: 20 }}
+                >
+                  10
+                </span>
+            </Link>
           </div>
 
           {/* Wallet / Mobile toggle */}
