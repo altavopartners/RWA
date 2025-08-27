@@ -7,11 +7,91 @@ datasource db {
   url      = "postgres://postgres:examplepassword@localhost:5432/hexport"
 }
 
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  accountId     String? @unique
+  publicKeyHex  String?
+  nonce         String?
+
+  // Core identity
+  fullName      String?
+  email         String?  @unique
+  phoneNumber   String?
+  location      String?
+
+  // Progressive profile
+  profileImage  String?  // This is the IPFS CID
+  businessName  String?
+  businessDesc  String?
+
+  userType      UserType @default(PRODUCER)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  nonceIssuedAt DateTime?
+
+  authSessions  AuthSession[]
+  documents     Document[]
+  dID           DID?     // This should reference the DID model
+  
+}
+
+
+model AuthSession {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  token       String
+  refreshToken String?
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  filename  String
+  cid       String
+  url       String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DID {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  did       String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+enum DocumentType {
+  KYC_ID
+  BUSINESS_LICENSE
+  ORGANIC_CERT
+  HALAL_CERT
+  OTHER
+}
+//for escrow
+enum KycStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+enum UserType {
+  PRODUCER
+  BUYER
+  ADMIN
 }
 
 model Product {
