@@ -1,11 +1,14 @@
-const { buildProductBody, trimOrUndefined, parseBool, toInt } = require('../utils/normalize');
-const { createProduct, listProducts, findProductById } = require('../services/product');
+import { Request, Response, NextFunction } from 'express';
+import { buildProductBody, trimOrUndefined, parseBool, toInt } from '../utils/normalize';
+import { createProduct, listProducts, findProductById } from '../services/product';
 
 // POST /api/products
-async function postProduct(req, res, next) {
+export async function postProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const body = buildProductBody(req.body);
-    const created = await createProduct(body, req.files);
+    // Multer .fields() -> Record<string, Express.Multer.File[]>
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    const created = await createProduct(body, files); // OK: service accepte un body souple
     res.status(201).json(created);
   } catch (err) {
     next(err);
@@ -13,28 +16,30 @@ async function postProduct(req, res, next) {
 }
 
 // GET /api/products
-async function getProducts(req, res, next) {
+export async function getProducts(req: Request, res: Response, next: NextFunction) {
   try {
-    const page = Math.max(1, toInt(req.query.page, 1));
-    const rawSize = Math.max(1, toInt(req.query.pageSize, 20));
+    const page = Math.max(1, toInt(req.query.page as string, 1));
+    const rawSize = Math.max(1, toInt(req.query.pageSize as string, 20));
     const pageSize = Math.min(rawSize, 100);
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
     const allowedSort = new Set(['createdAt', 'name', 'pricePerUnit', 'quantity']);
-    const sortBy = allowedSort.has(String(req.query.sortBy)) ? String(req.query.sortBy) : 'createdAt';
-    const sortOrder = (req.query.sortOrder === 'asc') ? 'asc' : 'desc';
+    const sortBy = allowedSort.has(String(req.query.sortBy))
+      ? String(req.query.sortBy)
+      : 'createdAt';
+    const sortOrder: 'asc' | 'desc' = req.query.sortOrder === 'asc' ? 'asc' : 'desc';
 
-    const q           = trimOrUndefined(req.query.q);
-    const category    = trimOrUndefined(req.query.category);
-    const subcategory = trimOrUndefined(req.query.subcategory);
-    const country     = trimOrUndefined(req.query.country);
+    const q           = trimOrUndefined(req.query.q as string);
+    const category    = trimOrUndefined(req.query.category as string);
+    const subcategory = trimOrUndefined(req.query.subcategory as string);
+    const country     = trimOrUndefined(req.query.country as string);
     const minPrice    = req.query.minPrice !== undefined ? Number(req.query.minPrice) : null;
     const maxPrice    = req.query.maxPrice !== undefined ? Number(req.query.maxPrice) : null;
-    const hasImages   = parseBool(req.query.hasImages);
-    const hasDocuments= parseBool(req.query.hasDocuments);
+    const hasImages   = parseBool(req.query.hasImages as string);
+    const hasDocuments= parseBool(req.query.hasDocuments as string);
 
-    const where = {};
+    const where: any = {};
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
@@ -55,32 +60,39 @@ async function getProducts(req, res, next) {
       if (maxPrice !== null) where.pricePerUnit.lte = maxPrice;
     }
 
-    if (hasImages !== undefined)   where.images   = hasImages   ? { not: null } : null;
-    if (hasDocuments !== undefined)where.documents= hasDocuments? { not: null } : null;
+    if (hasImages !== undefined)    where.images    = hasImages    ? { not: null } : null;
+    if (hasDocuments !== undefined) where.documents = hasDocuments ? { not: null } : null;
 
     const { total, items } = await listProducts({
       where,
       orderBy: { [sortBy]: sortOrder },
-      skip, take,
+      skip,
+      take,
     });
 
     res.json({
       data: items,
-      page, pageSize,
+      page,
+      pageSize,
       total,
       totalPages: Math.ceil(total / pageSize),
-      sortBy, sortOrder,
+      sortBy,
+      sortOrder,
       filters: { q, category, subcategory, country, minPrice, maxPrice, hasImages, hasDocuments },
     });
   } catch (err) {
     next(err);
   }
 }
-async function getProductById(req, res, next) {
+
+// GET /api/products/:id
+export async function getProductById(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const idParam = String(req.params.id);
-
-    // Accept numeric IDs or string/UUID IDs
     const id = /^\d+$/.test(idParam) ? Number(idParam) : idParam;
 
     const product = await findProductById(id);
@@ -93,4 +105,3 @@ async function getProductById(req, res, next) {
     next(err);
   }
 }
-module.exports = { postProduct, getProducts, getProductById };
