@@ -27,12 +27,7 @@ services:
       - PORT=4000
     volumes:
       - ./server:/app
-    command:
-      [
-        "sh",
-        "-c",
-        "until pg_isready -h postgres -U ${POSTGRES_USER}; do echo 'waiting for postgres'; sleep 1; done; npm run dev",
-      ]
+    command: npm run dev
     depends_on:
       - postgres
 

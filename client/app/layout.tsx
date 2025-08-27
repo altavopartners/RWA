@@ -6,6 +6,7 @@ import Navigation from "@/components/Navigation";
 export const metadata = {
   title: "Hex-Port",
   description: "Global marketplace for African exports",
+  icons: "/favicon.ico",
 };
 
 export default function RootLayout({
