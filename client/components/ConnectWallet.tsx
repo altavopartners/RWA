@@ -1,15 +1,12 @@
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Wallet, Shield, Globe, Loader2 } from "lucide-react"
-import { useAuth } from "@/hooks/useAuth"
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Wallet, Shield, Globe, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const ConnectWallet = () => {
-  const { connectWallet, isLoading, isConnected } = useAuth()
+  const { connectWallet, isLoading, isConnected } = useAuth();
 
-  if (isConnected) {
-    return null
-  }
+  if (isConnected) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -23,7 +20,8 @@ const ConnectWallet = () => {
             <div>
               <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
               <p className="text-muted-foreground">
-                Connect your Web3 wallet to access Hex-Port and start trading African exports
+                Connect your Web3 wallet to access Hex-Port and start trading
+                African exports
               </p>
             </div>
           </div>
@@ -64,17 +62,10 @@ const ConnectWallet = () => {
               </>
             )}
           </Button>
-
-          {/* Demo Notice */}
-          <div className="pt-4 border-t border-border/50">
-            <Badge variant="outline" className="glass">
-              Demo Mode - Mock wallet connection
-            </Badge>
-          </div>
         </div>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default ConnectWallet
+export default ConnectWallet;
