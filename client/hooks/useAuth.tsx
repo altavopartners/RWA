@@ -43,7 +43,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Backend URL
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --------------------------- Wallet Helpers ---------------------------
@@ -51,11 +50,16 @@ const signMessageWithWallet = async (
   walletAddress: string,
   message: string
 ) => {
-  if (!window.ethereum) throw new Error("Ethereum wallet not found");
-  const [signature] = await window.ethereum.request({
+  if (!window.ethereum || !window.ethereum.isMetaMask) {
+    throw new Error("MetaMask not found. Please install MetaMask.");
+  }
+
+  // Returns a string, not an array
+  const signature: string = await window.ethereum.request({
     method: "personal_sign",
     params: [message, walletAddress],
   });
+
   return signature;
 };
 
@@ -69,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
-  // Restore session from localStorage
+  // Restore session
   useEffect(() => {
     const savedAddress = localStorage.getItem("walletAddress");
     const savedToken = localStorage.getItem("jwtToken");
@@ -81,10 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Fetch user profile using JWT
   const fetchProfile = async (jwt: string) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
+      const res = await fetch(`${BACKEND_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
       if (!res.ok) throw new Error("Failed to fetch profile");
@@ -97,37 +100,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Connect Wallet
   const connectWallet = async () => {
     setIsLoading(true);
     try {
-      if (!window.ethereum) {
-        throw new Error("Ethereum wallet not found. Please install MetaMask.");
+      if (!window.ethereum || !window.ethereum.isMetaMask) {
+        throw new Error("MetaMask not found. Please install MetaMask.");
       }
 
       // Step 1: Request accounts
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      if (!accounts || accounts.length === 0)
+      if (!accounts || accounts.length === 0) {
         throw new Error("No wallet accounts found");
+      }
       const address = accounts[0];
       setWalletAddress(address);
 
-      // Step 2: Get nonce from backend
+      // Step 2: Get nonce
       const nonceRes = await fetch(`${BACKEND_URL}/api/auth/nonce`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ walletAddress: address }),
       });
       if (!nonceRes.ok) throw new Error("Failed to get nonce");
-      const { data: nonceData } = await nonceRes.json();
-      const nonce = nonceData.nonce || `Sign this to login: ${Date.now()}`;
+      const nonceJson = await nonceRes.json();
+      const nonce =
+        nonceJson?.data?.nonce || `Sign this to login: ${Date.now()}`;
 
-      // Step 3: Sign the nonce
+      // Step 3: Sign
       const signature = await signMessageWithWallet(address, nonce);
 
-      // Step 4: Connect wallet (verify signature)
+      // Step 4: Verify with backend
       const connectRes = await fetch(`${BACKEND_URL}/api/auth/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,7 +144,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
       if (!connectRes.ok) throw new Error("Wallet connection failed");
-      const { token: jwt, data: userData } = await connectRes.json();
+      const { accessToken, user: userData } = await connectRes.json(); // <-- correct destructure
+      const jwt = accessToken;
 
       // Step 5: Save session
       setToken(jwt);
