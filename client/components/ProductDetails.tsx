@@ -1,155 +1,87 @@
-// app/product/[id]/page.tsx
-import { notFound } from "next/navigation";
-import { Metadata } from "next";
+// components/ProductDetails.tsx
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Coins, AlertTriangle } from "lucide-react";
 
-// --- keep your taxonomy in sync with the creator form ---
-const categories = [
-  { id: "agri", label: "Agricultural Products" },
-  { id: "raw", label: "Raw Materials" },
-  { id: "processed", label: "Processed Goods" },
-  { id: "manufactured", label: "Manufactured Items" },
-] as const;
-
-const subcategories: Record<string, { id: string; label: string }[]> = {
-  agri: [
-    { id: "coffee", label: "Coffee Beans" },
-    { id: "cocoa", label: "Cocoa Beans" },
-    { id: "tea", label: "Tea Leaves" },
-    { id: "fruits", label: "Fruits & Vegetables" },
-    { id: "nuts-oilseeds", label: "Nuts & Oilseeds" },
-    { id: "spices", label: "Spices" },
-  ],
-  raw: [
-    { id: "crude-oil", label: "Crude Oil" },
-    { id: "natural-gas", label: "Natural Gas" },
-    { id: "gold", label: "Gold" },
-    { id: "diamonds", label: "Diamonds" },
-    { id: "copper", label: "Copper" },
-    { id: "iron-ore", label: "Iron Ore" },
-  ],
-  processed: [
-    { id: "edible-oils", label: "Edible Oils" },
-    { id: "cocoa-products", label: "Cocoa Products" },
-    { id: "roasted-coffee-tea", label: "Roasted Coffee & Tea" },
-    { id: "refined-sugar", label: "Refined Sugar" },
-    { id: "processed-fruits", label: "Processed Fruits" },
-    { id: "leather-tanned", label: "Leather (Tanned)" },
-    { id: "textile-yarn", label: "Textile Yarn & Fabrics" },
-  ],
-  manufactured: [
-    { id: "textiles-apparel", label: "Textiles & Apparel" },
-    { id: "footwear", label: "Footwear & Leather Goods" },
-    { id: "vehicles", label: "Vehicles & Parts" },
-    { id: "machinery", label: "Machinery & Equipment" },
-    { id: "electronics", label: "Electrical Equipment" },
-    { id: "building-materials", label: "Building Materials" },
-  ],
-};
-
-// --- types (aligns with what your creator form posts) ---
 type Product = {
   id: string | number;
   name: string;
   quantity: number;
-  unit: "kg" | "ton" | "piece" | "litre";
+  unit: string;
   pricePerUnit: number;
   countryOfOrigin: string;
-  category?: (typeof categories)[number]["id"];
+  category?: string;
   subcategory?: string;
   description: string;
   hsCode?: string;
-  incoterm?: "FOB" | "CIF" | "EXW" | "DAP";
+  incoterm?: string;
   minOrderQty?: number;
   leadTimeDays?: number;
-  // your API should ideally return file URLs; handle both strings & objects defensively:
-  images?: Array<string | { url: string }>;
-  documents?: Array<string | { url: string; name?: string }>;
+  images?: Array<{ path: string; originalName?: string }>;
+  documents?: Array<{ path: string; originalName?: string }>;
   createdAt?: string;
   updatedAt?: string;
 };
-
-export const dynamic = "force-dynamic"; // always fetch fresh in dev
-
-// Optional SEO
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
-  const id = params.id;
-  try {
-    const res = await fetch(`http://localhost:4000/api/products/${id}`, {
-      // If your API requires cookies/headers, add them here.
-      // cache: "no-store" // alternative to dynamic
-      next: { revalidate: 0 },
-    });
-
-    if (!res.ok) return { title: `Product ${id}` };
-    const p: Product = await res.json();
-    return {
-      title: `${p.name} · Product #${id}`,
-      description: p.description?.slice(0, 160),
-    };
-  } catch {
-    return { title: `Product ${id}` };
-  }
-}
 
 function fmtMoney(n?: number) {
   if (typeof n !== "number" || Number.isNaN(n)) return "-";
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
 }
 
-function catLabel(cat?: string) {
-  if (!cat) return "-";
-  const c = categories.find((x) => x.id === cat);
-  return c?.label ?? cat;
-}
-
-function subcatLabel(cat?: string, sub?: string) {
-  if (!cat || !sub) return "-";
-  const s = subcategories[cat]?.find((x) => x.id === sub);
-  return s?.label ?? sub;
-}
-
-function listifyMedia(arr?: Array<string | { url: string; name?: string }>) {
+function listifyMedia<T extends { path: string; originalName?: string }>(arr?: T[]) {
   if (!arr || arr.length === 0) return [];
-  return arr
-    .map((x) => (typeof x === "string" ? { url: x, name: x.split("/").pop() || "file" } : x))
-    .filter((x) => !!x?.url);
+  return arr.map((f) => ({
+    url: `http://localhost:4000${f.path}`,
+    name: f.originalName ?? f.path.split("/").pop(),
+  }));
 }
-export default async function ProductDetails({ id }: { id: string }) {
 
-  let product: Product | null = null;
-  let fatalError: string | null = null;
+export default function ProductDetails({ id }: { id: string }) {
+  const [product, setProduct] = useState<Product | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const res = await fetch(`http://localhost:4000/api/products/${id}`, {
-      next: { revalidate: 0 },
-    });
+  useEffect(() => {
+    let cancelled = false;
 
-    if (res.status === 404) return notFound();
-    if (!res.ok) {
-      fatalError = `Server responded with ${res.status}`;
-    } else {
-      product = (await res.json()) as Product;
+    async function load() {
+      try {
+        setLoading(true);
+        const res = await fetch(`http://localhost:4000/api/products/${id}`);
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+        const data = (await res.json()) as Product;
+        if (!cancelled) setProduct(data);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Failed to fetch product.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-  } catch (e: any) {
-    fatalError = e?.message ?? "Failed to fetch product.";
-  }
 
-  if (fatalError) {
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // ✅ Hooks always called, even if product is null
+  const imgs = useMemo(() => listifyMedia(product?.images), [product?.images]);
+  const docs = useMemo(() => listifyMedia(product?.documents), [product?.documents]);
+
+  if (loading) return <p className="p-6">Loading…</p>;
+
+  if (error) {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Alert variant="destructive">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Couldn’t load product</AlertTitle>
-          <AlertDescription>{fatalError}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       </div>
     );
@@ -157,59 +89,52 @@ export default async function ProductDetails({ id }: { id: string }) {
 
   if (!product) return null;
 
-  const imgs = listifyMedia(product.images);
-  const docs = listifyMedia(product.documents);
-
   return (
     <div className="max-w-5xl mx-auto p-6">
       <Card className="p-8 glass border-border/50">
+        {/* title + badges */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <h1 className="text-3xl font-bold flex items-center">
             <Coins className="w-7 h-7 mr-2 text-primary" />
             {product.name}
           </h1>
           <div className="flex gap-2">
-            {product.category && (
-              <Badge variant="secondary">{catLabel(product.category)}</Badge>
-            )}
-            {product.subcategory && product.category && (
-              <Badge variant="outline">{subcatLabel(product.category, product.subcategory)}</Badge>
-            )}
+            {product.category && <Badge variant="secondary">{product.category}</Badge>}
+            {product.subcategory && <Badge variant="outline">{product.subcategory}</Badge>}
           </div>
         </div>
 
         <p className="mt-3 text-muted-foreground">{product.description}</p>
 
-        {/* Media */}
+        {/* Images */}
         {imgs.length > 0 && (
           <>
             <Separator className="my-6" />
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Images</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {imgs.map((f, i) => (
-                  <a
-                    key={i}
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="relative rounded-lg overflow-hidden border"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt={f.name || `image-${i}`}
-                      className="aspect-video object-cover w-full h-full"
-                    />
-                  </a>
-                ))}
-              </div>
+            <h2 className="text-lg font-semibold mb-3">Images</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {imgs.map((f, i) => (
+                <a
+                  key={i}
+                  href={f.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="relative rounded-lg overflow-hidden border"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.url}
+                    alt={f.name || `image-${i}`}
+                    className="aspect-video object-cover w-full h-full"
+                  />
+                </a>
+              ))}
             </div>
           </>
         )}
 
         <Separator className="my-6" />
 
+        {/* Core info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="text-sm text-muted-foreground">Quantity</div>
@@ -227,6 +152,7 @@ export default async function ProductDetails({ id }: { id: string }) {
           </div>
         </div>
 
+        {/* Extra fields */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <div>
             <div className="text-sm text-muted-foreground">HS Code</div>
@@ -267,22 +193,26 @@ export default async function ProductDetails({ id }: { id: string }) {
           </div>
         </div>
 
+        {/* Documents */}
         {docs.length > 0 && (
           <>
             <Separator className="my-6" />
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Certificates & Documents</h2>
-              <ul className="space-y-2">
-                {docs.map((d, i) => (
-                  <li key={i} className="flex items-center justify-between gap-2">
-                    <span className="truncate">{d.name || d.url.split("/").pop()}</span>
-                    <a className="underline text-sm" href={d.url} target="_blank" rel="noreferrer">
-                      View
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <h2 className="text-lg font-semibold mb-3">Certificates & Documents</h2>
+            <ul className="space-y-2">
+              {docs.map((d, i) => (
+                <li key={i} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{d.name}</span>
+                  <a
+                    className="underline text-sm"
+                    href={d.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View
+                  </a>
+                </li>
+              ))}
+            </ul>
           </>
         )}
       </Card>
