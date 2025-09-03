@@ -69,42 +69,6 @@ export async function connectWalletController(req: Request, res: Response) {
   }
 }
 
-/** POST /api/auth/core-identity */
-export async function saveCoreIdentityController(
-  req: AuthenticatedRequest,
-  res: Response
-) {
-  try {
-    if (!req.user)
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-
-    const parsed = CoreIdentitySchema.parse(req.body);
-    const updated = await saveCoreIdentity(req.user.id, parsed);
-
-    return res.json({ success: true, data: updated });
-  } catch (err: any) {
-    return res.status(400).json({ success: false, message: err.message });
-  }
-}
-
-/** PUT /api/auth/progressive */
-export async function updateProgressiveController(
-  req: AuthenticatedRequest,
-  res: Response
-) {
-  try {
-    if (!req.user)
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-
-    const parsed = ProgressiveProfileSchema.parse(req.body);
-    const updated = await updateProgressiveProfile(req.user.id, parsed);
-
-    return res.json({ success: true, data: updated });
-  } catch (err: any) {
-    return res.status(400).json({ success: false, message: err.message });
-  }
-}
-
 /** GET /api/auth/profile */
 export async function getProfileController(
   req: AuthenticatedRequest,
@@ -116,6 +80,44 @@ export async function getProfileController(
 
     const profile = await getUserProfile(req.user.id);
     return res.json({ success: true, data: profile });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+/** PUT /api/auth/profile (combined core + progressive update) */
+export async function updateProfileController(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    if (!req.user)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    // Partial update: parse core fields if present
+    let updatedCore = {};
+    try {
+      const coreData = CoreIdentitySchema.parse(req.body);
+      updatedCore = await saveCoreIdentity(req.user.id, coreData);
+    } catch (_) {
+      // ignore validation errors if core fields not provided
+    }
+
+    // Partial update: parse progressive fields if present
+    let updatedProgressive = {};
+    try {
+      const progressiveData = ProgressiveProfileSchema.parse(req.body);
+      updatedProgressive = await updateProgressiveProfile(
+        req.user.id,
+        progressiveData
+      );
+    } catch (_) {
+      // ignore validation errors if progressive fields not provided
+    }
+
+    const updatedProfile = { ...updatedCore, ...updatedProgressive };
+
+    return res.json({ success: true, data: updatedProfile });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }

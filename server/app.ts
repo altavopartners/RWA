@@ -1,34 +1,36 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import express, { Request, Response } from "express";
+import cors from "cors";
 
-import { corsOptions } from './config/cors';
-import { ensureUploadDirs, rootUpload } from './config/uploads';
-import routes from './routes';
-import errorHandler from './middleware/errorHandler';
+import { corsOptions } from "./config/cors";
+import { ensureUploadDirs, rootUpload } from "./config/uploads";
+import routes from "./routes";
+import errorHandler from "./middleware/errorHandler";
 
 const app = express();
 
-// JSON parsing
-app.use(express.json());
+// JSON parsing (allow large payloads)
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // CORS
 app.use(cors(corsOptions));
-// preflight (utile pour les requêtes complexes)
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions));
 
-// s'assurer que les dossiers d'upload existent
+// Ensure upload directories exist
 ensureUploadDirs();
 
-// servir les fichiers uploadés (dev)
-app.use('/uploads', express.static(rootUpload));
+// Serve uploaded files (dev)
+app.use("/uploads", express.static(rootUpload));
 
-// healthcheck
-app.get('/', (_req: Request, res: Response) => res.send('Hex-Port backend is running'));
+// Healthcheck
+app.get("/", (_req: Request, res: Response) =>
+  res.send("Hex-Port backend is running")
+);
 
-// routes API
-app.use('/api', routes);
+// API routes
+app.use("/api", routes);
 
-// gestionnaire d'erreurs central
+// Central error handler
 app.use(errorHandler);
 
 export default app;

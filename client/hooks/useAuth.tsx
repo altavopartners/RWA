@@ -35,14 +35,13 @@ interface AuthContextType {
   walletAddress: string | null;
   isConnected: boolean;
   isLoading: boolean;
+  token: string | null;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
-  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --------------------------- Wallet Helpers ---------------------------
@@ -53,13 +52,10 @@ const signMessageWithWallet = async (
   if (!window.ethereum || !window.ethereum.isMetaMask) {
     throw new Error("MetaMask not found. Please install MetaMask.");
   }
-
-  // Returns a string, not an array
   const signature: string = await window.ethereum.request({
     method: "personal_sign",
     params: [message, walletAddress],
   });
-
   return signature;
 };
 
@@ -73,19 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
-  // Restore session
-  useEffect(() => {
-    const savedAddress = localStorage.getItem("walletAddress");
-    const savedToken = localStorage.getItem("jwtToken");
-    if (savedAddress && savedToken) {
-      setWalletAddress(savedAddress);
-      setToken(savedToken);
-      setIsConnected(true);
-      fetchProfile(savedToken);
-    }
-  }, []);
-
+  // ------------------- Fetch profile from backend -------------------
   const fetchProfile = async (jwt: string) => {
+    if (!jwt) return;
     try {
       const res = await fetch(`${BACKEND_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${jwt}` },
@@ -94,12 +80,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       setUser(data.data);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching profile:", err);
       setUser(null);
       setIsConnected(false);
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("walletAddress");
     }
   };
 
+  // ------------------- Initialize wallet/session -------------------
+  useEffect(() => {
+    const savedToken = localStorage.getItem("jwtToken");
+    const savedAddress = localStorage.getItem("walletAddress");
+
+    if (savedToken && savedAddress) {
+      setWalletAddress(savedAddress);
+      setToken(savedToken);
+      setIsConnected(true);
+
+      // Fetch profile after ensuring token exists
+      (async () => {
+        await fetchProfile(savedToken);
+      })();
+    }
+  }, []);
+
+  // ------------------- Connect Wallet -------------------
   const connectWallet = async () => {
     setIsLoading(true);
     try {
@@ -107,17 +113,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("MetaMask not found. Please install MetaMask.");
       }
 
-      // Step 1: Request accounts
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      if (!accounts || accounts.length === 0) {
+      if (!accounts || accounts.length === 0)
         throw new Error("No wallet accounts found");
-      }
+
       const address = accounts[0];
       setWalletAddress(address);
 
-      // Step 2: Get nonce
+      // Get nonce from backend
       const nonceRes = await fetch(`${BACKEND_URL}/api/auth/nonce`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,10 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nonce =
         nonceJson?.data?.nonce || `Sign this to login: ${Date.now()}`;
 
-      // Step 3: Sign
+      // Sign nonce with wallet
       const signature = await signMessageWithWallet(address, nonce);
 
-      // Step 4: Verify with backend
+      // Connect wallet to backend
       const connectRes = await fetch(`${BACKEND_URL}/api/auth/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,12 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
       if (!connectRes.ok) throw new Error("Wallet connection failed");
-      const { accessToken, user: userData } = await connectRes.json(); // <-- correct destructure
-      const jwt = accessToken;
 
-      // Step 5: Save session
-      setToken(jwt);
-      localStorage.setItem("jwtToken", jwt);
+      const { accessToken, user: userData } = await connectRes.json();
+
+      setToken(accessToken);
+      localStorage.setItem("jwtToken", accessToken);
       localStorage.setItem("walletAddress", address);
       setIsConnected(true);
       setUser(userData);
@@ -159,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Successfully connected your wallet!",
       });
     } catch (err: any) {
-      console.error(err);
+      console.error("Wallet connection error:", err);
       toast({
         title: "Connection failed",
         description: err.message,
@@ -167,11 +171,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setIsConnected(false);
       setWalletAddress(null);
+      setToken(null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ------------------- Disconnect Wallet -------------------
   const disconnectWallet = () => {
     setUser(null);
     setWalletAddress(null);
@@ -179,13 +185,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsConnected(false);
     localStorage.removeItem("walletAddress");
     localStorage.removeItem("jwtToken");
-    toast({ title: "Disconnected", description: "Wallet session cleared" });
+    toast({
+      title: "Disconnected",
+      description: "Wallet session cleared",
+    });
   };
 
+  // ------------------- Update Profile -------------------
   const updateProfile = async (data: Partial<User>) => {
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/progressive`, {
+      const res = await fetch(`${BACKEND_URL}/api/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -201,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Your profile has been updated",
       });
     } catch (err: any) {
-      console.error(err);
+      console.error("Update profile error:", err);
       toast({
         title: "Update failed",
         description: err.message,
@@ -217,10 +227,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         walletAddress,
         isConnected,
         isLoading,
+        token,
         connectWallet,
         disconnectWallet,
         updateProfile,
-        token,
       }}
     >
       {children}
@@ -228,7 +238,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook to use auth
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");

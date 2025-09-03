@@ -1,3 +1,4 @@
+// components/ConnectWallet.tsx
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Wallet, Shield, Globe, Loader2 } from "lucide-react";

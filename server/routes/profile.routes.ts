@@ -1,18 +1,17 @@
 // src/routes/profile.routes.ts
-// Defines REST API endpoints for user profile management under `/api/profile`.
-//
-// All routes are protected and require a valid JWT (verified by `verifyJWT` middleware).
-// Endpoints:
-// - GET /    -> Retrieve the complete profile of the authenticated user.
-// - PUT /    -> Update the profile fields (name, email, business info, etc.) of the authenticated user.
-
 import { Router } from "express";
 import { verifyJWT } from "../middleware/auth";
-import { getProfileController, updateProfileController } from "../controllers/profile.controller";
+import {
+  getProfileController,
+  updateProfileController,
+} from "../controllers/auth.controller";
 
 const router = Router();
 
+// GET full profile
 router.get("/", verifyJWT, getProfileController);
+
+// PUT update profile (core + progressive fields in one request)
 router.put("/", verifyJWT, updateProfileController);
 
 export default router;
