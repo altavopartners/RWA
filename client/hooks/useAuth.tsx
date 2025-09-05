@@ -23,11 +23,13 @@ interface User {
   location?: string | null;
   description?: string | null;
   profileImage?: string | null;
+  cartId?: string | null;
   role: "PRODUCER" | "BUYER" | "ADMIN";
   isVerified: boolean;
   did?: string | null;
   createdAt: string;
   updatedAt: string;
+
 }
 
 interface AuthContextType {

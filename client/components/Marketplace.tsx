@@ -378,16 +378,9 @@ const Marketplace = () => {
                     </Button>
 
                     <AddToCartPopup
-                      product={{
-                        id: String(product.id),
-                        name: product.name,                 // e.g. "Refined Gold Bullion"
-                        pricePerUnit: 65000,                // from your data
-                        unit: "kg",                         // or "ct"
-                        minOrder: 5,                        // from your data
-                        available: 50                       // from your data
-                      }}
-                      /*onConfirm={{(qty) => cart.add(product, qty)} */ // plug into your cart/store
+                      product={product}
                     />
+                    
                   </div>
                 </div>
               </Card>

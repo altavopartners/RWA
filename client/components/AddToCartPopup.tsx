@@ -6,37 +6,49 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Loader2, Minus, Plus, X, Package } from "lucide-react";
+import { addItemToCart } from "@/lib/cart";
+
 
 type Unit = "kg" | "ct";
 
+
 type AddToCartPopupProps = {
-  product: {
-    id: string;
-    name: string;
-    pricePerUnit: number;
-    unit: Unit;
-    minOrder: number;
-    available: number;
-  };
+  product: any;
   onConfirm?: (qty: number) => Promise<void> | void;
   triggerClassName?: string;
 };
 
-export default function AddToCartPopup({
-  product,
-  onConfirm,
-  triggerClassName,
-}: AddToCartPopupProps) {
+export default function AddToCartPopup({ product, onConfirm, triggerClassName }: AddToCartPopupProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false); // <-- for portal (avoids SSR mismatch)
-  const [qty, setQty] = useState(product.minOrder);
+
+  // Normalize product fields so it works with your example
+  const minOrder = useMemo(() => {
+    const raw = Number(product?.minOrder ?? product?.minOrderQty ?? 1);
+    return Number.isFinite(raw) ? Math.max(1, Math.floor(raw)) : 1;
+  }, [product?.minOrder, product?.minOrderQty]);
+
+  const available = useMemo(() => {
+    const raw = Number(product?.available ?? product?.quantity ?? 0);
+    return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+  }, [product?.available, product?.quantity]);
+
+  const unit: string = product?.unit ?? "unit";
+
+  // Start qty within [1, available]; even if minOrder > available, user can still adjust.
+  const [qty, setQty] = useState(() => Math.max(1, Math.min(available, Math.floor(Number(product?.minOrder ?? product?.minOrderQty ?? 1)))));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
+  // Keep qty within [1, available] when stock changes
+  useEffect(() => {
+    setQty((q) => Math.max(1, Math.min(available, Math.floor(Number(q) || 1))));
+  }, [available]);
+
   const total = useMemo(
-    () => qty * product.pricePerUnit,
-    [qty, product.pricePerUnit]
+    () => (Number(qty) || 0) * (Number(product?.pricePerUnit) || 0),
+    [qty, product?.pricePerUnit]
   );
 
   // ESC + body scroll lock
@@ -52,23 +64,39 @@ export default function AddToCartPopup({
     };
   }, [open]);
 
-  const dec = () => setQty((q) => Math.max(product.minOrder, q - 1));
-  const inc = () => setQty((q) => Math.min(product.available, q + 1));
+  const dec = () => setQty((q: number) => Math.max(1, Math.floor(q) - 1));
+  const inc = () => setQty((q: number) => Math.min(available, Math.floor(q) + 1));
+
   const onInput = (v: string) => {
     const n = Number(v);
     if (Number.isNaN(n)) return;
-    setQty(Math.max(product.minOrder, Math.min(product.available, n)));
+    setQty(Math.max(1, Math.min(available, Math.floor(n))));
   };
 
   const confirm = async () => {
     setSaving(true);
     try {
-      await onConfirm?.(qty);
+      const resp = await addItemToCart(
+        { idofproduct: product.id, qty },
+        { useCookieAuth: true } // or bearerToken if you use headers
+      );
+
+      if (!resp.success) {
+        console.error("Add failed:", resp.message);
+        // optionally show a toast or error state
+        return;
+      }
+
+      // success: close modal
       setOpen(false);
+    } catch (err) {
+      console.error("Network/API error", err);
     } finally {
       setSaving(false);
     }
   };
+
+  const outOfStock = available <= 0;
 
   // -------- overlay UI (portaled) --------
   const overlay = (
@@ -94,14 +122,14 @@ export default function AddToCartPopup({
                 <Package className="w-4 h-4 text-primary" />
               </span>
               <h3 id="add-to-cart-title" className="text-xl font-semibold">
-                {product.name}
+                {product?.name}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              ${product.pricePerUnit.toLocaleString()}/{product.unit}
+              ${Number(product?.pricePerUnit || 0).toLocaleString()}/{unit}
             </p>
             <p className="text-xs text-muted-foreground">
-              Available: {product.available} {product.unit} • Min: {product.minOrder} {product.unit}
+              Available: {available.toLocaleString()} {unit} • Min: {minOrder.toLocaleString()} {unit}
             </p>
           </div>
 
@@ -115,15 +143,15 @@ export default function AddToCartPopup({
           <div className="space-y-2">
             <label className="text-sm font-medium">Choose quantity</label>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" onClick={dec} disabled={qty <= product.minOrder}>
+              <Button variant="outline" size="icon" onClick={dec} disabled={outOfStock || qty <= 1}>
                 <Minus className="w-4 h-4" />
               </Button>
 
               <input
                 type="number"
                 inputMode="numeric"
-                min={product.minOrder}
-                max={product.available}
+                min={1}
+                max={available}
                 step={1}
                 value={qty}
                 onChange={(e) => onInput(e.target.value)}
@@ -131,15 +159,18 @@ export default function AddToCartPopup({
                 autoFocus
               />
 
-              <Button variant="outline" size="icon" onClick={inc} disabled={qty >= product.available}>
+              <Button variant="outline" size="icon" onClick={inc} disabled={outOfStock || qty >= available}>
                 <Plus className="w-4 h-4" />
               </Button>
 
-              <Badge variant="secondary">{product.unit}</Badge>
+              <Badge variant="secondary">{unit}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Min order {product.minOrder} {product.unit}. You can order up to {product.available} {product.unit}.
+              Min order {minOrder.toLocaleString()} {unit}. You can order up to {available.toLocaleString()} {unit}. The Add button will enable once your quantity meets the minimum.
             </p>
+            {outOfStock && (
+              <p className="text-xs text-destructive">Not enough stock available right now.</p>
+            )}
           </div>
 
           <div className="flex items-center justify-between border-t pt-4">
@@ -151,7 +182,7 @@ export default function AddToCartPopup({
             <Button
               className="flex-1 bg-green-600 text-white hover:bg-green-700 cursor-pointer"
               onClick={confirm}
-              disabled={saving || qty < product.minOrder || qty > product.available}
+              disabled={saving || outOfStock || qty < minOrder || qty > available}
             >
               {saving ? (
                 <>
@@ -159,7 +190,7 @@ export default function AddToCartPopup({
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-4 h-4 mr-2" /> Add {qty} {product.unit}
+                  <ShoppingCart className="w-4 h-4 mr-2" /> Add {qty} {unit}
                 </>
               )}
             </Button>
@@ -182,7 +213,7 @@ export default function AddToCartPopup({
     <>
       <Button onClick={() => setOpen(true)} 
                       variant="hero" 
-                      className="flex-1 cursor-pointer">
+                      className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}>
         <ShoppingCart className="w-4 h-4 mr-2" />
         Add to cart
       </Button>

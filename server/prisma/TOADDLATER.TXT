@@ -1,0 +1,50 @@
+
+model Order {
+  id             String      @id @default(cuid())
+  user           User?       @relation(fields: [userId], references: [id])
+  userId         String?
+
+  status         OrderStatus @default(PENDING)
+  currency       String      @db.Char(3)
+
+  subtotal       Decimal     @db.Decimal(19, 4)
+  discountTotal  Decimal     @db.Decimal(19, 4) @default(0)
+  taxTotal       Decimal     @db.Decimal(19, 4) @default(0)
+  shippingTotal  Decimal     @db.Decimal(19, 4) @default(0)
+  grandTotal     Decimal     @db.Decimal(19, 4)
+
+  shippingAddress Json
+  billingAddress  Json
+  email           String
+
+  placedAt       DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  items          OrderItem[]
+  payments       Payment[]
+  shipments      Shipment[]
+
+  @@index([userId, placedAt], map: "idx_order_user_placedat")
+}
+
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String
+
+  product       Product  @relation(fields: [productId], references: [id])
+  productId     Int
+
+  titleSnapshot String
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(19, 4)
+  currency      String   @db.Char(3)
+  discountAmount Decimal @db.Decimal(19, 4) @default(0)
+  taxAmount      Decimal @db.Decimal(19, 4) @default(0)
+  lineTotal      Decimal @db.Decimal(19, 4)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

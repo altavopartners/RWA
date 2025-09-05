@@ -7,51 +7,59 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OrderStatus {
+  PENDING
+  AWAITING_PAYMENT
+  PAID
+  FULFILLED
+  PARTIALLY_FULFILLED
+  CANCELED
+  REFUNDED
+}
 
 model User {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
+  id            String  @id @default(cuid())
+  walletAddress String  @unique
   accountId     String? @unique
   publicKeyHex  String?
   nonce         String?
 
-  // Core identity
-  fullName      String?
-  email         String?  @unique
-  phoneNumber   String?
-  location      String?
+  fullName    String?
+  email       String? @unique
+  phoneNumber String?
+  location    String?
 
-  // Progressive profile
-  profileImage  String?  // This is the IPFS CID
-  businessName  String?
-  businessDesc  String?
+  profileImage String?
+  businessName String?
+  businessDesc String?
 
-  userType      UserType @default(PRODUCER)
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  userType      UserType  @default(PRODUCER)
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
   nonceIssuedAt DateTime?
 
-  authSessions  AuthSession[]
-  documents     Document[]
-  dID           DID?     // This should reference the DID model
-  
+  authSessions AuthSession[]
+  documents    Document[]
+  dID          DID?
+
+  // back-relation
+  cartItems CartItem[]
 }
 
-
 model AuthSession {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  token       String
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id])
+  userId       String
+  token        String
   refreshToken String?
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Document {
@@ -74,6 +82,7 @@ model DID {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 enum DocumentType {
   KYC_ID
   BUSINESS_LICENSE
@@ -81,6 +90,7 @@ enum DocumentType {
   HALAL_CERT
   OTHER
 }
+
 //for escrow
 enum KycStatus {
   PENDING
@@ -88,6 +98,7 @@ enum KycStatus {
   VERIFIED
   REJECTED
 }
+
 enum UserType {
   PRODUCER
   BUYER
@@ -95,24 +106,47 @@ enum UserType {
 }
 
 model Product {
-  id            Int      @id @default(autoincrement())
-  name          String
-  quantity      Int
-  unit          String
-  pricePerUnit  Float
+  id              Int     @id @default(autoincrement())
+  name            String
+  quantity        Int
+  unit            String
+  pricePerUnit    Float // (you can switch to Decimal if you prefer)
   countryOfOrigin String
-  category      String
-  subcategory   String?
-  description   String
-  hsCode        String?
-  incoterm      String?
-  minOrderQty   Int?
-  leadTimeDays  Int?
+  category        String
+  subcategory     String?
+  description     String
+  hsCode          String?
+  incoterm        String?
+  minOrderQty     Int?
+  leadTimeDays    Int?
 
-  // JSON arrays for storing file paths or metadata
-  images        Json?
-  documents     Json?
+  images    Json?
+  documents Json?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // back-relation
+  cartItems CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id String @id @default(cuid())
+
+  // 🔗 relations (the missing opposite sides)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 🔒 One row per (user, product)
+  @@unique([userId, productId], name: "userId_productId")
+  @@index([userId])
+  @@index([productId])
 }
