@@ -24,7 +24,7 @@ interface User {
   description?: string | null;
   profileImage?: string | null;
   cartId?: string | null;
-  role: "PRODUCER" | "BUYER" | "ADMIN" | "USER" | "BANK";
+  role: "PRODUCER" | "BUYER" | "ADMIN" | "USER" ;
   isVerified: boolean;
   did?: string | null;
   createdAt: string;
