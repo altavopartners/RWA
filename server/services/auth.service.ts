@@ -6,19 +6,16 @@
 
 import { prisma } from "../utils/prisma";
 import { WalletType, JWTPayload, UserType } from "../types/auth";
-import {
-  generateNonce,
-  createSignatureMessage,
-  isNonceValid,
-} from "../utils/crypto";
+import { generateNonce, createSignatureMessage, isNonceValid } from "../utils/crypto";
 import { JWTUtils } from "../utils/jwt";
 import { SessionService } from "./session.service"; // Import SessionService
-import { v4 as uuidv4 } from "uuid"; // For generating unique session IDs if needed, though JWT payload can use user.id
+import { v4 as uuidv4 } from 'uuid'; // For generating unique session IDs if needed, though JWT payload can use user.id
 /** Optional DID auto-issue feature */
 import { registerDidForUser } from "./did.service";
+import { verifyMetaMaskSignature } from "../utils/verifyEthereum";
+import { verifyHashpackSignature } from "../utils/verifyHashpack";
 
-const AUTO_ISSUE_DID =
-  (process.env.AUTO_ISSUE_DID || "false").toLowerCase() === "true";
+const AUTO_ISSUE_DID = (process.env.AUTO_ISSUE_DID || "false").toLowerCase() === "true";
 
 /** Generate nonce and upsert lightweight user record */
 export async function generateWalletNonce(walletAddress: string) {
@@ -28,21 +25,21 @@ export async function generateWalletNonce(walletAddress: string) {
   const user = await prisma.user.upsert({
     where: { walletAddress },
     update: { nonce, updatedAt: now },
-    create: { walletAddress, nonce }, // userType defaults to PRODUCER
+    create: { walletAddress, nonce }, // userType defaults to USER
   });
 
   return {
     nonce,
     message: createSignatureMessage(walletAddress, nonce, Date.now()),
     expiresIn: 600, // 10 minutes
-    userType: (user.userType as UserType) || "PRODUCER",
+    userType: (user.userType as UserType) || "USER",
   };
 }
 
 /**
  * connectWallet: verifies signature (MetaMask or HashPack), saves user record,
  * creates an AuthSession, and returns a JWT + user object.
- *
+ * 
  * - For HashPack, a publicKeyHex (32 bytes hex) is required to verify ED25519 signatures.
  */
 export async function connectWalletService(params: {
@@ -52,19 +49,10 @@ export async function connectWalletService(params: {
   nonce: string;
   walletType: WalletType;
   publicKeyHex?: string; // for HashPack
-  ipAddress?: string; // For session tracking
-  userAgent?: string; // For session tracking
+  ipAddress?: string;   // For session tracking
+  userAgent?: string;   // For session tracking
 }) {
-  const {
-    walletAddress,
-    signature,
-    message,
-    nonce,
-    walletType,
-    publicKeyHex,
-    ipAddress,
-    userAgent,
-  } = params;
+  const { walletAddress, signature, message, nonce, walletType, publicKeyHex, ipAddress, userAgent } = params;
 
   // 1) Find user and check nonce
   const userBefore = await prisma.user.findUnique({ where: { walletAddress } });
@@ -76,7 +64,7 @@ export async function connectWalletService(params: {
     throw new Error("Nonce expired");
   }
 
-  /*2) Verify signature (Uncomment for real verification)
+   /*2) Verify signature (Uncomment for real verification)
     let ok = false;
     if (walletType === "metamask") {
       ok = verifyMetaMaskSignature(message, signature, walletAddress);
@@ -88,6 +76,7 @@ export async function connectWalletService(params: {
     }
     if (!ok) throw new Error("Signature verification failed");
     */
+    
 
   // ONLY FOR TESTING: Temporarily accept all signatures
   let ok = true; // <- Remove this line for production
@@ -115,7 +104,7 @@ export async function connectWalletService(params: {
   const payload: Omit<JWTPayload, "iat" | "exp"> = {
     userId: user.id,
     walletAddress: user.walletAddress,
-    userType: (user.userType as UserType) || "PRODUCER",
+    userType: (user.userType as UserType) || "USER",
     sessionId: sessionId, // Link JWT to this specific session
   };
 
@@ -147,7 +136,7 @@ export async function connectWalletService(params: {
       id: user.id,
       walletAddress: user.walletAddress,
       username: user.fullName ?? undefined,
-      userType: (user.userType as UserType) || "PRODUCER",
+      userType: (user.userType as UserType) || "USER",
       isVerified: user.isVerified,
     },
   };
@@ -160,14 +149,19 @@ export async function getUserProfile(userId: string) {
     select: {
       id: true,
       walletAddress: true,
+      accountId: true,
       fullName: true,
       email: true,
       profileImage: true,
+      phoneNumber: true,
       location: true,
       businessName: true,
-      businessDesc: true, // currently backend field
+      businessDesc: true,
       userType: true,
       isVerified: true,
+      createdAt: true,
+      updatedAt: true,
+      lastLoginAt: true,
     },
   });
 
@@ -175,25 +169,22 @@ export async function getUserProfile(userId: string) {
 
   return {
     ...user,
-    description: user.businessDesc || "", // map to frontend
-    userType: (user.userType as UserType) || "PRODUCER",
+    username: user.fullName ?? undefined,
+    userType: (user.userType as UserType) || "USER",
   };
 }
 
 /** Core identity (phase 1) - NOW CREATES DID */
-export async function saveCoreIdentity(
-  userId: string,
-  data: {
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-    location: string;
-  }
-) {
+export async function saveCoreIdentity(userId: string, data: {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  location: string;
+}) {
   // basic uniqueness checks
   if (data.email) {
     const ex = await prisma.user.findFirst({
-      where: { email: data.email, id: { not: userId } },
+      where: { email: data.email, id: { not: userId } }
     });
     if (ex) throw new Error("Email already in use");
   }
@@ -204,7 +195,7 @@ export async function saveCoreIdentity(
     data: {
       ...data,
       isVerified: true,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     },
   });
 
@@ -216,14 +207,11 @@ export async function saveCoreIdentity(
       console.log(`[DID] Creating DID for verified user ${userId}`);
       await registerDidForUser(userId, {
         triggeredBy: "profile_completion",
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
       });
     }
   } catch (err) {
-    console.warn(
-      `[DID] Failed to auto-create for user ${userId}:`,
-      (err as Error).message
-    );
+    console.warn(`[DID] Failed to auto-create for user ${userId}:`, (err as Error).message);
     // Don't throw - let user continue even if DID fails
   }
 
@@ -231,19 +219,16 @@ export async function saveCoreIdentity(
 }
 
 /** Progressive profile (phase 2) */
-export async function updateProgressiveProfile(
-  userId: string,
-  data: {
-    profileImage?: string;
-    businessName?: string;
-    businessDesc?: string;
-  }
-) {
+export async function updateProgressiveProfile(userId: string, data: {
+  profileImage?: string;
+  businessName?: string;
+  businessDesc?: string;
+}) {
   const updated = await prisma.user.update({
     where: { id: userId },
     data: {
       ...data,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     },
   });
 
@@ -260,14 +245,13 @@ export async function getIdentityByWallet(walletAddress: string) {
       profileImage: true,
       userType: true,
       isVerified: true,
-      dID: {
-        // Include related DID information with specific fields
+      dID: {  // Include related DID information with specific fields
         select: {
           did: true,
           createdAt: true,
-        },
+        }
       },
-      createdAt: true, // Include account creation date
+      createdAt: true,  // Include account creation date
     },
   });
 
@@ -285,8 +269,9 @@ export async function getIdentityByWallet(walletAddress: string) {
       profileImage: user.profileImage,
       userType: user.userType,
       isVerified: user.isVerified,
-      did: user.dID?.did || null, // Handle case where DID might not exist
-      memberSince: user.createdAt.toISOString(), // Format date as ISO string
-    },
+      did: user.dID?.did || null,  // Handle case where DID might not exist
+      memberSince: user.createdAt.toISOString(),  // Format date as ISO string
+    }
   };
 }
+

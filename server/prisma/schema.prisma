@@ -33,7 +33,7 @@ model User {
   businessName String?
   businessDesc String?
 
-  userType      UserType  @default(PRODUCER)
+  userType      UserType  @default(USER)
   isVerified    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -103,6 +103,7 @@ enum UserType {
   PRODUCER
   BUYER
   ADMIN
+  USER
 }
 
 model Product {
