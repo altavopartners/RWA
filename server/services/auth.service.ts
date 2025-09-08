@@ -41,6 +41,10 @@ export async function generateWalletNonce(walletAddress: string) {
  * creates an AuthSession, and returns a JWT + user object.
  * 
  * - For HashPack, a publicKeyHex (32 bytes hex) is required to verify ED25519 signatures.
+ * ED25519 signatures how it works:
+You have a private key (secret) and public key (shared). You sign messages with private key, others verify with public key.
+
+
  */
 export async function connectWalletService(params: {
   walletAddress: string;
@@ -121,7 +125,6 @@ export async function connectWalletService(params: {
     token: accessToken, // Store the access token
     refreshToken: refreshToken, // Store the refresh token
     ipAddress, // Optional: Track IP
-    userAgent, // Optional: Track User Agent
     // expiresAt is handled by SessionService.getDefaultExpiry() or can be passed explicitly
     // isActive is set to true by default in SessionService.createSession
   });
@@ -174,67 +177,70 @@ export async function getUserProfile(userId: string) {
   };
 }
 
-/** Core identity (phase 1) - NOW CREATES DID */
-export async function saveCoreIdentity(userId: string, data: {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  location: string;
-}) {
-  // basic uniqueness checks
-  if (data.email) {
-    const ex = await prisma.user.findFirst({
-      where: { email: data.email, id: { not: userId } }
-    });
-    if (ex) throw new Error("Email already in use");
-  }
-
-  // Update user profile and mark as verified
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      ...data,
-      isVerified: true,
-      updatedAt: new Date()
-    },
-  });
-
-  // ✅ ONLY NOW create DID for verified user
-  try {
-    // Check if user already has DID (prevent duplicates)
-    const existingDID = await prisma.dID.findUnique({ where: { userId } });
-    if (!existingDID) {
-      console.log(`[DID] Creating DID for verified user ${userId}`);
-      await registerDidForUser(userId, {
-        triggeredBy: "profile_completion",
-        createdAt: new Date().toISOString()
-      });
-    }
-  } catch (err) {
-    console.warn(`[DID] Failed to auto-create for user ${userId}:`, (err as Error).message);
-    // Don't throw - let user continue even if DID fails
-  }
-
-  return updated;
-}
-
-/** Progressive profile (phase 2) */
-export async function updateProgressiveProfile(userId: string, data: {
+/** Unified profile update function - handles both core identity and progressive profile */
+export async function updateUserProfile(userId: string, data: {
+  // Core identity fields (phase 1) - triggers verification and DID creation
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  location?: string;
+  
+  // Progressive profile fields (phase 2)
   profileImage?: string;
   businessName?: string;
   businessDesc?: string;
 }) {
+  // Check if this is a core identity update (has required fields for verification)
+  const isCoreIdentityUpdate = data.fullName && data.email && data.phoneNumber && data.location;
+  
+  // Email uniqueness check if email is being updated
+  if (data.email) {
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        email: data.email, 
+        id: { not: userId } 
+      }
+    });
+    if (existingUser) throw new Error("Email already in use");
+  }
+
+  // Prepare update data
+  const updateData: any = {
+    ...data,
+    updatedAt: new Date()
+  };
+
+  // If this is a core identity update, mark as verified
+  if (isCoreIdentityUpdate) {
+    updateData.isVerified = true;
+  }
+
+  // Update user profile
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: {
-      ...data,
-      updatedAt: new Date()
-    },
+    data: updateData,
   });
+
+  // ✅ Create DID for newly verified users (only after core identity completion)
+  if (isCoreIdentityUpdate) {
+    try {
+      // Check if user already has DID (prevent duplicates)
+      const existingDID = await prisma.dID.findUnique({ where: { userId } });
+      if (!existingDID) {
+        console.log(`[DID] Creating DID for verified user ${userId}`);
+        await registerDidForUser(userId, {
+          triggeredBy: "profile_completion",
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn(`[DID] Failed to auto-create for user ${userId}:`, (err as Error).message);
+      // Don't throw - let user continue even if DID fails
+    }
+  }
 
   return updated;
 }
-
 export async function getIdentityByWallet(walletAddress: string) {
   // Query the database to find user by wallet address with specific fields
   const user = await prisma.user.findUnique({

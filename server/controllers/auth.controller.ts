@@ -3,16 +3,11 @@ import { Request, Response } from "express";
 import {
   generateWalletNonce,
   connectWalletService,
-  saveCoreIdentity,
-  updateProgressiveProfile,
+  updateUserProfile, // ← Use the new unified function
   getUserProfile,
   getIdentityByWallet,
 } from "../services/auth.service";
 import { AuthenticatedRequest } from "../types/auth";
-import {
-  CoreIdentitySchema,
-  ProgressiveProfileSchema,
-} from "../utils/validation";
 
 /** POST /api/auth/nonce */
 export async function generateNonceController(req: Request, res: Response) {
@@ -85,7 +80,7 @@ export async function getProfileController(
   }
 }
 
-/** PUT /api/auth/profile (combined core + progressive update) */
+/** PUT /api/auth/profile (unified profile update) */
 export async function updateProfileController(
   req: AuthenticatedRequest,
   res: Response
@@ -94,31 +89,40 @@ export async function updateProfileController(
     if (!req.user)
       return res.status(401).json({ success: false, message: "Unauthorized" });
 
-    // Partial update: parse core fields if present
-    let updatedCore = {};
-    try {
-      const coreData = CoreIdentitySchema.parse(req.body);
-      updatedCore = await saveCoreIdentity(req.user.id, coreData);
-    } catch (_) {
-      // ignore validation errors if core fields not provided
-    }
+    console.log("🔴 Backend received:", req.body);
 
-    // Partial update: parse progressive fields if present
-    let updatedProgressive = {};
-    try {
-      const progressiveData = ProgressiveProfileSchema.parse(req.body);
-      updatedProgressive = await updateProgressiveProfile(
-        req.user.id,
-        progressiveData
-      );
-    } catch (_) {
-      // ignore validation errors if progressive fields not provided
-    }
+    // Extract only the fields we want to update (filter out undefined values)
+    const updateData: {
+      fullName?: string;
+      email?: string;
+      phoneNumber?: string;
+      location?: string;
+      profileImage?: string;
+      businessName?: string;
+      businessDesc?: string;
+    } = {};
 
-    const updatedProfile = { ...updatedCore, ...updatedProgressive };
+    // Core identity fields
+    if (req.body.fullName !== undefined) updateData.fullName = req.body.fullName;
+    if (req.body.email !== undefined) updateData.email = req.body.email;
+    if (req.body.phoneNumber !== undefined) updateData.phoneNumber = req.body.phoneNumber;
+    if (req.body.location !== undefined) updateData.location = req.body.location;
+
+    // Progressive profile fields
+    if (req.body.profileImage !== undefined) updateData.profileImage = req.body.profileImage;
+    if (req.body.businessName !== undefined) updateData.businessName = req.body.businessName;
+    if (req.body.businessDesc !== undefined) updateData.businessDesc = req.body.businessDesc;
+
+    console.log("🟣 Backend updating with:", updateData);
+
+    // Use the unified function
+    const updatedProfile = await updateUserProfile(req.user.id, updateData);
+
+    console.log("🟢 Backend result:", updatedProfile);
 
     return res.json({ success: true, data: updatedProfile });
   } catch (err: any) {
+    console.error("❌ Profile update error:", err);
     return res.status(400).json({ success: false, message: err.message });
   }
 }

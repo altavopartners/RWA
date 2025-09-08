@@ -21,7 +21,7 @@ interface User {
   email?: string | null;
   businessName?: string | null;
   location?: string | null;
-  description?: string | null;
+  businessDesc?: string | null;
   profileImage?: string | null;
   cartId?: string | null;
   role: "PRODUCER" | "BUYER" | "ADMIN" | "USER" ;

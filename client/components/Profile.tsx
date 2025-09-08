@@ -16,7 +16,7 @@ const Profile = () => {
     businessName: "",
     email: "",
     location: "",
-    description: "",
+    businessDesc: "",
     profileImage: "",
   });
 
@@ -28,7 +28,7 @@ const Profile = () => {
         businessName: user.businessName || "",
         email: user.email || "",
         location: user.location || "",
-        description: user.description || "",
+        businessDesc: user.businessDesc || "",
         profileImage: user.profileImage || "",
       });
     }
@@ -40,7 +40,7 @@ const Profile = () => {
       email: formData.email,
       location: formData.location,
       businessName: formData.businessName,
-      description: formData.description,
+      businessDesc: formData.businessDesc,
       profileImage: formData.profileImage,
     });
     setIsEditing(false);
@@ -158,11 +158,11 @@ const Profile = () => {
               Description
             </label>
             <Textarea
-              value={formData.description}
+              value={formData.businessDesc}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  description: e.target.value,
+                  businessDesc: e.target.value,
                 }))
               }
               disabled={!isEditing}
