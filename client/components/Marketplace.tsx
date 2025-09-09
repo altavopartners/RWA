@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { useAuth } from '@/hooks/useAuth'
 import {
   Search,
   Filter,
@@ -162,6 +163,13 @@ const Marketplace = () => {
     load();
     return () => { isMounted = false; };
   }, []);
+
+  
+    const { isConnected } = useAuth()
+    // Redirect if not connected (comment out while debugging)
+    useEffect(() => {
+      if (isConnected === false) router.replace('/')
+    }, [isConnected, router])
 
   const handleSelectCategory = (id: string) => {
     setSelectedCategory(id);

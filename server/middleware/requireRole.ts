@@ -91,12 +91,12 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
 
 /** Enhanced rate limiting with environment-based configuration */
 export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 60 * 60 * 1000, // 60 minutes
   max: process.env.NODE_ENV === "production" ? 5 : 10, // Stricter in production
   message: {
     success: false,
     message: "Too many authentication attempts. Please try again later.",
-    retryAfter: "15 minutes",
+    retryAfter: "60 minutes",
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -108,12 +108,12 @@ export const authRateLimit = rateLimit({
 });
 
 export const generalRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 60 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 100 : 200, // Adjust based on environment
   message: {
     success: false,
     message: "Too many requests. Please try again later.",
-    retryAfter: "15 minutes",
+    retryAfter: "60 minutes",
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -124,12 +124,12 @@ export const generalRateLimit = rateLimit({
 
 /** API-specific rate limiting */
 export const apiRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 60 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 50 : 100,
   message: {
     success: false,
     message: "Too many API requests. Please try again later.",
-    retryAfter: "15 minutes",
+    retryAfter: "60 minutes",
   },
   standardHeaders: true,
   legacyHeaders: false,

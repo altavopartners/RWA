@@ -1,7 +1,7 @@
-// app/layout.tsx
+import NavClient from "@/components/NavClient";
 import "./globals.css";
 import Providers from "./providers";
-import Navigation from "@/components/Navigation";
+
 
 export const metadata = {
   title: "Hex-Port",
@@ -9,17 +9,12 @@ export const metadata = {
   icons: "/favicon.ico",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
         <Providers>
-          <Navigation />
-          {/* Nav is h-16 (64px) → add matching top padding */}
+          <NavClient />
           <main className="pt-16">{children}</main>
         </Providers>
       </body>

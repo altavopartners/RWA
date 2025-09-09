@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Navigation() {
+  const API_BASE = "http://localhost:4000";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, walletAddress, isConnected, connectWallet, disconnectWallet, isLoading } = useAuth();
+  // ADDED
+  const [count, setCount] = useState(0);
 
   // Map to your actual routes
   const navItems = [
@@ -34,6 +37,60 @@ export default function Navigation() {
     if (isConnected) disconnectWallet();
     else connectWallet();
   };
+
+
+
+  const fetchCartItemsCount = async () => {
+  try {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+    const res = await fetch(`${API_BASE}/api/carts/getmycartcount`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      // fine in the browser; prevents caching
+      cache: "no-store",
+    });
+
+    // try JSON first; fall back to text
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      const txt = await res.text();
+      if (!res.ok) throw new Error(txt || "Failed to fetch cart count");
+      // if backend returns empty body but ok, treat as 0
+      data = {};
+    }
+
+    if (!res.ok) {
+      const message =
+        (typeof data?.message === "string" && data.message) ||
+        (typeof data?.error === "string" && data.error) ||
+        "Failed to fetch cart count";
+      throw new Error(message);
+    }
+
+    const nextCount = Number(data?.cartcount ?? 0);
+    setCount(Number.isFinite(nextCount) ? nextCount : 0);
+  } catch (err: any) {
+    setCount(0);
+  }
+};
+
+useEffect(() => {
+  fetchCartItemsCount();
+}, [pathname, isConnected]);
+
+
+useEffect(() => {
+  const handler = () => fetchCartItemsCount();
+  window.addEventListener("cart:updated", handler);
+  return () => window.removeEventListener("cart:updated", handler);
+}, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
@@ -80,8 +137,7 @@ export default function Navigation() {
                 <span
                   className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
                   style={{ background: "lab(56 6.99 -64.99)", minWidth: 20, minHeight: 20 }}
-                >
-                  10
+                >{count}
                 </span>
             </Link>
           </div>
@@ -91,14 +147,14 @@ export default function Navigation() {
             {isConnected && user && (
               <div className="hidden md:flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium">{user.name || "User"}</p>
+                  {/* <p className="text-sm font-medium">{user.name || "User"}</p> */}
                   <p className="text-xs text-muted-foreground">
                     {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                   </p>
                 </div>
-                <Badge variant={user.verified ? "default" : "outline"} className="bg-success">
+                {/* <Badge variant={user.verified ? "default" : "outline"} className="bg-success">
                   {user.verified ? "Verified" : "Unverified"}
-                </Badge>
+                </Badge> */}
               </div>
             )}
 
@@ -150,13 +206,13 @@ export default function Navigation() {
               {isConnected && user && (
                 <div className="p-3 bg-muted/30 rounded-lg mb-3">
                   <div className="text-center">
-                    <p className="font-medium">{user.name || "User"}</p>
+                   {/* <p className="font-medium">{user.name || "User"}</p> */}
                     <p className="text-xs text-muted-foreground">
                       {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                     </p>
-                    <Badge variant={user.verified ? "default" : "outline"} className="bg-success mt-1">
+                  {/*  <Badge variant={user.verified ? "default" : "outline"} className="bg-success mt-1">
                       {user.verified ? "Verified" : "Unverified"}
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </div>
               )}

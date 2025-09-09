@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Loader2, Minus, Plus, X, Package } from "lucide-react";
 import { addItemToCart } from "@/lib/cart";
+import { useToast } from "@/hooks/use-toast";
 
 
 type Unit = "kg" | "ct";
@@ -19,6 +20,7 @@ type AddToCartPopupProps = {
 };
 
 export default function AddToCartPopup({ product, onConfirm, triggerClassName }: AddToCartPopupProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false); // <-- for portal (avoids SSR mismatch)
 
@@ -86,7 +88,15 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
         // optionally show a toast or error state
         return;
       }
-
+      
+      // notifie le header
+      window.dispatchEvent(new Event("cart:updated"));
+      toast({
+          title: "Item added to cart",
+          description: "Successfully added the item to your cart!",
+            variant: "success",
+        });
+      
       // success: close modal
       setOpen(false);
     } catch (err) {
@@ -215,7 +225,7 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
                       variant="hero" 
                       className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}>
         <ShoppingCart className="w-4 h-4 mr-2" />
-        Add to cart
+        Add to cart ?
       </Button>
 
       {open && mounted && createPortal(overlay, document.body)}

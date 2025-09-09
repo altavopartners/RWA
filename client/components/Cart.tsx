@@ -74,6 +74,8 @@ export default function CartPage() {
     if (isConnected === false) router.replace('/')
   }, [isConnected, router])
 
+  
+  
   const normalizeFromBackend = useCallback((raw: any): CartItem[] => {
     // Accept: array of cart rows, single cart row, or nested shapes
     const rows: any[] =
@@ -174,20 +176,31 @@ export default function CartPage() {
     if (isConnected) fetchCartItems()
   }, [isConnected, fetchCartItems])
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null
   // Optimistic quantity changes (replace with real API calls where noted)
-  const inc = useCallback((id: CartItem['id']) => {
+  const inc = useCallback(async (id: CartItem['id']) => {
     setItems(prev => prev.map(it => (it.id === id ? { ...it, qty: it.qty + 1 } : it)))
-    // await fetch(`${API_BASE}/api/carts/items/${id}`, { method: 'PATCH', body: JSON.stringify({ op: 'inc' }) })
+    await fetch(`${API_BASE}/api/carts/incrementitemquantity`, { method: 'POST',headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }, body: JSON.stringify({ "cartItemId": id }) })
   }, [])
 
-  const dec = useCallback((id: CartItem['id']) => {
+  const dec = useCallback(async (id: CartItem['id']) => {
     setItems(prev => prev.map(it => (it.id === id ? { ...it, qty: Math.max(1, it.qty - 1) } : it)))
-    // await fetch(`${API_BASE}/api/carts/items/${id}`, { method: 'PATCH', body: JSON.stringify({ op: 'dec' }) })
+    await fetch(`${API_BASE}/api/carts/decrementitemquantity`, { method: 'POST',headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }, body: JSON.stringify({ "cartItemId": id }) })
   }, [])
 
-  const removeItem = useCallback((id: CartItem['id']) => {
+  //removeitemfromcart
+  const removeItem = useCallback(async (id: CartItem['id']) => {
     setItems(prev => prev.filter(it => it.id !== id))
-    // await fetch(`${API_BASE}/api/carts/items/${id}`, { method: 'DELETE' })
+    await fetch(`${API_BASE}/api/carts/removeitemfromcart`, { method: 'POST',headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }, body: JSON.stringify({ "cartItemId": id }) })
   }, [])
 
   const { subtotal, shipping, total } = useMemo(() => {
@@ -297,10 +310,10 @@ export default function CartPage() {
       </div>
 
       {/* Dev helpers – safe to delete */}
-      <div className="text-xs text-muted-foreground">
+      {/* <div className="text-xs text-muted-foreground">
         Using <code>product.pricePerUnit</code> and <code>quantity</code>. Image paths are
         prefixed with <code>NEXT_PUBLIC_API_BASE</code> if they are relative (e.g. /uploads/...).
-      </div>
+      </div> */}
     </div>
   )
 }

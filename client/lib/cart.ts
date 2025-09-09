@@ -11,11 +11,11 @@ type AddItemResponse =
 const API_BASE = "http://localhost:4000";
 
 export async function addItemToCart(
-  payload: AddItemPayload
-): Promise<AddItemResponse> {
+payload: AddItemPayload, p0: { useCookieAuth: boolean; }): Promise<AddItemResponse> {
   try {
     // Grab token from localStorage (client-side only)
-    const token = typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -53,5 +53,51 @@ export async function addItemToCart(
       message: err?.message || "Network error",
       code: "NETWORK_ERROR",
     };
+  }
+}
+
+// ===== AJOUTS =====
+
+// Récupère uniquement le nombre total d'articles du panier
+export async function getCartCount(): Promise<number> {
+  try {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/api/carts/getmycart`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) return 0;
+
+    const data = await res.json().catch(() => ({}));
+    return Number(data?.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+// Récupère tout le panier complet (si tu veux l'utiliser ailleurs)
+export async function getMyCart(): Promise<any | null> {
+  try {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/api/carts/getmycart`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
   }
 }
