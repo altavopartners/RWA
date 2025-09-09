@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:15
@@ -20,13 +22,6 @@ services:
     build: ./server
     ports:
       - "4000:4000"
-      #- FILEBASE_TOKEN=${FILEBASE_TOKEN}
-      # 🔥 CRITICAL: Point to the IPFS container by its service name
-      #- IPFS_API_URL=http://ipfs:5001
-      #- IPFS_GATEWAY_URL=http://ipfs:8080
-      #- IPFS_SERVICE=local
-      # For generating public links from the API response, use the external port
-      #- PUBLIC_IPFS_GATEWAY=http://localhost:8082
     env_file:
       - .env
     environment:
@@ -35,6 +30,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./server:/app
+      - /app/node_modules
     command: npm run dev
     depends_on:
       - postgres
@@ -46,8 +42,9 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      CHOKIDAR_USEPOLLING: "true" # enables hot reload in Docker
     volumes:
       - ./client:/app
       - /app/node_modules
@@ -62,21 +59,21 @@ services:
           ignore:
             - node_modules/
   #ipfs:
-      #image: ipfs/kubo:latest
-      #container_name: hexport-ipfs
-      #restart: always
-      #ports:
-        #- "4001:4001" # swarm
-        #- "5001:5001" # API
-        #- "8082:8080" # gateway
-      #volumes:
-        #- ipfs_data:/data/ipfs
-      #command: daemon --migrate=true
-      #healthcheck:
-        #test: ["CMD", "ipfs", "swarm", "peers"]
-        #interval: 30s
-        #timeout: 10s
-        #retries: 3
+  #image: ipfs/kubo:latest
+  #container_name: hexport-ipfs
+  #restart: always
+  #ports:
+  #- "4001:4001" # swarm
+  #- "5001:5001" # API
+  #- "8082:8080" # gateway
+  #volumes:
+  #- ipfs_data:/data/ipfs
+  #command: daemon --migrate=true
+  #healthcheck:
+  #test: ["CMD", "ipfs", "swarm", "peers"]
+  #interval: 30s
+  #timeout: 10s
+  #retries: 3
 
 volumes:
   postgres_data:

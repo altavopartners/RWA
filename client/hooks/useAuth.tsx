@@ -19,17 +19,17 @@ interface User {
   walletAddress: string;
   fullName?: string | null;
   email?: string | null;
+  phoneNumber?: string | null; // ✅ added
   businessName?: string | null;
   location?: string | null;
   businessDesc?: string | null;
   profileImage?: string | null;
   cartId?: string | null;
-  role: "PRODUCER" | "BUYER" | "ADMIN" | "USER" ;
+  role: "PRODUCER" | "BUYER" | "ADMIN" | "USER";
   isVerified: boolean;
   did?: string | null;
   createdAt: string;
   updatedAt: string;
-
 }
 
 interface AuthContextType {
@@ -100,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(savedToken);
       setIsConnected(true);
 
-      // Fetch profile after ensuring token exists
       (async () => {
         await fetchProfile(savedToken);
       })();
