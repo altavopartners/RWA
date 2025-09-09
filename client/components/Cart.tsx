@@ -201,6 +201,7 @@ export default function CartPage() {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     }, body: JSON.stringify({ "cartItemId": id }) })
+    window.dispatchEvent(new Event("cart:updated"));
   }, [])
 
   const { subtotal, shipping, total } = useMemo(() => {
