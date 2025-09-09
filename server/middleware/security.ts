@@ -6,7 +6,12 @@
 import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 
-/** auth endpoints rate limit */
+/**
+ * STRICT RATE LIMITER FOR AUTHENTICATION ENDPOINTS
+ * Prevents brute-force attacks by limiting failed login attempts.
+ * - Window: 15 minutes
+ * - Max attempts: 10 (only failed attempts count)
+ */
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -20,7 +25,13 @@ export const authRateLimit = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-/** general rate limiter */
+/**
+ * GENERAL RATE LIMITER FOR ALL ROUTES
+ * Protects against API abuse and Denial-of-Service (DoS) attacks.
+ * - Window: 15 minutes  
+ * - Max requests: 100 per client
+ * - Applies to: All routes globally
+ */
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -33,13 +44,19 @@ export const generalRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
-/** CORS options */
+/**
+ * CORS (CROSS-ORIGIN RESOURCE SHARING) CONFIGURATION
+ * Controls which external domains can access our API.
+ * - Whitelists: Localhost (3000, 3001) and FRONTEND_URL from env
+ * - Blocks: All other origins with CORS error
+ * - Allows: Credentials (cookies, authentication)
+ */
 export const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     if (!origin) return callback(null, true);
     const allowedOrigins = [
       "http://localhost:3000",
-      "http://localhost:3001",
+      "http://127.0.0.1:3000",
       process.env.FRONTEND_URL,
     ].filter(Boolean);
     if (allowedOrigins.includes(origin)) callback(null, true);
@@ -51,7 +68,16 @@ export const corsOptions = {
   exposedHeaders: ["X-Total-Count", "X-Page-Count"],
 };
 
-/** security headers */
+/**
+ * SECURITY HTTP HEADERS MIDDLEWARE
+ * Sets critical security headers to protect against common web vulnerabilities.
+ * - Removes X-Powered-By: Hides Express.js stack information
+ * - X-Content-Type-Options: Prevents MIME-type sniffing
+ * - X-Frame-Options: Blocks clickjacking attacks
+ * - X-XSS-Protection: Enables browser XSS filter
+ * - Referrer-Policy: Controls referrer information leakage
+ * - Content-Security-Policy: Restricts resource loading to trusted sources only
+ */
 export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
   res.removeHeader("X-Powered-By");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -65,7 +91,13 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-/** dev request logger */
+/**
+ * DEVELOPMENT REQUEST LOGGER
+ * Logs all incoming requests to console for debugging and monitoring.
+ * - Only active in development environment (NODE_ENV=development)
+ * - Shows: Timestamp, HTTP method, URL, and client IP
+ * - Purpose: API traffic visibility and troubleshooting
+ */
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   if (process.env.NODE_ENV === "development") {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${req.ip}`);
@@ -73,7 +105,14 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
-/** error handler */
+/**
+ * GLOBAL ERROR HANDLING MIDDLEWARE
+ * Catches all unhandled errors and formats consistent JSON error responses.
+ * - Prevents server crashes from uncaught exceptions
+ * - Maps specific error types to appropriate HTTP status codes
+ * - Security: Hides stack traces in production environment
+ * - Handles: ValidationError, UnauthorizedError, JWT errors, etc.
+ */
 export const errorHandler = (error: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Error occurred:", error);
   let statusCode = 500;

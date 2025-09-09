@@ -1,3 +1,6 @@
+"use client";
+
+import type React from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -5,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, MapPin, Mail, Camera } from "lucide-react";
+import { Shield, MapPin, Mail, Camera, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const Profile = () => {
@@ -15,8 +18,9 @@ const Profile = () => {
     fullName: "",
     businessName: "",
     email: "",
+    phoneNumber: "",
     location: "",
-    description: "",
+    businessDesc: "",
     profileImage: "",
   });
 
@@ -27,8 +31,9 @@ const Profile = () => {
         fullName: user.fullName || "",
         businessName: user.businessName || "",
         email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
         location: user.location || "",
-        description: user.description || "",
+        businessDesc: user.businessDesc || "",
         profileImage: user.profileImage || "",
       });
     }
@@ -38,12 +43,18 @@ const Profile = () => {
     await updateProfile({
       fullName: formData.fullName,
       email: formData.email,
+      // phoneNumber: formData.phoneNumber,
       location: formData.location,
       businessName: formData.businessName,
-      description: formData.description,
+      businessDesc: formData.businessDesc,
       profileImage: formData.profileImage,
     });
     setIsEditing(false);
+  };
+
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-$$$$]/g, ""));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,20 +79,20 @@ const Profile = () => {
 
   return (
     <div className="container py-8">
-      <Card className="max-w-3xl mx-auto p-6">
-        <div className="flex items-center gap-6 mb-8">
+      <Card className="max-w-4xl mx-auto p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10 pb-6 border-b border-border/50">
           <div className="relative">
-            <Avatar className="w-24 h-24">
+            <Avatar className="w-28 h-28">
               <AvatarImage
                 src={formData.profileImage || "/placeholder.svg"}
                 alt={formData.fullName || "User"}
               />
-              <AvatarFallback>
+              <AvatarFallback className="text-xl text-primary">
                 {formData.fullName?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
             {isEditing && (
-              <label className="absolute bottom-0 right-0 cursor-pointer p-1 bg-white rounded-full border shadow">
+              <label className="absolute bottom-0 right-0 cursor-pointer p-2 bg-white rounded-full border shadow-md hover:shadow-lg transition-shadow">
                 <Camera className="w-5 h-5 text-gray-700" />
                 <input
                   type="file"
@@ -92,95 +103,213 @@ const Profile = () => {
               </label>
             )}
           </div>
-          <div>
+          <div className="flex-1">
             <Input
               value={formData.fullName}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, fullName: e.target.value }))
               }
               disabled={!isEditing}
-              className="text-2xl font-bold p-0 border-0 text-gray-900 bg-transparent"
+              className="text-3xl font-bold p-0 border-0 bg-transparent mb-3 text-primary placeholder:text-primary/50"
+              placeholder="Enter your full name"
             />
-            {user.isVerified && (
-              <Badge
-                variant="default"
-                className="bg-success mt-2 flex items-center gap-1"
-              >
-                <Shield className="w-3 h-3" /> Verified
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              {user.isVerified && (
+                <Badge
+                  variant="default"
+                  className="bg-success flex items-center gap-1"
+                >
+                  <Shield className="w-3 h-3" /> Verified Producer
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs text-primary/80">
+                {user.walletAddress?.slice(0, 8)}...
+                {user.walletAddress?.slice(-6)}
               </Badge>
-            )}
-            <p className="text-muted-foreground">{user.walletAddress}</p>
+            </div>
+            <p className="text-primary/80 text-sm">
+              {formData.businessName || "Business name not set"}
+            </p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Business Name
-            </label>
-            <Input
-              value={formData.businessName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  businessName: e.target.value,
-                }))
-              }
-              disabled={!isEditing}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Personal Information */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-primary">
+                Personal Information
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-primary/80">
+                    Full Name
+                  </label>
+                  <Input
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        fullName: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="Enter your full name"
+                    className="placeholder:text-primary/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2 text-primary/80">
+                    <Mail className="w-4 h-4 text-blue-600" /> Email Address
+                  </label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="Enter your email address"
+                    className="placeholder:text-primary/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2 text-primary/80">
+                    <Phone className="w-4 h-4 text-green-600" /> Phone Number
+                  </label>
+                  <Input
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        phoneNumber: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="+1 (555) 123-4567"
+                    className={
+                      isEditing &&
+                      formData.phoneNumber &&
+                      !validatePhoneNumber(formData.phoneNumber)
+                        ? "border-red-500 focus:border-red-500"
+                        : "placeholder:text-primary/50"
+                    }
+                  />
+                  {isEditing &&
+                    formData.phoneNumber &&
+                    !validatePhoneNumber(formData.phoneNumber) && (
+                      <p className="text-red-500 text-xs mt-1">
+                        Please enter a valid phone number
+                      </p>
+                    )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2 text-primary/80">
+                    <MapPin className="w-4 h-4 text-red-600" /> Location
+                  </label>
+                  <Input
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="City, Country"
+                    className="placeholder:text-primary/50"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1 flex items-center gap-2">
-              <Mail className="w-4 h-4" /> Email
-            </label>
-            <Input
-              value={formData.email}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, email: e.target.value }))
-              }
-              disabled={!isEditing}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 flex items-center gap-2">
-              <MapPin className="w-4 h-4" /> Location
-            </label>
-            <Input
-              value={formData.location}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, location: e.target.value }))
-              }
-              disabled={!isEditing}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Description
-            </label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              disabled={!isEditing}
-              rows={4}
-            />
+
+          {/* Right Column - Business Information */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-primary">
+                Business Information
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-primary/80">
+                    Business Name
+                  </label>
+                  <Input
+                    value={formData.businessName}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        businessName: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="Enter your business name"
+                    className="placeholder:text-primary/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-primary/80">
+                    Business Description
+                  </label>
+                  <Textarea
+                    value={formData.businessDesc}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        businessDesc: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    rows={6}
+                    placeholder="Describe your business, products, and services..."
+                    className="resize-none placeholder:text-primary/50"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-border/50">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
-                Cancel
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                className="sm:w-auto w-full"
+              >
+                Cancel Changes
               </Button>
-              <Button onClick={handleSave}>Save Changes</Button>
+              <Button
+                onClick={handleSave}
+                className="sm:w-auto w-full"
+                disabled={
+                  !!(
+                    isEditing &&
+                    formData.phoneNumber &&
+                    !validatePhoneNumber(formData.phoneNumber)
+                  )
+                }
+              >
+                Save Profile
+              </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="sm:w-auto w-full"
+            >
+              Edit Profile
+            </Button>
           )}
         </div>
       </Card>

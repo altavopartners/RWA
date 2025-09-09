@@ -10,7 +10,7 @@
 //
 // Types Defined:
 // - WalletType:      Union of supported wallet types ("hashpack", "metamask").
-// - UserType:         Union of user roles on the platform ("PRODUCER", "BUYER", "ADMIN").
+// - UserType:         Union of user roles on the platform ("PRODUCER", "BUYER", "ADMIN", "USER").
 // - AuthResponse:    Structure of the JSON response sent back to the client after authentication attempts.
 // - NonceResponse:    Structure of the JSON response containing the nonce and message for wallet signing.
 // - JWTPayload:      Internal structure of the data stored within a JWT token.
@@ -23,7 +23,7 @@ import { Request } from "express";
 export type WalletType = "hashpack" | "metamask";
 
 /** User types on the platform */
-export type UserType = "PRODUCER" | "BUYER" | "ADMIN";
+export type UserType = "PRODUCER" | "BUYER" | "ADMIN" | "USER";
 
 /** Payload returned to client after auth */
 export interface AuthResponse {
@@ -31,6 +31,7 @@ export interface AuthResponse {
   token?: string;
   user?: {
     id: string;
+    accountId: string;
     walletAddress: string;
     username?: string;
     userType: UserType;
