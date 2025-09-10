@@ -5,16 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useAuth } from '@/hooks/useAuth'
+// import { useAuth } from '@/hooks/useAuth'
 import {
   Search,
   Filter,
   MapPin,
   FileCheck,
   Coins,
-  ShoppingCart ,
-  Globe,
-  PlusCircle
+  PlusCircle,
 } from "lucide-react";
 import AddToCartPopup from "@/components/AddToCartPopup";
 
@@ -130,8 +128,12 @@ function buildAssetUrl(path: string | undefined) {
 const Marketplace = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<"all" | string>("all");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<"all" | string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | string>(
+    "all"
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState<
+    "all" | string
+  >("all");
 
   const [products, setProducts] = useState<APIProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +147,7 @@ const Marketplace = () => {
       setError(null);
       try {
         const res = await fetch(`${apiBase()}/api/products`, {
-          headers: { "Accept": "application/json" },
+          headers: { Accept: "application/json" },
           // credentials: "include", // uncomment if you need cookies
           cache: "no-store", // always fresh for client-side fetch
         });
@@ -161,15 +163,15 @@ const Marketplace = () => {
       }
     }
     load();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  
-    const { isConnected } = useAuth()
-    // Redirect if not connected (comment out while debugging)
-    useEffect(() => {
-      if (isConnected === false) router.replace('/')
-    }, [isConnected, router])
+  // const { isConnected } = useAuth()
+  // useEffect(() => {
+  //   if (isConnected === false) router.replace('/')
+  // }, [isConnected, router])
 
   const handleSelectCategory = (id: string) => {
     setSelectedCategory(id);
@@ -185,7 +187,8 @@ const Marketplace = () => {
         p.countryOfOrigin.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q);
 
-      const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "all" || p.category === selectedCategory;
       const matchesSubcategory =
         selectedCategory === "all" ||
         selectedSubcategory === "all" ||
@@ -195,7 +198,8 @@ const Marketplace = () => {
     });
   }, [products, searchQuery, selectedCategory, selectedSubcategory]);
 
-  const activeSubcats = selectedCategory !== "all" ? subcategories[selectedCategory] ?? [] : [];
+  const activeSubcats =
+    selectedCategory !== "all" ? subcategories[selectedCategory] ?? [] : [];
 
   return (
     <div className="pt-20 min-h-screen">
@@ -203,7 +207,9 @@ const Marketplace = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Global Marketplace</h1>
-          <p className="text-muted-foreground">Discover authentic African products from verified producers</p>
+          <p className="text-muted-foreground">
+            Discover authentic African products from verified producers
+          </p>
         </div>
 
         {/* Search and Filters */}
@@ -218,7 +224,7 @@ const Marketplace = () => {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" className="md:w-auto">
+            <Button variant="outline" className="md:w-auto bg-transparent">
               <Filter className="w-4 h-4 mr-2" />
               Filters
             </Button>
@@ -239,7 +245,9 @@ const Marketplace = () => {
             {categories.map((category) => (
               <Button
                 key={category.id}
-                variant={selectedCategory === category.id ? "default" : "outline"}
+                variant={
+                  selectedCategory === category.id ? "default" : "outline"
+                }
                 size="sm"
                 onClick={() => handleSelectCategory(category.id)}
                 className="transition-smooth"
@@ -252,11 +260,15 @@ const Marketplace = () => {
           {/* Subcategory Pills */}
           {selectedCategory !== "all" && activeSubcats.length > 0 && (
             <div className="space-y-2 animate-fade-in">
-              <div className="text-sm text-muted-foreground">Refine: Subcategories</div>
+              <div className="text-sm text-muted-foreground">
+                Refine: Subcategories
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Button
                   key="all-sub"
-                  variant={selectedSubcategory === "all" ? "secondary" : "outline"}
+                  variant={
+                    selectedSubcategory === "all" ? "secondary" : "outline"
+                  }
                   size="sm"
                   onClick={() => setSelectedSubcategory("all")}
                   className="transition-smooth"
@@ -267,7 +279,9 @@ const Marketplace = () => {
                 {activeSubcats.map((sub) => (
                   <Button
                     key={sub.id}
-                    variant={selectedSubcategory === sub.id ? "secondary" : "outline"}
+                    variant={
+                      selectedSubcategory === sub.id ? "secondary" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedSubcategory(sub.id)}
                     className="transition-smooth"
@@ -282,14 +296,19 @@ const Marketplace = () => {
 
         {/* Results Count / States */}
         <div className="mb-6">
-          {loading && <p className="text-sm text-muted-foreground">Loading products…</p>}
+          {loading && (
+            <p className="text-sm text-muted-foreground">Loading products…</p>
+          )}
           {error && (
             <p className="text-sm text-red-500">
-              {error} — check API is running at <code>{apiBase()}/api/products</code> and CORS.
+              {error} — check API is running at{" "}
+              <code>{apiBase()}/api/products</code> and CORS.
             </p>
           )}
           {!loading && !error && (
-            <p className="text-sm text-muted-foreground">Showing {filteredProducts.length} products</p>
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredProducts.length} products
+            </p>
           )}
         </div>
 
@@ -308,7 +327,7 @@ const Marketplace = () => {
                   {firstImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={firstImage}
+                      src={firstImage || "/placeholder.svg"}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
                     />
@@ -338,7 +357,9 @@ const Marketplace = () => {
                 {/* Product Info */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
+                    <h3 className="font-semibold text-lg line-clamp-1">
+                      {product.name}
+                    </h3>
                     {product.hsCode && (
                       <Badge variant="outline">HS {product.hsCode}</Badge>
                     )}
@@ -379,16 +400,15 @@ const Marketplace = () => {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1 cursor-pointer"
-                      onClick={() => router.push(`/product-details/${product.id}`)}
+                      className="flex-1 cursor-pointer bg-transparent"
+                      onClick={() =>
+                        router.push(`/product-details/${product.id}`)
+                      }
                     >
                       View Details
                     </Button>
 
-                    <AddToCartPopup
-                      product={product}
-                    />
-                    
+                    <AddToCartPopup product={product} />
                   </div>
                 </div>
               </Card>

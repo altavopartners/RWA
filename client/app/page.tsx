@@ -2,7 +2,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import ConnectWallet from "@/components/ConnectWallet";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -196,8 +195,6 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
-
-      {!isConnected && <ConnectWallet />}
     </>
   );
 }

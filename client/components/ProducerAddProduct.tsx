@@ -1,3 +1,7 @@
+"use client";
+
+import type React from "react";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Coins, Upload, Camera, FileCheck, AlertTriangle, CheckCircle2, X } from "lucide-react";
+import {
+  Coins,
+  Upload,
+  Camera,
+  FileCheck,
+  AlertTriangle,
+  CheckCircle2,
+  X,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AuthGuard } from "@/components/auth-guard";
 
 /* --- Taxonomy (exactly as you specified) --- */
 const categories = [
@@ -116,7 +129,13 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 };
 
-const RequiredLabel = ({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) => (
+const RequiredLabel = ({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: React.ReactNode;
+}) => (
   <Label htmlFor={htmlFor} className="flex items-center gap-1">
     <span>{children}</span>
     <span className="text-red-600">*</span>
@@ -124,6 +143,14 @@ const RequiredLabel = ({ htmlFor, children }: { htmlFor?: string; children: Reac
 );
 
 const ProducerAddProduct = () => {
+  return (
+    <AuthGuard message="Please connect your wallet to add products to the marketplace">
+      <ProducerAddProductContent />
+    </AuthGuard>
+  );
+};
+
+function ProducerAddProductContent() {
   const [form, setForm] = useState<FormState>(initialValues);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -141,7 +168,7 @@ const ProducerAddProduct = () => {
   // cleanup object URLs
   useEffect(() => {
     return () => {
-      // no persistent object URLs here; previews use <img src={URL.createObjectURL(file)} />
+      // no persistent object URLs here; previews use <img src={URL.createObjectURL(file) || "/placeholder.svg"} />
       // If you switch to memoized URLs, revoke them here.
     };
   }, []);
@@ -167,16 +194,28 @@ const ProducerAddProduct = () => {
     }
 
     // numbers
-    if (f.quantity && (!/^\d+$/.test(f.quantity) || parseInt(f.quantity) <= 0)) {
+    if (
+      f.quantity &&
+      (!/^\d+$/.test(f.quantity) || Number.parseInt(f.quantity) <= 0)
+    ) {
       e.quantity = "Quantity must be a positive integer.";
     }
-    if (f.pricePerUnit && (isNaN(Number(f.pricePerUnit)) || Number(f.pricePerUnit) <= 0)) {
+    if (
+      f.pricePerUnit &&
+      (isNaN(Number(f.pricePerUnit)) || Number(f.pricePerUnit) <= 0)
+    ) {
       e.pricePerUnit = "Price per unit must be a positive number.";
     }
-    if (f.minOrderQty && (!/^\d+$/.test(f.minOrderQty) || parseInt(f.minOrderQty) <= 0)) {
+    if (
+      f.minOrderQty &&
+      (!/^\d+$/.test(f.minOrderQty) || Number.parseInt(f.minOrderQty) <= 0)
+    ) {
       e.minOrderQty = "Min order qty must be a positive integer.";
     }
-    if (f.leadTimeDays && (!/^\d+$/.test(f.leadTimeDays) || parseInt(f.leadTimeDays) <= 0)) {
+    if (
+      f.leadTimeDays &&
+      (!/^\d+$/.test(f.leadTimeDays) || Number.parseInt(f.leadTimeDays) <= 0)
+    ) {
       e.leadTimeDays = "Lead time must be a positive integer (days).";
     }
 
@@ -207,14 +246,21 @@ const ProducerAddProduct = () => {
 
     if (Object.keys(v).length > 0) {
       // scroll to top where the error summary lives
-      setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      setTimeout(
+        () =>
+          topRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        0
+      );
       return;
     }
 
     // Build FormData for multipart/form-data
     const fd = new FormData();
     fd.append("name", form.name.trim());
-    fd.append("quantity", String(parseInt(form.quantity)));
+    fd.append("quantity", String(Number.parseInt(form.quantity)));
     fd.append("unit", form.unit);
     fd.append("pricePerUnit", String(Number(form.pricePerUnit)));
     fd.append("countryOfOrigin", form.countryOfOrigin.trim());
@@ -223,9 +269,10 @@ const ProducerAddProduct = () => {
     fd.append("description", form.description.trim());
     if (form.hsCode) fd.append("hsCode", form.hsCode.trim());
     if (form.incoterm) fd.append("incoterm", form.incoterm);
-    if (form.minOrderQty) fd.append("minOrderQty", String(parseInt(form.minOrderQty)));
-    if (form.leadTimeDays) fd.append("leadTimeDays", String(parseInt(form.leadTimeDays)));
-
+    if (form.minOrderQty)
+      fd.append("minOrderQty", String(Number.parseInt(form.minOrderQty)));
+    if (form.leadTimeDays)
+      fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
     (form.images || []).forEach((file) => fd.append("images", file));
     (form.documents || []).forEach((file) => fd.append("documents", file));
 
@@ -246,8 +293,18 @@ const ProducerAddProduct = () => {
       // keep the filled values; if you want to clear, reset to initialValues
       // setForm(initialValues)
     } catch (err: any) {
-      setErrors((prev) => ({ ...prev, form: err?.message || "Failed to create product." }));
-      setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      setErrors((prev) => ({
+        ...prev,
+        form: err?.message || "Failed to create product.",
+      }));
+      setTimeout(
+        () =>
+          topRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        0
+      );
     } finally {
       setSubmitting(false);
     }
@@ -270,7 +327,8 @@ const ProducerAddProduct = () => {
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>We found some issues</AlertTitle>
           <AlertDescription>
-            Please review the highlighted fields below. All fields marked with <span className="text-red-600 font-semibold">*</span> are required.
+            Please review the highlighted fields below. All fields marked with{" "}
+            <span className="text-red-600 font-semibold">*</span> are required.
           </AlertDescription>
         </Alert>
       )}
@@ -295,7 +353,9 @@ const ProducerAddProduct = () => {
               onChange={handleChange("name")}
               aria-invalid={!!errors.name}
             />
-            {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-sm text-red-600 mt-1">{errors.name}</p>
+            )}
           </div>
           <div>
             <RequiredLabel htmlFor="quantity">Quantity</RequiredLabel>
@@ -309,7 +369,9 @@ const ProducerAddProduct = () => {
               step="1"
               aria-invalid={!!errors.quantity}
             />
-            {errors.quantity && <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>}
+            {errors.quantity && (
+              <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>
+            )}
           </div>
         </div>
 
@@ -331,10 +393,14 @@ const ProducerAddProduct = () => {
                 <SelectItem value="litre">litre</SelectItem>
               </SelectContent>
             </Select>
-            {errors.unit && <p className="text-sm text-red-600 mt-1">{errors.unit}</p>}
+            {errors.unit && (
+              <p className="text-sm text-red-600 mt-1">{errors.unit}</p>
+            )}
           </div>
           <div>
-            <RequiredLabel htmlFor="pricePerUnit">Price per unit (USD)</RequiredLabel>
+            <RequiredLabel htmlFor="pricePerUnit">
+              Price per unit (USD)
+            </RequiredLabel>
             <Input
               id="pricePerUnit"
               type="number"
@@ -354,7 +420,9 @@ const ProducerAddProduct = () => {
         {/* Country / HS / Incoterm */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <RequiredLabel htmlFor="countryOfOrigin">Country of Origin</RequiredLabel>
+            <RequiredLabel htmlFor="countryOfOrigin">
+              Country of Origin
+            </RequiredLabel>
             <Input
               id="countryOfOrigin"
               placeholder="Ghana"
@@ -363,7 +431,9 @@ const ProducerAddProduct = () => {
               aria-invalid={!!errors.countryOfOrigin}
             />
             {errors.countryOfOrigin && (
-              <p className="text-sm text-red-600 mt-1">{errors.countryOfOrigin}</p>
+              <p className="text-sm text-red-600 mt-1">
+                {errors.countryOfOrigin}
+              </p>
             )}
           </div>
           <div>
@@ -375,13 +445,17 @@ const ProducerAddProduct = () => {
               onChange={handleChange("hsCode")}
               aria-invalid={!!errors.hsCode}
             />
-            {errors.hsCode && <p className="text-sm text-red-600 mt-1">{errors.hsCode}</p>}
+            {errors.hsCode && (
+              <p className="text-sm text-red-600 mt-1">{errors.hsCode}</p>
+            )}
           </div>
           <div>
             <Label>Incoterm (optional)</Label>
             <Select
               value={form.incoterm || ""}
-              onValueChange={(v: NonNullable<FormState["incoterm"]>) => setField("incoterm", v)}
+              onValueChange={(v: NonNullable<FormState["incoterm"]>) =>
+                setField("incoterm", v)
+              }
             >
               <SelectTrigger aria-invalid={!!errors.incoterm}>
                 <SelectValue placeholder="FOB / CIF / EXW / DAP" />
@@ -393,7 +467,9 @@ const ProducerAddProduct = () => {
                 <SelectItem value="DAP">DAP</SelectItem>
               </SelectContent>
             </Select>
-            {errors.incoterm && <p className="text-sm text-red-600 mt-1">{errors.incoterm}</p>}
+            {errors.incoterm && (
+              <p className="text-sm text-red-600 mt-1">{errors.incoterm}</p>
+            )}
           </div>
         </div>
 
@@ -440,7 +516,11 @@ const ProducerAddProduct = () => {
             <Select
               value={form.category}
               onValueChange={(v: string | undefined) =>
-                setForm((s) => ({ ...s, category: v as FormState["category"], subcategory: undefined }))
+                setForm((s) => ({
+                  ...s,
+                  category: v as FormState["category"],
+                  subcategory: undefined,
+                }))
               }
             >
               <SelectTrigger aria-invalid={!!errors.category}>
@@ -454,7 +534,9 @@ const ProducerAddProduct = () => {
                 ))}
               </SelectContent>
             </Select>
-            {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+            {errors.category && (
+              <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+            )}
           </div>
 
           <div>
@@ -466,7 +548,11 @@ const ProducerAddProduct = () => {
             >
               <SelectTrigger>
                 <SelectValue
-                  placeholder={form.category ? "Pick a subcategory" : "Select a category first"}
+                  placeholder={
+                    form.category
+                      ? "Pick a subcategory"
+                      : "Select a category first"
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
@@ -507,7 +593,9 @@ const ProducerAddProduct = () => {
             multiple
             accept="image/*"
             className="hidden"
-            onChange={(e) => setField("images", Array.from(e.target.files || []))}
+            onChange={(e) =>
+              setField("images", Array.from(e.target.files || []))
+            }
           />
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
             <Camera className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
@@ -515,18 +603,30 @@ const ProducerAddProduct = () => {
               {imageFiles.length > 0 ? (
                 <>
                   <Badge variant="secondary" className="text-sm">
-                    {imageFiles.length} image{imageFiles.length > 1 ? "s" : ""} selected
+                    {imageFiles.length} image{imageFiles.length > 1 ? "s" : ""}{" "}
+                    selected
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {imageFiles.map((f) => f.name).slice(0, 2).join(", ")}
-                    {imageFiles.length > 2 ? ` +${imageFiles.length - 2} more` : ""}
+                    {imageFiles
+                      .map((f) => f.name)
+                      .slice(0, 2)
+                      .join(", ")}
+                    {imageFiles.length > 2
+                      ? ` +${imageFiles.length - 2} more`
+                      : ""}
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-muted-foreground">No files chosen yet</span>
+                <span className="text-sm text-muted-foreground">
+                  No files chosen yet
+                </span>
               )}
             </div>
-            <Button type="button" variant="outline" onClick={() => imagesRef.current?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => imagesRef.current?.click()}
+            >
               <Upload className="w-4 h-4 mr-2" />
               Choose Images
             </Button>
@@ -535,15 +635,23 @@ const ProducerAddProduct = () => {
             {imageFiles.length > 0 && (
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {imageFiles.map((file, idx) => (
-                  <div key={idx} className="relative rounded-lg overflow-hidden border">
+                  <div
+                    key={idx}
+                    className="relative rounded-lg overflow-hidden border"
+                  >
                     <img
-                      src={URL.createObjectURL(file)}
+                      src={URL.createObjectURL(file) || "/placeholder.svg"}
                       alt={file.name}
                       className="aspect-video object-cover w-full h-full"
                     />
                     <button
                       type="button"
-                      onClick={() => setField("images", imageFiles.filter((_, i) => i !== idx))}
+                      onClick={() =>
+                        setField(
+                          "images",
+                          imageFiles.filter((_, i) => i !== idx)
+                        )
+                      }
                       className="absolute top-1 right-1 bg-white/80 hover:bg-white rounded-full p-1 shadow"
                       aria-label={`Remove ${file.name}`}
                     >
@@ -568,7 +676,9 @@ const ProducerAddProduct = () => {
             multiple
             accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
             className="hidden"
-            onChange={(e) => setField("documents", Array.from(e.target.files || []))}
+            onChange={(e) =>
+              setField("documents", Array.from(e.target.files || []))
+            }
           />
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
             <FileCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
@@ -576,18 +686,28 @@ const ProducerAddProduct = () => {
               {docFiles.length > 0 ? (
                 <>
                   <Badge variant="secondary" className="text-sm">
-                    {docFiles.length} file{docFiles.length > 1 ? "s" : ""} selected
+                    {docFiles.length} file{docFiles.length > 1 ? "s" : ""}{" "}
+                    selected
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {docFiles.map((f) => f.name).slice(0, 3).join(", ")}
+                    {docFiles
+                      .map((f) => f.name)
+                      .slice(0, 3)
+                      .join(", ")}
                     {docFiles.length > 3 ? ` +${docFiles.length - 3} more` : ""}
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-muted-foreground">No files chosen yet</span>
+                <span className="text-sm text-muted-foreground">
+                  No files chosen yet
+                </span>
               )}
             </div>
-            <Button type="button" variant="outline" onClick={() => docsRef.current?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => docsRef.current?.click()}
+            >
               <Upload className="w-4 h-4 mr-2" />
               Upload Documents
             </Button>
@@ -596,15 +716,27 @@ const ProducerAddProduct = () => {
             {docFiles.length > 0 && (
               <ul className="mt-4 text-left text-sm">
                 {docFiles.map((f, idx) => (
-                  <li key={idx} className="flex items-center justify-between gap-2 py-1 border-b last:border-b-0">
-                    <span className="truncate" title={f.name}>{f.name}</span>
+                  <li
+                    key={idx}
+                    className="flex items-center justify-between gap-2 py-1 border-b last:border-b-0"
+                  >
+                    <span className="truncate" title={f.name}>
+                      {f.name}
+                    </span>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-muted-foreground">{formatBytes(f.size)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatBytes(f.size)}
+                      </span>
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
-                        onClick={() => setField("documents", docFiles.filter((_, i) => i !== idx))}
+                        onClick={() =>
+                          setField(
+                            "documents",
+                            docFiles.filter((_, i) => i !== idx)
+                          )
+                        }
                         aria-label={`Remove ${f.name}`}
                       >
                         <X className="h-4 w-4" />
@@ -617,7 +749,13 @@ const ProducerAddProduct = () => {
           </div>
         </div>
 
-        <Button type="submit" variant="hero" size="lg" className="w-full" disabled={submitting}>
+        <Button
+          type="submit"
+          variant="default"
+          size="lg"
+          className="w-full"
+          disabled={submitting}
+        >
           {submitting ? "Saving..." : "Save Product"}
         </Button>
 
@@ -632,10 +770,11 @@ const ProducerAddProduct = () => {
       </form>
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Fields marked with <span className="text-red-600 font-semibold">*</span> are required per your database schema.
+        Fields marked with <span className="text-red-600 font-semibold">*</span>{" "}
+        are required per your database schema.
       </p>
     </Card>
   );
-};
+}
 
 export default ProducerAddProduct;

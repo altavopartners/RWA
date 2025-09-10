@@ -11,7 +11,9 @@ type AddItemResponse =
 const API_BASE = "http://localhost:4000";
 
 export async function addItemToCart(
-payload: AddItemPayload, p0: { useCookieAuth: boolean; }): Promise<AddItemResponse> {
+  payload: AddItemPayload,
+  p0: { useCookieAuth: boolean }
+): Promise<AddItemResponse> {
   try {
     // Grab token from localStorage (client-side only)
     const token =

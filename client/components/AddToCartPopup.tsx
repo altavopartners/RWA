@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Loader2, Minus, Plus, X, Package } from "lucide-react";
 import { addItemToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthAction } from "@/components/auth-guard";
 
 type Unit = "kg" | "ct";
 
@@ -23,6 +24,7 @@ export default function AddToCartPopup({
   triggerClassName,
 }: AddToCartPopupProps) {
   const { toast } = useToast();
+  const { requireAuth } = useAuthAction();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -108,6 +110,10 @@ export default function AddToCartPopup({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAddToCart = () => {
+    requireAuth(() => setOpen(true));
   };
 
   const outOfStock = available <= 0;
@@ -252,7 +258,7 @@ export default function AddToCartPopup({
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
+        onClick={handleAddToCart}
         variant="default"
         className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
       >

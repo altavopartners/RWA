@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, Minus, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { AuthGuard } from "@/components/auth-guard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 
@@ -36,18 +37,16 @@ function joinUrl(base: string, path?: string | null) {
   }
 }
 
-export default function CartPage() {
-  const { isConnected } = useAuth();
-  const router = useRouter();
-
+function CartContent() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+  const { isConnected } = useAuth();
+  const router = useRouter();
 
-  useEffect(() => {
-    if (isConnected === false) router.replace("/");
-  }, [isConnected, router]);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
   const normalizeFromBackend = useCallback((raw: any): CartItem[] => {
     const rows: any[] =
@@ -101,9 +100,6 @@ export default function CartPage() {
     setError(null);
 
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
-
       const res = await fetch(`${API_BASE}/api/carts/getmycart`, {
         method: "GET",
         headers: {
@@ -146,9 +142,6 @@ export default function CartPage() {
   useEffect(() => {
     if (isConnected) fetchCartItems();
   }, [isConnected, fetchCartItems]);
-
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
   const inc = useCallback(async (id: CartItem["id"]) => {
     setItems((prev) =>
@@ -199,8 +192,6 @@ export default function CartPage() {
     const total = subtotal + shipping;
     return { subtotal, shipping, total };
   }, [items]);
-
-  if (isConnected === false) return null;
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -323,5 +314,13 @@ export default function CartPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CartPage() {
+  return (
+    <AuthGuard message="Please connect your wallet to view your cart">
+      <CartContent />
+    </AuthGuard>
   );
 }
