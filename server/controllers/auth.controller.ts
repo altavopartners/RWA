@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import {
   generateWalletNonce,
   connectWalletService,
-  updateUserProfile,
+  updateUserProfile, // ← Use the new unified function
   getUserProfile,
   getIdentityByWallet,
 } from "../services/auth.service";
@@ -53,7 +53,12 @@ export async function connectWalletController(req: Request, res: Response) {
       userAgent: req.get("User-Agent") || undefined,
     });
 
-    return res.json({ success: true, accessToken, refreshToken, user });
+    return res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user,
+    });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }
@@ -75,7 +80,7 @@ export async function getProfileController(
   }
 }
 
-/** PUT /api/auth/profile */
+/** PUT /api/auth/profile (unified profile update) */
 export async function updateProfileController(
   req: AuthenticatedRequest,
   res: Response
@@ -86,6 +91,7 @@ export async function updateProfileController(
 
     console.log("🔴 Backend received:", req.body);
 
+    // Extract only the fields we want to update (filter out undefined values)
     const updateData: {
       fullName?: string;
       email?: string;
@@ -96,29 +102,18 @@ export async function updateProfileController(
       businessDesc?: string;
     } = {};
 
-    // Accept either 'phone' or 'phoneNumber' from front-end
-    if (req.body.phoneNumber !== undefined)
-      updateData.phoneNumber = req.body.phoneNumber;
-    else if (req.body.phone !== undefined)
-      updateData.phoneNumber = req.body.phone;
-
-    // Core identity
-    if (req.body.fullName !== undefined)
-      updateData.fullName = req.body.fullName;
+    // Core identity fields
+    if (req.body.fullName !== undefined) updateData.fullName = req.body.fullName;
     if (req.body.email !== undefined) updateData.email = req.body.email;
-    if (req.body.location !== undefined)
-      updateData.location = req.body.location;
-
-    // Progressive profile
-    if (req.body.profileImage !== undefined)
-      updateData.profileImage = req.body.profileImage;
-    if (req.body.businessName !== undefined)
-      updateData.businessName = req.body.businessName;
-    if (req.body.businessDesc !== undefined)
-      updateData.businessDesc = req.body.businessDesc;
+    if (req.body.phoneNumber !== undefined) updateData.phoneNumber = req.body.phoneNumber;
+    if (req.body.location !== undefined) updateData.location = req.body.location;
+    if (req.body.profileImage !== undefined) updateData.profileImage = req.body.profileImage;
+    if (req.body.businessName !== undefined) updateData.businessName = req.body.businessName;
+    if (req.body.businessDesc !== undefined) updateData.businessDesc = req.body.businessDesc;
 
     console.log("🟣 Backend updating with:", updateData);
 
+    // Use the unified function
     const updatedProfile = await updateUserProfile(req.user.id, updateData);
 
     console.log("🟢 Backend result:", updatedProfile);

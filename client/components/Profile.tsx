@@ -43,7 +43,7 @@ const Profile = () => {
     await updateProfile({
       fullName: formData.fullName,
       email: formData.email,
-      // phoneNumber: formData.phoneNumber,
+      phoneNumber: formData.phoneNumber,
       location: formData.location,
       businessName: formData.businessName,
       businessDesc: formData.businessDesc,
@@ -114,14 +114,14 @@ const Profile = () => {
               placeholder="Enter your full name"
             />
             <div className="flex flex-wrap items-center gap-3 mb-2">
-              {user.isVerified && (
+              {/*user.isVerified && (
                 <Badge
                   variant="default"
                   className="bg-success flex items-center gap-1"
                 >
                   <Shield className="w-3 h-3" /> Verified Producer
                 </Badge>
-              )}
+              )*/}
               <Badge variant="outline" className="text-xs text-primary/80">
                 {user.walletAddress?.slice(0, 8)}...
                 {user.walletAddress?.slice(-6)}

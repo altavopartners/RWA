@@ -139,7 +139,7 @@ export async function getUserProfile(userId: string) {
       businessName: true,
       businessDesc: true,
       userType: true,
-      isVerified: true,
+      //isVerified: true,
       createdAt: true,
       updatedAt: true,
       lastLoginAt: true,
@@ -156,74 +156,66 @@ export async function getUserProfile(userId: string) {
 }
 
 /** Unified profile update function */
-export async function updateUserProfile(
-  userId: string,
-  data: {
-    fullName?: string;
-    email?: string;
-    phoneNumber?: string;
-    location?: string;
-    profileImage?: string;
-    businessName?: string;
-    businessDesc?: string;
-  }
-) {
-  const isCoreIdentityUpdate =
-    !!data.fullName && !!data.email && !!data.phoneNumber && !!data.location;
-
+export async function updateUserProfile(userId: string, data: {
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  location?: string;
+  
+  profileImage?: string;
+  businessName?: string;
+  businessDesc?: string;
+}) {
+  // Check if this is a core identity update (has required fields for verification)
+  const isCoreIdentityUpdate = data.fullName && data.email && data.phoneNumber && data.location;
+  
+  // Email uniqueness check if email is being updated
   if (data.email) {
     const existingUser = await prisma.user.findFirst({
-      where: { email: data.email, id: { not: userId } },
+      where: { 
+        email: data.email, 
+        id: { not: userId } 
+      }
     });
     if (existingUser) throw new Error("Email already in use");
   }
 
-  const updateData: any = { ...data, updatedAt: new Date() };
-  if (isCoreIdentityUpdate) updateData.isVerified = true;
+  // Prepare update data
+  const updateData: any = {
+    ...data,
+    updatedAt: new Date()
+  };
 
+  /*If this is a core identity update, mark as verified
+  if (isCoreIdentityUpdate) {
+    updateData.isVerified = true;
+  }*/
+
+  // Update user profile
   const updated = await prisma.user.update({
     where: { id: userId },
     data: updateData,
-    select: {
-      id: true,
-      walletAddress: true,
-      fullName: true,
-      email: true,
-      phoneNumber: true,
-      location: true,
-      profileImage: true,
-      businessName: true,
-      businessDesc: true,
-      userType: true,
-      isVerified: true,
-      createdAt: true,
-      updatedAt: true,
-    },
   });
 
+  // Create DID for newly verified users (only after core identity completion)
   if (isCoreIdentityUpdate) {
     try {
+      // Check if user already has DID (prevent duplicates)
       const existingDID = await prisma.dID.findUnique({ where: { userId } });
       if (!existingDID) {
         console.log(`[DID] Creating DID for verified user ${userId}`);
         await registerDidForUser(userId, {
           triggeredBy: "profile_completion",
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
         });
       }
     } catch (err) {
-      console.warn(
-        `[DID] Failed to auto-create for user ${userId}:`,
-        (err as Error).message
-      );
+      console.warn(`[DID] Failed to auto-create for user ${userId}:`, (err as Error).message);
+      // Don't throw - let user continue even if DID fails
     }
   }
 
-  return {
-    ...updated,
-    username: updated.fullName ?? undefined,
-    userType: (updated.userType as UserType) || "USER",
-  };
+  return updated;
 }
 
 /** Get user identity by wallet address */
@@ -236,7 +228,7 @@ export async function getIdentityByWallet(walletAddress: string) {
       profileImage: true,
       phoneNumber: true,
       userType: true,
-      isVerified: true,
+      //isVerified: true,
       dID: {
         select: { did: true, createdAt: true },
       },
@@ -254,7 +246,7 @@ export async function getIdentityByWallet(walletAddress: string) {
       phoneNumber: user.phoneNumber,
       profileImage: user.profileImage,
       userType: user.userType,
-      isVerified: user.isVerified,
+      //isVerified: user.isVerified,
       did: user.dID?.did || null,
       memberSince: user.createdAt.toISOString(),
     },

@@ -26,7 +26,7 @@ interface User {
   profileImage?: string | null;
   cartId?: string | null;
   role: "PRODUCER" | "BUYER" | "ADMIN" | "USER";
-  isVerified: boolean;
+  // isVerified: boolean;in the back i meant by is verified that the user is connected and did generated not the kyc to avoid missunderstanding i removed it
   did?: string | null;
   createdAt: string;
   updatedAt: string;
