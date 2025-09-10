@@ -1,6 +1,7 @@
 import { Router } from "express";
 import productRoutes from "./product.routes";
 import cartRoutes from "./cart.routes";
+import orderRoutes from "./order.routes";
 import authRoutes from "./auth.routes";
 import didRoutes from "./did.routes";
 import documentRoutes from "./document.routes";
@@ -14,6 +15,9 @@ router.use("/products", productRoutes);
 
 // Cart routes
 router.use("/carts", cartRoutes);
+
+// Order routes
+router.use("/orders", orderRoutes);
 
 // Auth routes
 router.use("/auth", authRoutes);

@@ -46,6 +46,7 @@ model User {
 
   // back-relation
   cartItems CartItem[]
+  orders    Order[]
 }
 
 model AuthSession {
@@ -127,8 +128,9 @@ model Product {
   // back-relation
   cartItems CartItem[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  OrderedItem OrderedItem[]
 }
 
 model CartItem {
@@ -149,5 +151,61 @@ model CartItem {
   // 🔒 One row per (user, product)
   @@unique([userId, productId], name: "userId_productId")
   @@index([userId])
+  @@index([productId])
+}
+
+model Order {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status OrderStatus @default(PENDING)
+
+  subtotal Decimal @db.Decimal(18, 2)
+  shipping Decimal @default(0) @db.Decimal(18, 2)
+  total    Decimal @db.Decimal(18, 2)
+
+  items OrderedItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderedItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  // quantity ordered
+  quantity Int
+
+  // price snapshot at time of order (don’t trust future product edits)
+  unitPrice Decimal @db.Decimal(18, 2)
+  lineTotal Decimal @db.Decimal(18, 2)
+
+  // key product fields snapshot for auditing
+  // name            String
+  // unit            String
+  // countryOfOrigin String
+  // category        String
+  // subcategory     String?
+  // hsCode          String?
+  // incoterm        String?
+  // minOrderQty     Int?
+  // leadTimeDays    Int?
+  // images          Json?
+  // documents       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
   @@index([productId])
 }
