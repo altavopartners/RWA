@@ -9,9 +9,7 @@ import { ShoppingCart, Loader2, Minus, Plus, X, Package } from "lucide-react";
 import { addItemToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 
-
 type Unit = "kg" | "ct";
-
 
 type AddToCartPopupProps = {
   product: any;
@@ -19,12 +17,15 @@ type AddToCartPopupProps = {
   triggerClassName?: string;
 };
 
-export default function AddToCartPopup({ product, onConfirm, triggerClassName }: AddToCartPopupProps) {
+export default function AddToCartPopup({
+  product,
+  onConfirm,
+  triggerClassName,
+}: AddToCartPopupProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false); // <-- for portal (avoids SSR mismatch)
+  const [mounted, setMounted] = useState(false);
 
-  // Normalize product fields so it works with your example
   const minOrder = useMemo(() => {
     const raw = Number(product?.minOrder ?? product?.minOrderQty ?? 1);
     return Number.isFinite(raw) ? Math.max(1, Math.floor(raw)) : 1;
@@ -37,13 +38,19 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
 
   const unit: string = product?.unit ?? "unit";
 
-  // Start qty within [1, available]; even if minOrder > available, user can still adjust.
-  const [qty, setQty] = useState(() => Math.max(1, Math.min(available, Math.floor(Number(product?.minOrder ?? product?.minOrderQty ?? 1)))));
+  const [qty, setQty] = useState(() =>
+    Math.max(
+      1,
+      Math.min(
+        available,
+        Math.floor(Number(product?.minOrder ?? product?.minOrderQty ?? 1))
+      )
+    )
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  // Keep qty within [1, available] when stock changes
   useEffect(() => {
     setQty((q) => Math.max(1, Math.min(available, Math.floor(Number(q) || 1))));
   }, [available]);
@@ -53,7 +60,6 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
     [qty, product?.pricePerUnit]
   );
 
-  // ESC + body scroll lock
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -67,7 +73,8 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
   }, [open]);
 
   const dec = () => setQty((q: number) => Math.max(1, Math.floor(q) - 1));
-  const inc = () => setQty((q: number) => Math.min(available, Math.floor(q) + 1));
+  const inc = () =>
+    setQty((q: number) => Math.min(available, Math.floor(q) + 1));
 
   const onInput = (v: string) => {
     const n = Number(v);
@@ -80,24 +87,21 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
     try {
       const resp = await addItemToCart(
         { idofproduct: product.id, qty },
-        { useCookieAuth: true } // or bearerToken if you use headers
+        { useCookieAuth: true }
       );
 
       if (!resp.success) {
         console.error("Add failed:", resp.message);
-        // optionally show a toast or error state
         return;
       }
-      
-      // notifie le header
+
       window.dispatchEvent(new Event("cart:updated"));
       toast({
-          title: "Item added to cart",
-          description: "Successfully added the item to your cart!",
-            variant: "success",
-        });
-      
-      // success: close modal
+        title: "Item added to cart",
+        description: "Successfully added the item to your cart!",
+        variant: "default",
+      });
+
       setOpen(false);
     } catch (err) {
       console.error("Network/API error", err);
@@ -108,20 +112,18 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
 
   const outOfStock = available <= 0;
 
-  // -------- overlay UI (portaled) --------
   const overlay = (
     <div
-      className="fixed inset-0 z-[9999] backdrop-blur-sm
+      className="fixed inset-0 z-[9999] bg-background/80 backdrop-blur-sm
                  flex items-center justify-center p-4"
       onClick={() => setOpen(false)}
       aria-hidden={!open}
     >
       <Card
         className="w-full max-w-md p-8 glass border-border/50"
-        onClick={(e) => e.stopPropagation()} // keep clicks inside
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        style={{backgroundColor: 'lab(12 -1.2 -9.41)'}}
         aria-labelledby="add-to-cart-title"
       >
         {/* Header */}
@@ -139,11 +141,17 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
               ${Number(product?.pricePerUnit || 0).toLocaleString()}/{unit}
             </p>
             <p className="text-xs text-muted-foreground">
-              Available: {available.toLocaleString()} {unit} • Min: {minOrder.toLocaleString()} {unit}
+              Available: {available.toLocaleString()} {unit} • Min:{" "}
+              {minOrder.toLocaleString()} {unit}
             </p>
           </div>
 
-          <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -153,7 +161,12 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
           <div className="space-y-2">
             <label className="text-sm font-medium">Choose quantity</label>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" onClick={dec} disabled={outOfStock || qty <= 1}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={dec}
+                disabled={outOfStock || qty <= 1}
+              >
                 <Minus className="w-4 h-4" />
               </Button>
 
@@ -165,34 +178,47 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
                 step={1}
                 value={qty}
                 onChange={(e) => onInput(e.target.value)}
-                className="w-28 h-10 rounded-md border bg-background px-3"
+                className="w-28 h-10 rounded-md border border-border bg-background px-3 text-foreground"
                 autoFocus
               />
 
-              <Button variant="outline" size="icon" onClick={inc} disabled={outOfStock || qty >= available}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={inc}
+                disabled={outOfStock || qty >= available}
+              >
                 <Plus className="w-4 h-4" />
               </Button>
 
               <Badge variant="secondary">{unit}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Min order {minOrder.toLocaleString()} {unit}. You can order up to {available.toLocaleString()} {unit}. The Add button will enable once your quantity meets the minimum.
+              Min order {minOrder.toLocaleString()} {unit}. You can order up to{" "}
+              {available.toLocaleString()} {unit}. The Add button will enable
+              once your quantity meets the minimum.
             </p>
             {outOfStock && (
-              <p className="text-xs text-destructive">Not enough stock available right now.</p>
+              <p className="text-xs text-destructive">
+                Not enough stock available right now.
+              </p>
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t pt-4">
+          <div className="flex items-center justify-between border-t border-border pt-4">
             <span className="text-muted-foreground">Total</span>
-            <span className="text-xl font-semibold">${total.toLocaleString()}</span>
+            <span className="text-xl font-semibold">
+              ${total.toLocaleString()}
+            </span>
           </div>
 
           <div className="flex gap-2 pt-2">
             <Button
-              className="flex-1 bg-green-600 text-white hover:bg-green-700 cursor-pointer"
+              className="flex-1 bg-success text-success-foreground hover:bg-success/90 cursor-pointer"
               onClick={confirm}
-              disabled={saving || outOfStock || qty < minOrder || qty > available}
+              disabled={
+                saving || outOfStock || qty < minOrder || qty > available
+              }
             >
               {saving ? (
                 <>
@@ -204,7 +230,11 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
                 </>
               )}
             </Button>
-            <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+            <Button
+              variant="outline"
+              className="flex-1 bg-transparent"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
           </div>
@@ -221,9 +251,11 @@ export default function AddToCartPopup({ product, onConfirm, triggerClassName }:
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} 
-                      variant="hero" 
-                      className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}>
+      <Button
+        onClick={() => setOpen(true)}
+        variant="default"
+        className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
+      >
         <ShoppingCart className="w-4 h-4 mr-2" />
         Add to cart ?
       </Button>

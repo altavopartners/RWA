@@ -47,7 +47,7 @@ const ConnectWallet = () => {
           <Button
             onClick={connectWallet}
             disabled={isLoading}
-            variant="hero"
+            variant="default"
             size="lg"
             className="w-full"
           >

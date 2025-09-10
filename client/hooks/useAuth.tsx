@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Wallet connected",
         description: "Successfully connected your wallet!",
-        variant: "success",
+        variant: "default",
       });
     } catch (err: any) {
       console.error("Wallet connection error:", err);
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast({
       title: "Disconnected",
       description: "Wallet session cleared",
-     variant: "success",
+      variant: "default",
     });
   };
 

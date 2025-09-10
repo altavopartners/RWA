@@ -89,12 +89,10 @@ export default function Navigation() {
     }
   }, [API_BASE]);
 
-  // Fetch on route change and when wallet connection changes (e.g., auth token available)
   useEffect(() => {
     fetchCartItemsCount();
   }, [pathname, isConnected, fetchCartItemsCount]);
 
-  // Listen to custom cart updates from elsewhere in the app
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => fetchCartItemsCount();
@@ -147,9 +145,8 @@ export default function Navigation() {
             >
               <ShoppingCart className="w-4 h-4" />
               <span
-                className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
                 style={{
-                  background: "lab(56 6.99 -64.99)",
                   minWidth: 20,
                   minHeight: 20,
                 }}
@@ -172,11 +169,6 @@ export default function Navigation() {
                     {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                   </p>
                 </div>
-                {/* If you want the verification badge back, uncomment below and adapt fields
-                <Badge variant={user?.isVerified ? "default" : "outline"} className={user?.isVerified ? "bg-success" : ""}>
-                  {user?.isVerified ? "Verified" : "Unverified"}
-                </Badge>
-                */}
               </div>
             )}
 
@@ -243,7 +235,6 @@ export default function Navigation() {
                   <p className="text-xs text-muted-foreground">
                     {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                   </p>
-                  {/* Optional verification badge (see desktop) */}
                 </div>
               )}
 
