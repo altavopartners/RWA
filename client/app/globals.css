@@ -1,254 +1,123 @@
 @import "tailwindcss";
-@import "tailwind-animate"; /* v4-compatible replacement */
+/* @import "tw-animate-css"; Uncomment if needed */
 
-/* Maritime Export Design System - Global Trade Web3 Aesthetics */
+@custom-variant dark (&:is(.dark *));
 
-@layer base {
-  :root {
-    /* Maritime & Export Colors */
-    --background: 216 33% 4%;
-    --foreground: 210 40% 98%;
+/* ===================== LIGHT MODE ===================== */
+:root {
+  --background: oklch(0.98 0.02 250); /* Slightly off-white for less strain */
+  --foreground: oklch(0.15 0.01 240); /* Darker gray for readability */
+  --card: oklch(0.95 0.02 250); /* Soft card background */
+  --card-foreground: oklch(0.15 0.01 240);
+  --popover: oklch(0.98 0.02 250);
+  --popover-foreground: oklch(0.15 0.01 240);
 
-    --card: 216 28% 8%;
-    --card-foreground: 210 40% 98%;
+  --primary: oklch(0.45 0.15 260); /* Modern purple-blue */
+  --primary-foreground: oklch(0.99 0.01 250); /* Bright text for contrast */
 
-    --popover: 216 28% 8%;
-    --popover-foreground: 210 40% 98%;
+  --secondary: oklch(0.55 0.05 220); /* Muted gray-blue */
+  --secondary-foreground: oklch(0.98 0.02 250);
 
-    /* Primary: Deep Ocean Blue */
-    --primary: 216 95% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 216 85% 68%;
+  --muted: oklch(0.95 0.02 240);
+  --muted-foreground: oklch(0.5 0.01 240);
 
-    /* Secondary: Port Gray */
-    --secondary: 215 15% 35%;
-    --secondary-foreground: 210 40% 98%;
+  --accent: oklch(0.65 0.2 280); /* Purple accent */
+  --accent-foreground: oklch(0.99 0.01 250);
 
-    /* Muted: Deep Sea */
-    --muted: 216 20% 15%;
-    --muted-foreground: 215 16% 70%;
+  --destructive: oklch(0.6 0.3 30); /* Red for errors */
+  --destructive-foreground: oklch(0.99 0.01 250);
 
-    /* Accent: Sky Blue */
-    --accent: 198 88% 55%;
-    --accent-foreground: 216 33% 4%;
-    --accent-glow: 198 78% 65%;
+  --border: oklch(0.9 0.02 240);
+  --input: oklch(0.95 0.02 250);
+  --ring: oklch(0.65 0.22 280 / 0.6);
 
-    /* Success: Seafoam Green */
-    --success: 170 65% 45%;
-    --success-foreground: 216 33% 4%;
+  --chart-1: oklch(0.48 0.24 265); /* Indigo */
+  --chart-2: oklch(0.63 0.26 305); /* Purple */
+  --chart-3: oklch(0.7 0.18 160); /* Pink */
+  --chart-4: oklch(0.82 0.19 85); /* Yellow */
+  --chart-5: oklch(0.76 0.19 70); /* Green */
 
-    /* Warning: Sunset Orange */
-    --warning: 25 85% 55%;
-    --warning-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 216 15% 25%;
-    --input: 216 20% 12%;
-    --ring: 198 88% 55%;
-
-    --radius: 0.75rem;
-
-    /* Maritime Gradients */
-    --gradient-primary: linear-gradient(
-      135deg,
-      hsl(var(--primary)),
-      hsl(var(--primary-glow))
-    );
-    --gradient-ocean: linear-gradient(
-      135deg,
-      hsl(216 95% 58%),
-      hsl(198 88% 55%),
-      hsl(170 65% 45%)
-    );
-    --gradient-deep: linear-gradient(180deg, hsl(216 28% 8%), hsl(216 33% 12%));
-    --gradient-accent: linear-gradient(
-      135deg,
-      hsl(var(--accent)),
-      hsl(var(--accent-glow))
-    );
-
-    /* Nautical Shadows */
-    --shadow-primary: 0 10px 40px -10px hsl(var(--primary) / 0.4);
-    --shadow-accent: 0 10px 40px -10px hsl(var(--accent) / 0.3);
-    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.2);
-    --shadow-card: 0 8px 32px -8px hsl(216 33% 4% / 0.6);
-
-    /* Animations */
-    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    /* Sidebar - Shipping Container White */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 216 95% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 216 33% 97%;
-    --sidebar-accent-foreground: 216 95% 58%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 198 88% 55%;
-  }
-
-  .dark {
-    /* Dark Mode: Deep Sea Exploration */
-    --background: 216 33% 4%;
-    --foreground: 210 40% 98%;
-
-    --card: 216 28% 8%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 216 28% 8%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 198 88% 55%;
-    --primary-foreground: 216 33% 4%;
-
-    --secondary: 215 20% 25%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 216 20% 15%;
-    --muted-foreground: 215 16% 70%;
-
-    --accent: 216 95% 58%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 215 20% 25%;
-    --input: 216 20% 15%;
-    --ring: 198 88% 55%;
-
-    /* Dark Mode Sidebar - Ship's Bridge */
-    --sidebar-background: 216 28% 8%;
-    --sidebar-foreground: 210 30% 88%;
-    --sidebar-primary: 198 88% 55%;
-    --sidebar-primary-foreground: 216 33% 4%;
-    --sidebar-accent: 216 25% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 20% 20%;
-    --sidebar-ring: 216 95% 58%;
-  }
+  --radius: 0.5rem;
+  --sidebar: oklch(0.95 0.02 250);
+  --sidebar-foreground: oklch(0.15 0.01 240);
+  --sidebar-primary: oklch(0.45 0.15 260);
+  --sidebar-primary-foreground: oklch(0.99 0.01 250);
+  --sidebar-accent: oklch(0.65 0.2 280);
+  --sidebar-accent-foreground: oklch(0.99 0.01 250);
+  --sidebar-border: oklch(0.9 0.02 240);
+  --sidebar-ring: oklch(0.65 0.22 280 / 0.6);
 }
 
+/* ===================== DARK MODE ===================== */
+.dark {
+  --background: oklch(0.12 0.02 250); /* Dark gray-blue */
+  --foreground: oklch(0.95 0.01 250); /* Light text */
+  --card: oklch(0.18 0.01 250);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.18 0.01 250);
+  --popover-foreground: oklch(0.95 0.01 250);
+
+  --primary: oklch(0.55 0.25 280); /* Brighter purple */
+  --primary-foreground: oklch(0.98 0.01 250);
+
+  --secondary: oklch(0.25 0.02 220);
+  --secondary-foreground: oklch(0.95 0.01 250);
+
+  --muted: oklch(0.25 0.02 240);
+  --muted-foreground: oklch(0.7 0.02 240);
+
+  --accent: oklch(0.65 0.2 280);
+  --accent-foreground: oklch(0.99 0.01 250);
+
+  --destructive: oklch(0.6 0.3 30);
+  --destructive-foreground: oklch(0.99 0.01 250);
+
+  --border: oklch(0.25 0.02 240);
+  --input: oklch(0.25 0.02 240);
+  --ring: oklch(0.65 0.22 280 / 0.7);
+
+  --chart-1: oklch(0.48 0.24 265);
+  --chart-2: oklch(0.63 0.26 305);
+  --chart-3: oklch(0.7 0.18 160);
+  --chart-4: oklch(0.82 0.19 85);
+  --chart-5: oklch(0.76 0.19 70);
+
+  --sidebar: oklch(0.18 0.01 250);
+  --sidebar-foreground: oklch(0.95 0.01 250);
+  --sidebar-primary: oklch(0.55 0.25 280);
+  --sidebar-primary-foreground: oklch(0.98 0.01 250);
+  --sidebar-accent: oklch(0.25 0.02 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.25 0.02 240);
+  --sidebar-ring: oklch(0.65 0.22 280 / 0.7);
+}
+
+/* ===================== BASE STYLES ===================== */
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border outline-ring/50 transition-colors duration-300;
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: 'Inter', sans-serif;
-    background: var(--gradient-deep);
-    min-height: 100vh;
-  }
-}
-
-@layer utilities {
-  /* Maritime Utility Classes */
-  .gradient-primary {
-    background: var(--gradient-primary);
+    @apply bg-background text-foreground font-sans;
+    line-height: 1.6; /* Better readability */
   }
 
-  .gradient-ocean {
-    background: var(--gradient-ocean);
+  button,
+  input,
+  textarea {
+    @apply rounded-md transition-all duration-200;
   }
 
-  .gradient-accent {
-    background: var(--gradient-accent);
+  a {
+    @apply text-primary hover:text-accent transition-colors;
   }
 
-  .shadow-primary {
-    box-shadow: var(--shadow-primary);
+  .card {
+    @apply bg-card text-card-foreground shadow-md p-4 rounded-lg;
   }
 
-  .shadow-accent {
-    box-shadow: var(--shadow-accent);
+  .popover {
+    @apply bg-popover text-popover-foreground shadow-lg rounded-lg;
   }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-
-  .transition-smooth {
-    transition: var(--transition-smooth);
-  }
-
-  .transition-bounce {
-    transition: var(--transition-bounce);
-  }
-
-  /* Glass morphism for modern trade UI */
-  .glass {
-    backdrop-filter: blur(16px) saturate(180%);
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  /* Navigation patterns */
-  .pattern-dots {
-    background-image: radial-gradient(
-      circle,
-      hsl(var(--primary) / 0.1) 1px,
-      transparent 1px
-    );
-    background-size: 24px 24px;
-  }
-
-  .pattern-grid {
-    background-image: linear-gradient(
-        hsl(var(--border) / 0.3) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-}
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }

@@ -80,8 +80,8 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in">
               <Button
-                variant="hero"
-                size="xl"
+                variant="default"
+                size="lg"
                 className="animate-float"
                 onClick={() => router.push("/producer-dashboard")}
               >
@@ -89,8 +89,8 @@ export default function HomePage() {
                 Start as Producer
               </Button>
               <Button
-                variant="glass"
-                size="xl"
+                variant="default"
+                size="lg"
                 onClick={() => router.push("/marketplace")}
               >
                 Explore Marketplace
@@ -167,15 +167,15 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                variant="sunset"
-                size="xl"
+                variant="default"
+                size="lg"
                 onClick={() => router.push("/producer-dashboard")}
               >
                 Start as Producer
               </Button>
               <Button
-                variant="accent"
-                size="xl"
+                variant="default"
+                size="lg"
                 onClick={() => router.push("/marketplace")}
               >
                 Browse as Buyer

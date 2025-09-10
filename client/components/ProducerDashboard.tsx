@@ -1,22 +1,15 @@
+"use client";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Package, 
-  Upload, 
-  FileCheck, 
-  Coins, 
-  TrendingUp, 
-  Eye,
-  Plus,
-  Camera
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+
+import { Package, FileCheck, Coins, TrendingUp, Eye, Plus } from "lucide-react";
+
 import ProducerAddProduct from "@/components/ProducerAddProduct";
 
 const ProducerDashboard = () => {
@@ -33,18 +26,18 @@ const ProducerDashboard = () => {
       price: 2.5,
       quantity: 1000,
       orders: 3,
-      image: "/placeholder.svg"
+      image: "/placeholder.svg",
     },
     {
-      id: "2", 
+      id: "2",
       name: "Handwoven Kente Cloth",
       status: "draft",
       tokenId: null,
       price: 150,
       quantity: 50,
       orders: 0,
-      image: "/placeholder.svg"
-    }
+      image: "/placeholder.svg",
+    },
   ];
 
   const handleTokenize = async () => {
@@ -56,11 +49,11 @@ const ProducerDashboard = () => {
       { label: "Uploading to IPFS...", progress: 25 },
       { label: "Creating HTS Token...", progress: 50 },
       { label: "Minting NFT...", progress: 75 },
-      { label: "Listing on Marketplace...", progress: 100 }
+      { label: "Listing on Marketplace...", progress: 100 },
     ];
 
     for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       setTokenizationProgress(step.progress);
     }
 
@@ -74,7 +67,9 @@ const ProducerDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Producer Dashboard</h1>
-          <p className="text-muted-foreground">Manage your products and track your exports</p>
+          <p className="text-muted-foreground">
+            Manage your products and track your exports
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -83,7 +78,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Products</p>
-                <p className="text-2xl font-bold ">12</p>
+                <p className="text-2xl font-bold">12</p>
               </div>
               <Package className="w-8 h-8 text-primary" />
             </div>
@@ -93,7 +88,7 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Orders</p>
-                <p className="text-2xl font-bold ">8</p>
+                <p className="text-2xl font-bold">8</p>
               </div>
               <TrendingUp className="w-8 h-8 text-success" />
             </div>
@@ -119,19 +114,30 @@ const ProducerDashboard = () => {
             </div>
           </Card>
         </div>
-        
-              <Button
-                variant="glass"
-                size="xl"
-                onClick={() => router.push("/producer-add-product")}
-              >
-                Add New Product
-              </Button>
+
+        {/* Add Product Button */}
+        <Button
+          variant="default"
+          size="lg"
+          onClick={() => router.push("/producer-add-product")}
+          className="mb-8"
+        >
+          Add New Product
+        </Button>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Tokenization Form */}
           <div className="lg:col-span-2">
-            
             <ProducerAddProduct />
+
+            {isTokenizing && (
+              <div className="mt-6">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Tokenization in progress...
+                </p>
+                <Progress value={tokenizationProgress} />
+              </div>
+            )}
           </div>
 
           {/* Products List */}
@@ -146,28 +152,33 @@ const ProducerDashboard = () => {
 
               <div className="space-y-4">
                 {mockProducts.map((product) => (
-                  <Card key={product.id} className="p-4 border border-border/30">
+                  <Card
+                    key={product.id}
+                    className="p-4 border border-border/30"
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-sm">{product.name}</h4>
-                      <Badge 
-                        variant={product.status === "listed" ? "default" : "secondary"}
+                      <Badge
+                        variant={
+                          product.status === "listed" ? "default" : "secondary"
+                        }
                         className="text-xs"
                       >
                         {product.status}
                       </Badge>
                     </div>
-                    
+
                     {product.tokenId && (
                       <p className="text-xs text-muted-foreground mb-2">
                         Token ID: {product.tokenId}
                       </p>
                     )}
-                    
+
                     <div className="flex justify-between text-sm">
                       <span>${product.price}/kg</span>
                       <span>{product.quantity}kg</span>
                     </div>
-                    
+
                     {product.orders > 0 && (
                       <p className="text-xs text-success mt-2">
                         {product.orders} active orders

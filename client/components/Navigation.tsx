@@ -28,24 +28,33 @@ export default function Navigation() {
 
   const pathname = usePathname();
   const router = useRouter();
-  const { user, walletAddress, isConnected, connectWallet, disconnectWallet, isLoading } = useAuth();
+  const {
+    user,
+    walletAddress,
+    isConnected,
+    connectWallet,
+    disconnectWallet,
+    isLoading,
+  } = useAuth();
 
   const navItems = [
-    { href: "/",                 label: "Home",        icon: TrendingUp },
-    { href: "/marketplace",      label: "Marketplace", icon: Store },
-    { href: "/producer-dashboard", label: "Producer",  icon: Package },
-    { href: "/order-flow",       label: "Orders",      icon: Receipt },
-    { href: "/shipment-tracking", label: "Tracking",   icon: Truck },
-    { href: "/profile",          label: "Profile",     icon: User },
+    { href: "/", label: "Home", icon: TrendingUp },
+    { href: "/marketplace", label: "Marketplace", icon: Store },
+    { href: "/producer-add-product", label: "Add Product", icon: Package },
+    { href: "/order-flow", label: "Orders", icon: Receipt },
+    { href: "/shipment-tracking", label: "Tracking", icon: Truck },
+    { href: "/profile", label: "Profile", icon: User },
   ];
 
   const isActive = (href: string) => pathname === href;
 
-  const handleWalletAction = () => (isConnected ? disconnectWallet() : connectWallet());
+  const handleWalletAction = () =>
+    isConnected ? disconnectWallet() : connectWallet();
 
   const fetchCartItemsCount = useCallback(async () => {
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
       const res = await fetch(`${API_BASE}/api/carts/getmycartcount`, {
         method: "GET",
@@ -139,7 +148,11 @@ export default function Navigation() {
               <ShoppingCart className="w-4 h-4" />
               <span
                 className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                style={{ background: "lab(56 6.99 -64.99)", minWidth: 20, minHeight: 20 }}
+                style={{
+                  background: "lab(56 6.99 -64.99)",
+                  minWidth: 20,
+                  minHeight: 20,
+                }}
                 aria-label={`Cart items: ${count}`}
               >
                 {count}
@@ -168,13 +181,21 @@ export default function Navigation() {
             )}
 
             <Button
-              variant={isConnected ? "accent" : "hero"}
+              variant={isConnected ? "default" : "secondary"}
               onClick={handleWalletAction}
               disabled={isLoading}
               className="hidden md:flex"
             >
-              {isConnected ? <LogOut className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
-              {isConnected ? "Disconnect" : isLoading ? "Connecting..." : "Connect Wallet"}
+              {isConnected ? (
+                <LogOut className="w-4 h-4" />
+              ) : (
+                <Wallet className="w-4 h-4" />
+              )}
+              {isConnected
+                ? "Disconnect"
+                : isLoading
+                ? "Connecting..."
+                : "Connect Wallet"}
             </Button>
 
             <Button
@@ -184,7 +205,11 @@ export default function Navigation() {
               onClick={() => setIsMobileMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </Button>
           </div>
         </div>
@@ -223,13 +248,21 @@ export default function Navigation() {
               )}
 
               <Button
-                variant={isConnected ? "accent" : "hero"}
+                variant={isConnected ? "default" : "secondary"}
                 onClick={handleWalletAction}
                 disabled={isLoading}
                 className="w-full"
               >
-                {isConnected ? <LogOut className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
-                {isConnected ? "Disconnect" : isLoading ? "Connecting..." : "Connect Wallet"}
+                {isConnected ? (
+                  <LogOut className="w-4 h-4" />
+                ) : (
+                  <Wallet className="w-4 h-4" />
+                )}
+                {isConnected
+                  ? "Disconnect"
+                  : isLoading
+                  ? "Connecting..."
+                  : "Connect Wallet"}
               </Button>
             </div>
           </div>
