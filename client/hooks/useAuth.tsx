@@ -117,28 +117,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedAddress = localStorage.getItem("walletAddress");
 
     if (savedToken && savedAddress) {
-      // Only restore session state, don't validate with backend yet
-      safeSetState(() => {
-        setWalletAddress(savedAddress);
-        setToken(savedToken);
-        setIsConnected(true);
-        setHasCheckedSession(true);
-      });
-
-      // Validate session in background without triggering MetaMask
       try {
-        await fetchProfile(savedToken);
+        // First check if MetaMask is available and connected
+        if (window.ethereum && window.ethereum.isMetaMask) {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+
+          // Only proceed if wallet is connected and matches saved address
+          if (
+            accounts &&
+            accounts.length > 0 &&
+            accounts[0].toLowerCase() === savedAddress.toLowerCase()
+          ) {
+            safeSetState(() => {
+              setWalletAddress(savedAddress);
+              setToken(savedToken);
+              setIsConnected(true);
+              setHasCheckedSession(true);
+            });
+
+            // Now safely fetch profile since wallet is connected
+            await fetchProfile(savedToken);
+          } else {
+            // Wallet not connected or address mismatch, clear session
+            console.log(
+              "Wallet not connected or address mismatch, clearing session"
+            );
+            localStorage.removeItem("jwtToken");
+            localStorage.removeItem("walletAddress");
+            safeSetState(() => setHasCheckedSession(true));
+          }
+        } else {
+          // MetaMask not available, clear session
+          console.log("MetaMask not available, clearing session");
+          localStorage.removeItem("jwtToken");
+          localStorage.removeItem("walletAddress");
+          safeSetState(() => setHasCheckedSession(true));
+        }
       } catch (err) {
-        // If validation fails, silently clear session
-        console.log("Session validation failed, clearing stored session");
-        safeSetState(() => {
-          setUser(null);
-          setIsConnected(false);
-          setWalletAddress(null);
-          setToken(null);
-        });
+        // Error checking wallet connection, clear session
+        console.log("Error checking wallet connection, clearing session");
         localStorage.removeItem("jwtToken");
         localStorage.removeItem("walletAddress");
+        safeSetState(() => setHasCheckedSession(true));
       }
     } else {
       safeSetState(() => setHasCheckedSession(true));
