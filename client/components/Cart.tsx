@@ -94,6 +94,52 @@ function CartContent() {
     });
   }, []);
 
+const passOrder = useCallback(async () => {
+    if (!isConnected) return
+    setLoading(true)
+    setError(null)
+
+    try {
+      const token =
+        typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null
+
+      const res = await fetch(`${API_BASE}/api/orders/pass-order`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: 'no-store',
+      })
+
+      const txt = await res.text()
+      let data: any = {}
+      try {
+        data = txt ? JSON.parse(txt) : {}
+      } catch {
+        if (!res.ok) throw new Error(txt || 'FFailed to pass order')
+      }
+
+      if (!res.ok) {
+        const message =
+          (typeof data?.message === 'string' && data.message) ||
+          (typeof data?.error === 'string' && data.error) ||
+          txt ||
+          'Failed to pass order'
+        throw new Error(message)
+      }
+
+      setItems([])
+      window.dispatchEvent(new Event("cart:updated"));
+    } catch (e: any) {
+      console.error(e)
+      setError(e?.message || 'Something went wrong')
+      setItems([])
+    } finally {
+      setLoading(false)
+    }
+  }, [isConnected, normalizeFromBackend])
+
   const fetchCartItems = useCallback(async () => {
     if (!isConnected) return;
     setLoading(true);
@@ -216,15 +262,6 @@ function CartContent() {
             ) : items.length === 0 ? (
               <div className="space-y-3">
                 <p className="text-muted-foreground">Your cart is empty.</p>
-                <div className="text-xs text-muted-foreground">
-                  Expected shapes: a single cart row or an array of rows each
-                  with
-                  <code className="ml-1">
-                    {
-                      " { id, productId, quantity, product: { name, pricePerUnit, images[] } }"
-                    }
-                  </code>
-                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -307,8 +344,12 @@ function CartContent() {
               <span className="font-semibold">Total</span>
               <span className="font-bold tabular-nums">{money(total)}</span>
             </div>
-            <Button className="w-full" disabled={items.length === 0 || loading}>
-              Checkout
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={items.length === 0 || loading}
+              onClick={passOrder}
+            >
+              Confirm Order
             </Button>
           </CardContent>
         </Card>
