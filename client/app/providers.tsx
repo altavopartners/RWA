@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import { WalletConnectProvider } from "@/hooks/useWalletConnect";
+import ConnectWallet from "@/components/ConnectWallet";
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -21,13 +23,16 @@ export default function Providers({ children }: { children: ReactNode }) {
         disableTransitionOnChange
       >
         <AuthProvider>
-          <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              {children}
-            </TooltipProvider>
-          </CartProvider>
+          <WalletConnectProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                {children}
+                <ConnectWallet />
+              </TooltipProvider>
+            </CartProvider>
+          </WalletConnectProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

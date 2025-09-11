@@ -1,10 +1,13 @@
+"use client";
+
 // hooks/useAuth.tsx
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
-  ReactNode,
+  useEffect,
+  useRef,
+  type ReactNode,
 } from "react";
 import { useToast } from "./use-toast";
 
@@ -64,12 +67,27 @@ const signMessageWithWallet = async (
 // --------------------------- Auth Provider ---------------------------
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const isMountedRef = useRef(true);
 
   const [user, setUser] = useState<User | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const safeSetState = (setter: () => void) => {
+    if (isMountedRef.current) {
+      setter();
+    }
+  };
 
   // ------------------- Fetch profile from backend -------------------
   const fetchProfile = async (jwt: string) => {
@@ -80,35 +98,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) throw new Error("Failed to fetch profile");
       const data = await res.json();
-      setUser(data.data);
+      safeSetState(() => setUser(data.data));
     } catch (err) {
       console.error("Error fetching profile:", err);
-      setUser(null);
-      setIsConnected(false);
+      safeSetState(() => {
+        setUser(null);
+        setIsConnected(false);
+      });
       localStorage.removeItem("jwtToken");
       localStorage.removeItem("walletAddress");
     }
   };
 
-  // ------------------- Initialize wallet/session -------------------
-  useEffect(() => {
+  const checkExistingSession = async () => {
+    if (hasCheckedSession) return;
+
     const savedToken = localStorage.getItem("jwtToken");
     const savedAddress = localStorage.getItem("walletAddress");
 
     if (savedToken && savedAddress) {
-      setWalletAddress(savedAddress);
-      setToken(savedToken);
-      setIsConnected(true);
+      // Only restore session state, don't validate with backend yet
+      safeSetState(() => {
+        setWalletAddress(savedAddress);
+        setToken(savedToken);
+        setIsConnected(true);
+        setHasCheckedSession(true);
+      });
 
-      (async () => {
+      // Validate session in background without triggering MetaMask
+      try {
         await fetchProfile(savedToken);
-      })();
+      } catch (err) {
+        // If validation fails, silently clear session
+        console.log("Session validation failed, clearing stored session");
+        safeSetState(() => {
+          setUser(null);
+          setIsConnected(false);
+          setWalletAddress(null);
+          setToken(null);
+        });
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("walletAddress");
+      }
+    } else {
+      safeSetState(() => setHasCheckedSession(true));
     }
+  };
+
+  useEffect(() => {
+    checkExistingSession();
   }, []);
 
   // ------------------- Connect Wallet -------------------
   const connectWallet = async () => {
-    setIsLoading(true);
+    // Check existing session first without MetaMask interaction
+    if (!hasCheckedSession) {
+      await checkExistingSession();
+      if (isConnected) return; // If session restored successfully, don't connect again
+    }
+
+    // Only proceed with MetaMask connection if no valid session exists
+    safeSetState(() => setIsLoading(true));
     try {
       if (!window.ethereum || !window.ethereum.isMetaMask) {
         throw new Error("MetaMask not found. Please install MetaMask.");
@@ -121,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("No wallet accounts found");
 
       const address = accounts[0];
-      setWalletAddress(address);
+      safeSetState(() => setWalletAddress(address));
 
       // Get nonce from backend
       const nonceRes = await fetch(`${BACKEND_URL}/api/auth/nonce`, {
@@ -153,11 +203,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { accessToken, user: userData } = await connectRes.json();
 
-      setToken(accessToken);
+      safeSetState(() => {
+        setToken(accessToken);
+        setIsConnected(true);
+        setUser(userData);
+        setHasCheckedSession(true);
+      });
+
       localStorage.setItem("jwtToken", accessToken);
       localStorage.setItem("walletAddress", address);
-      setIsConnected(true);
-      setUser(userData);
 
       toast({
         title: "Wallet connected",
@@ -171,20 +225,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: err.message,
         variant: "destructive",
       });
-      setIsConnected(false);
-      setWalletAddress(null);
-      setToken(null);
+      safeSetState(() => {
+        setIsConnected(false);
+        setWalletAddress(null);
+        setToken(null);
+      });
     } finally {
-      setIsLoading(false);
+      safeSetState(() => setIsLoading(false));
     }
   };
 
   // ------------------- Disconnect Wallet -------------------
   const disconnectWallet = () => {
-    setUser(null);
-    setWalletAddress(null);
-    setToken(null);
-    setIsConnected(false);
+    safeSetState(() => {
+      setUser(null);
+      setWalletAddress(null);
+      setToken(null);
+      setIsConnected(false);
+      setHasCheckedSession(false); // Reset session check state
+    });
     localStorage.removeItem("walletAddress");
     localStorage.removeItem("jwtToken");
     toast({
@@ -208,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) throw new Error("Failed to update profile");
       const updated = await res.json();
-      setUser(updated.data);
+      safeSetState(() => setUser(updated.data));
       toast({
         title: "Profile updated",
         description: "Your profile has been updated",

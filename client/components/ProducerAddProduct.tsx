@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AuthGuard } from "@/components/auth-guard";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
+import { useAuth } from "@/hooks/useAuth";
 
 /* --- Taxonomy (exactly as you specified) --- */
 const categories = [
@@ -143,11 +144,31 @@ const RequiredLabel = ({
 );
 
 const ProducerAddProduct = () => {
-  return (
-    <AuthGuard message="Please connect your wallet to add products to the marketplace">
-      <ProducerAddProductContent />
-    </AuthGuard>
-  );
+  const { isConnected } = useAuth();
+  const { triggerConnect } = useWalletConnect();
+
+  useEffect(() => {
+    if (!isConnected) {
+      triggerConnect();
+    }
+  }, [isConnected, triggerConnect]);
+
+  if (!isConnected) {
+    return (
+      <div className="container py-8">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">
+            Product Creation Access Required
+          </h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to add products to the marketplace.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <ProducerAddProductContent />;
 };
 
 function ProducerAddProductContent() {

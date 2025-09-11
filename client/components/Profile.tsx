@@ -8,10 +8,37 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, MapPin, Mail, Camera, Phone } from "lucide-react";
+import { MapPin, Mail, Camera, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
 
 const Profile = () => {
+  const { isConnected } = useAuth();
+  const { triggerConnect } = useWalletConnect();
+
+  useEffect(() => {
+    if (!isConnected) {
+      triggerConnect();
+    }
+  }, [isConnected, triggerConnect]);
+
+  if (!isConnected) {
+    return (
+      <div className="container py-8">
+        <Card className="max-w-4xl mx-auto p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Profile Access Required</h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view and edit your profile.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <ProfileContent />;
+};
+
+function ProfileContent() {
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -70,13 +97,6 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
-  if (!user)
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading profile...</p>
-      </div>
-    );
-
   return (
     <div className="container py-8">
       <Card className="max-w-4xl mx-auto p-8">
@@ -114,17 +134,13 @@ const Profile = () => {
               placeholder="Enter your full name"
             />
             <div className="flex flex-wrap items-center gap-3 mb-2">
-              {/*user.isVerified && (
-                <Badge
-                  variant="default"
-                  className="bg-success flex items-center gap-1"
-                >
-                  <Shield className="w-3 h-3" /> Verified Producer
-                </Badge>
-              )*/}
               <Badge variant="outline" className="text-xs text-primary/80">
-                {user.walletAddress?.slice(0, 8)}...
-                {user.walletAddress?.slice(-6)}
+                {user?.walletAddress
+                  ? `${user.walletAddress.slice(
+                      0,
+                      8
+                    )}...${user.walletAddress.slice(-6)}`
+                  : "No wallet address"}
               </Badge>
             </div>
             <p className="text-primary/80 text-sm">
@@ -315,6 +331,6 @@ const Profile = () => {
       </Card>
     </div>
   );
-};
+}
 
 export default Profile;

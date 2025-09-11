@@ -1,23 +1,24 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useState,
-  // ⬇️ remplace PropsWithChildren par ReactNode
-  ReactNode,
-  FC,
+  type ReactNode,
+  type FC,
 } from "react";
-import { addItemToCart, getCartCount, AddItemPayload } from "@/lib/cart";
+import { addItemToCart, getCartCount, type AddItemPayload } from "@/lib/cart";
 import { useAuth } from "@/hooks/useAuth";
 
 type CartContextValue = {
   count: number;
   isLoading: boolean;
   refresh: () => Promise<void>;
-  addItem: (payload: AddItemPayload) => Promise<{ ok: boolean; message?: string }>;
+  addItem: (
+    payload: AddItemPayload
+  ) => Promise<{ ok: boolean; message?: string }>;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -28,6 +29,11 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (!isConnected || !user?.id) {
+      setCount(0);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const c = await getCartCount();
@@ -35,7 +41,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isConnected, user?.id]);
 
   useEffect(() => {
     if (isConnected && user?.id) {
@@ -47,7 +53,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const addItem = useCallback(
     async (payload: AddItemPayload) => {
-      const res = await addItemToCart(payload);
+      const res = await addItemToCart(payload, { useCookieAuth: true });
       if (res.success) {
         await refresh();
         return { ok: true, message: res.message };
@@ -62,7 +68,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
       {children}
     </CartContext.Provider>
   );
-}
+};
 
 export function useCart() {
   const ctx = useContext(CartContext);

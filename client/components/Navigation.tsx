@@ -52,15 +52,25 @@ export default function Navigation() {
     isConnected ? disconnectWallet() : connectWallet();
 
   const fetchCartItemsCount = useCallback(async () => {
+    if (!isConnected || !user?.id) {
+      setCount(0);
+      return;
+    }
+
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+      if (!token) {
+        setCount(0);
+        return;
+      }
 
       const res = await fetch(`${API_BASE}/api/carts/getmycartcount`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         cache: "no-store",
       });
@@ -87,18 +97,22 @@ export default function Navigation() {
     } catch {
       setCount(0);
     }
-  }, [API_BASE]);
+  }, [API_BASE, isConnected, user?.id]);
 
   useEffect(() => {
-    fetchCartItemsCount();
-  }, [pathname, isConnected, fetchCartItemsCount]);
+    if (isConnected && user?.id) {
+      fetchCartItemsCount();
+    } else {
+      setCount(0);
+    }
+  }, [isConnected, user?.id, fetchCartItemsCount]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !isConnected || !user?.id) return;
     const handler = () => fetchCartItemsCount();
     window.addEventListener("cart:updated", handler);
     return () => window.removeEventListener("cart:updated", handler);
-  }, [fetchCartItemsCount]);
+  }, [fetchCartItemsCount, isConnected, user?.id]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50 shadow-sm">
@@ -144,16 +158,18 @@ export default function Navigation() {
               )}
             >
               <ShoppingCart className="w-4 h-4" />
-              <span
-                className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                style={{
-                  minWidth: 20,
-                  minHeight: 20,
-                }}
-                aria-label={`Cart items: ${count}`}
-              >
-                {count}
-              </span>
+              {isConnected && user?.id && count > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  style={{
+                    minWidth: 20,
+                    minHeight: 20,
+                  }}
+                  aria-label={`Cart items: ${count}`}
+                >
+                  {count}
+                </span>
+              )}
             </Link>
           </div>
 

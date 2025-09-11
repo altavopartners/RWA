@@ -1,17 +1,36 @@
-// components/ConnectWallet.tsx
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Wallet, Shield, Globe, Loader2 } from "lucide-react";
+import { Wallet, Shield, Globe, Loader2, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
+import { useEffect } from "react";
 
 const ConnectWallet = () => {
   const { connectWallet, isLoading, isConnected } = useAuth();
+  const { showConnectModal, hideConnect } = useWalletConnect();
 
-  if (isConnected) return null;
+  useEffect(() => {
+    if (isConnected && showConnectModal) {
+      hideConnect();
+    }
+  }, [isConnected, showConnectModal, hideConnect]);
+
+  if (!showConnectModal || isConnected) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 glass border-border/50">
+      <Card className="max-w-md w-full p-8 glass border-border/50 relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4"
+          onClick={hideConnect}
+        >
+          <X className="w-4 h-4" />
+        </Button>
+
         <div className="text-center space-y-6">
           {/* Header */}
           <div className="space-y-4">

@@ -136,42 +136,37 @@ const Marketplace = () => {
   >("all");
 
   const [products, setProducts] = useState<APIProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false instead of true
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false); // Track if data has been loaded
 
-  // Fetch from API
-  useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${apiBase()}/api/products`, {
-          headers: { Accept: "application/json" },
-          // credentials: "include", // uncomment if you need cookies
-          cache: "no-store", // always fresh for client-side fetch
-        });
-        if (!res.ok) {
-          throw new Error(`Request failed: ${res.status} ${res.statusText}`);
-        }
-        const json: APIResponse = await res.json();
-        if (isMounted) setProducts(Array.isArray(json.data) ? json.data : []);
-      } catch (e: any) {
-        if (isMounted) setError(e?.message || "Failed to load products");
-      } finally {
-        if (isMounted) setLoading(false);
+  const loadProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase()}/api/products`, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status} ${res.statusText}`);
       }
+      const json: APIResponse = await res.json();
+      setProducts(Array.isArray(json.data) ? json.data : []);
+      setHasLoaded(true);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load products");
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  };
 
-  // const { isConnected } = useAuth()
-  // useEffect(() => {
-  //   if (isConnected === false) router.replace('/')
-  // }, [isConnected, router])
+  useEffect(() => {
+    // Auto-load products when marketplace component mounts (user navigated to marketplace)
+    if (!hasLoaded) {
+      loadProducts();
+    }
+  }, [hasLoaded]);
 
   const handleSelectCategory = (id: string) => {
     setSelectedCategory(id);
@@ -300,15 +295,28 @@ const Marketplace = () => {
             <p className="text-sm text-muted-foreground">Loading products…</p>
           )}
           {error && (
-            <p className="text-sm text-red-500">
-              {error} — check API is running at{" "}
-              <code>{apiBase()}/api/products</code> and CORS.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-red-500">
+                {error} — check API is running at{" "}
+                <code>{apiBase()}/api/products</code> and CORS.
+              </p>
+              <Button variant="outline" size="sm" onClick={loadProducts}>
+                Retry Loading
+              </Button>
+            </div>
           )}
-          {!loading && !error && (
+          {!loading && !error && hasLoaded && (
             <p className="text-sm text-muted-foreground">
               Showing {filteredProducts.length} products
             </p>
+          )}
+          {!hasLoaded && !loading && !error && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">
+                Ready to browse products
+              </p>
+              <Button onClick={loadProducts}>Load Products</Button>
+            </div>
           )}
         </div>
 
@@ -417,12 +425,14 @@ const Marketplace = () => {
         </div>
 
         {/* Load More (placeholder) */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Load More Products
-          </Button>
-        </div>
+        {hasLoaded && filteredProducts.length > 0 && (
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg">
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Load More Products
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

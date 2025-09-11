@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, Minus, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { AuthGuard } from "@/components/auth-guard";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 
@@ -318,9 +318,27 @@ function CartContent() {
 }
 
 export default function CartPage() {
-  return (
-    <AuthGuard message="Please connect your wallet to view your cart">
-      <CartContent />
-    </AuthGuard>
-  );
+  const { isConnected } = useAuth();
+  const { triggerConnect } = useWalletConnect();
+
+  useEffect(() => {
+    if (!isConnected) {
+      triggerConnect();
+    }
+  }, [isConnected, triggerConnect]);
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Cart Access Required</h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view your cart.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <CartContent />;
 }
