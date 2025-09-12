@@ -254,19 +254,27 @@ export default function AddToCartPopup({
       </Card>
     </div>
   );
+return (
+  <>
+    <Button
+      onClick={handleAddToCart}
+      variant="default"
+      className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
+      disabled={
+        saving || outOfStock || qty < minOrder || qty > available
+      }
+    >
+      {outOfStock || qty < minOrder || qty > available ? (
+        <>❌ Sold Out</>
+      ) : (
+        <>
+          <ShoppingCart className="w-4 h-4 mr-2" />
+          Add to cart
+        </>
+      )}
+    </Button>
 
-  return (
-    <>
-      <Button
-        onClick={handleAddToCart}
-        variant="default"
-        className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
-      >
-        <ShoppingCart className="w-4 h-4 mr-2" />
-        Add to cart ?
-      </Button>
-
-      {open && mounted && createPortal(overlay, document.body)}
-    </>
+    {open && mounted && createPortal(overlay, document.body)}
+  </>
   );
 }
