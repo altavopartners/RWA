@@ -96,7 +96,7 @@ export type Order = {
   subtotal: number;
   shipping: number;
   totalAmount: number;
-  total: string;       // 👈 add this
+  total: string;
 
   escrowAmount: number;
   status: "bank_verification" | "ready_for_shipment" | "in_transit" | "delivered" | "disputed" | string;
@@ -112,11 +112,13 @@ export type Order = {
   paymentSchedule: { onApproval: number; onShipment: number; onDelivery: number };
   milestones: OrderMilestone[];
 };
+
 const labelFor = (s: string) => {
   if (!s) return "";
-  const clean = s.replace(/_/g, " ").toLowerCase(); // "AWAITING_PAYMENT" -> "awaiting payment"
-  return clean.charAt(0).toUpperCase() + clean.slice(1); // "awaiting payment" -> "Awaiting payment"
+  const clean = s.replace(/_/g, " ").toLowerCase();
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
 };
+
 // ---- helpers ----
 const toNumber = (n: any, d = 0) => {
   const v = typeof n === "string" ? Number.parseFloat(n) : Number(n);
@@ -129,7 +131,6 @@ function useToken() {
 }
 
 // Map backend status -> UI status + progress
-// Map backend status -> UI status + progress (calibré sur ton enum)
 function mapStatus(s: string): { ui: Order["status"]; progress: number } {
   switch (s) {
     case "PENDING":
@@ -139,14 +140,13 @@ function mapStatus(s: string): { ui: Order["status"]; progress: number } {
     case "PAID":
       return { ui: "paid", progress: 40 };
     case "FULFILLED":
-      return { ui: "delivered", progress: 100 };        // ou "fulfilled" si tu préfères garder le label exact
+      return { ui: "delivered", progress: 100 };
     case "PARTIALLY_FULFILLED":
       return { ui: "partially_fulfilled", progress: 80 };
     case "CANCELED":
       return { ui: "canceled", progress: 0 };
     case "REFUNDED":
       return { ui: "refunded", progress: 0 };
-    // anciens statuts éventuels :
     case "READY_FOR_SHIPMENT":
       return { ui: "ready_for_shipment", progress: 60 };
     case "IN_TRANSIT":
@@ -160,16 +160,20 @@ function mapStatus(s: string): { ui: Order["status"]; progress: number } {
   }
 }
 
-
 export default function OrderFlow() {
   const { isConnected } = useAuth();
   const { triggerConnect } = useWalletConnect();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+
+  // NEW: simple client-side pagination
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+
   const token = useToken();
 
   const normalizeMilestones = useCallback((raw: any[]): OrderMilestone[] => {
@@ -205,7 +209,7 @@ export default function OrderFlow() {
         subtotal: toNumber(b.subtotal, 0),
         shipping: toNumber(b.shipping, 0),
         totalAmount: toNumber(b.total, qty * unitPrice),
-        total: typeof b.total === "string" ? b.total : String(b.total ?? (qty * unitPrice)),
+        total: typeof b.total === "string" ? b.total : String(b.total ?? qty * unitPrice),
 
         escrowAmount: toNumber(b.total, qty * unitPrice),
         status: ui,
@@ -270,6 +274,9 @@ export default function OrderFlow() {
       setOrders(list);
       if (!selectedId && list.length) setSelectedId(list[0].id);
       setLastFetchedAt(Date.now());
+
+      // NEW: reset the visible page to the first 10 whenever we refetch
+      setVisibleCount(10);
     } catch (e: any) {
       console.error(e);
       setOrders([]);
@@ -333,56 +340,76 @@ export default function OrderFlow() {
     }
     fetchOrders();
   }, [isConnected, triggerConnect, fetchOrders]);
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "awaiting_payment":
-      return "bg-warning";
-    case "paid":
-    case "ready_for_shipment":
-    case "in_transit":
-      return "bg-info";
-    case "delivered":
-    case "fulfilled":
-      return "bg-success";
-    case "partially_fulfilled":
-      return "bg-info"; // ou "bg-warning" si tu veux attirer l’attention
-    case "canceled":
-    case "refunded":
-    case "disputed":
-      return "bg-destructive";
-    case "pending":
-      return "bg-muted";
-    default:
-      return "bg-muted";
-  }
-};
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "awaiting_payment":
-    case "pending":
-      return Shield; // ou Clock
-    case "paid":
-    case "ready_for_shipment":
-      return Package;
-    case "in_transit":
-      return Truck;
-    case "delivered":
-    case "fulfilled":
-      return CheckCircle;
-    case "partially_fulfilled":
-      return Clock;
-    case "canceled":
-    case "refunded":
-    case "disputed":
-      return AlertCircle;
-    default:
-      return Clock;
-  }
-};
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "awaiting_payment":
+        return "bg-warning";
+      case "paid":
+      case "ready_for_shipment":
+      case "in_transit":
+        return "bg-info";
+      case "delivered":
+      case "fulfilled":
+        return "bg-success";
+      case "partially_fulfilled":
+        return "bg-info";
+      case "canceled":
+      case "refunded":
+      case "disputed":
+        return "bg-destructive";
+      case "pending":
+        return "bg-muted";
+      default:
+        return "bg-muted";
+    }
+  };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "awaiting_payment":
+      case "pending":
+        return Shield;
+      case "paid":
+      case "ready_for_shipment":
+        return Package;
+      case "in_transit":
+        return Truck;
+      case "delivered":
+      case "fulfilled":
+        return CheckCircle;
+      case "partially_fulfilled":
+        return Clock;
+      case "canceled":
+      case "refunded":
+      case "disputed":
+        return AlertCircle;
+      default:
+        return Clock;
+    }
+  };
 
-  const currentOrder = useMemo(() => orders.find((o) => o.id === selectedId) || null, [orders, selectedId]);
+  // Sort orders by newest first for "Recent Orders"
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => {
+      const ta = new Date(a.orderDate || a.id).getTime();
+      const tb = new Date(b.orderDate || b.id).getTime();
+      return tb - ta;
+    });
+  }, [orders]);
+
+  // Only show a slice based on visibleCount
+  const visibleOrders = useMemo(
+    () => sortedOrders.slice(0, visibleCount),
+    [sortedOrders, visibleCount]
+  );
+
+  const canLoadMore = visibleCount < sortedOrders.length;
+
+  const currentOrder = useMemo(
+    () => orders.find((o) => o.id === selectedId) || null,
+    [orders, selectedId]
+  );
 
   if (!isConnected) {
     return (
@@ -399,59 +426,54 @@ const getStatusIcon = (status: string) => {
 
   return (
     <div className="pt-20 min-h-screen">
-
-      
-        {/* Stats Cards */}
-        <div className="container mx-auto  grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6 glass border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Orders</p>
-                <p className="text-2xl font-bold">{orders?.length ?? 0}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-success" />
+      {/* Stats Cards */}
+      <div className="container mx-auto  grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card className="p-6 glass border-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Orders</p>
+              <p className="text-2xl font-bold">{orders?.length ?? 0}</p>
             </div>
-          </Card>
+            <TrendingUp className="w-8 h-8 text-success" />
+          </div>
+        </Card>
 
-          <Card className="p-6 glass border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Products</p>
-                <p className="text-2xl font-bold">
-                  {(orders ?? []).reduce((sum, o) => sum + (o.items?.length ?? 0), 0)}
-                </p>
-
-
-              </div>
-              <Package className="w-8 h-8 text-primary" />
+        <Card className="p-6 glass border-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Products</p>
+              <p className="text-2xl font-bold">
+                {(orders ?? []).reduce((sum, o) => sum + (o.items?.length ?? 0), 0)}
+              </p>
             </div>
-          </Card>
+            <Package className="w-8 h-8 text-primary" />
+          </div>
+        </Card>
 
-          <Card className="p-6 glass border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Spent</p>
-                <p className="text-2xl font-bold">
-                  {(orders ?? [])
-                    .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0)
-                    .toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                </p>
-              </div>
-              <Coins className="w-8 h-8 text-accent" />
+        <Card className="p-6 glass border-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-2xl font-bold">
+                {(orders ?? [])
+                  .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0)
+                  .toLocaleString("en-US", { style: "currency", currency: "USD" })}
+              </p>
             </div>
-          </Card>
+            <Coins className="w-8 h-8 text-accent" />
+          </div>
+        </Card>
 
-          <Card className="p-6 glass border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Orders Shipped</p>
-                <p className="text-2xl font-bold">{(orders ?? []).filter(o => (o.status ?? "") === "delivered").length}</p>
-              </div>
-              <FileCheck className="w-8 h-8 text-warning" />
+        <Card className="p-6 glass border-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Orders Shipped</p>
+              <p className="text-2xl font-bold">{(orders ?? []).filter(o => (o.status ?? "") === "delivered").length}</p>
             </div>
-          </Card>
-        </div>
-
+            <FileCheck className="w-8 h-8 text-warning" />
+          </div>
+        </Card>
+      </div>
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
@@ -472,8 +494,6 @@ const getStatusIcon = (status: string) => {
           </div>
         )}
 
-        
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Orders List */}
           <div className="lg:col-span-1">
@@ -481,11 +501,11 @@ const getStatusIcon = (status: string) => {
               <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
               {loading ? (
                 <p className="text-muted-foreground text-sm">Loading orders…</p>
-              ) : orders.length === 0 ? (
+              ) : sortedOrders.length === 0 ? (
                 <p className="text-muted-foreground text-sm">No orders yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {orders.map((order) => {
+                  {visibleOrders.map((order) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const extra = Math.max(0, (order.items?.length || 0) - 1);
                     return (
@@ -518,6 +538,21 @@ const getStatusIcon = (status: string) => {
                       </div>
                     );
                   })}
+
+                  {/* Load more control */}
+                  {canLoadMore && (
+                    <div className="pt-2">
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => setVisibleCount((c) => c + 10)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        load more
+                      </Button>
+                    </div>
+                  )}
+
                   {lastFetchedAt && (
                     <div className="text-xs text-muted-foreground">
                       Last updated: {new Date(lastFetchedAt).toLocaleString()}
