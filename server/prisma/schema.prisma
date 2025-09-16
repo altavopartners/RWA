@@ -155,8 +155,9 @@ model CartItem {
 }
 
 model Order {
-  id        Int      @id @default(autoincrement())   // primary key in DB
+  id    String  @id @default(cuid())
   userId String
+  code String?
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status OrderStatus @default(PENDING)

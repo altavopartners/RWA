@@ -476,18 +476,7 @@ export default function OrderFlow() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">My Orders</h1>
-            <p className="text-muted-foreground">Track your orders and manage escrow payments</p>
-          </div>
-          <Button variant="outline" onClick={fetchOrders} disabled={loading}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-
+        
         {error && (
           <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -498,7 +487,14 @@ export default function OrderFlow() {
           {/* Orders List */}
           <div className="lg:col-span-1">
             <Card className="glass border-border/50 p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
+              
+                <Button variant="outline" onClick={fetchOrders} disabled={loading}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
               {loading ? (
                 <p className="text-muted-foreground text-sm">Loading orders…</p>
               ) : sortedOrders.length === 0 ? (

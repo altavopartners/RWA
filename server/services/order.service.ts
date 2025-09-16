@@ -16,6 +16,39 @@ type PassOrderOptions = {
   shipping?: number; // in order currency (e.g., USD). default 5.00
 };
 
+/**
+ * Generate the next order code for the current calendar year.
+ * Format: ORD-YYYY-XXXXXX (zero-padded sequence)
+ *
+ * NOTE: For best safety, add a unique index on Order.code in your Prisma schema:
+ * model Order {
+ *   id        String   @id @default(cuid())
+ *   code      String   @unique
+ *   // ...
+ * }
+ */
+async function generateOrderCode(tx: Prisma.TransactionClient): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  const startOfYear = new Date(year, 0, 1);
+  const startOfNextYear = new Date(year + 1, 0, 1);
+
+  // Count orders in the current year
+  const yearlyCount = await tx.order.count({
+    where: {
+      createdAt: {
+        gte: startOfYear,
+        lt: startOfNextYear,
+      },
+    },
+  });
+
+  const seq = yearlyCount + 1;
+  const padded = String(seq).padStart(6, "0");
+  return `ORD-${year}-${padded}`;
+}
+
 export async function passOrderService({ userId, shipping = 5.0 }: PassOrderOptions) {
   // Wrap the entire flow in a single transaction
   return prisma.$transaction(async (tx) => {
@@ -54,27 +87,55 @@ export async function passOrderService({ userId, shipping = 5.0 }: PassOrderOpti
     const total = subtotal.add(shippingD);
 
     // 4) Create order + ordered items (snapshot product data)
-    const order = await tx.order.create({
-      data: {
-        userId,
-        status: OrderStatus.AWAITING_PAYMENT,
-        subtotal,
-        shipping: shippingD,
-        total,
-        items: {
-          create: cartItems.map((ci) => ({
-            productId: ci.productId,
-            quantity: ci.quantity,
-            unitPrice: toDecimal(ci.product.pricePerUnit),
-            lineTotal: toDecimal(ci.product.pricePerUnit).mul(ci.quantity),
+    //    Include a tiny retry loop for unique code collisions under concurrency.
+    const MAX_RETRIES = 2;
+    let order: Awaited<ReturnType<typeof tx.order.create>> | null = null;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const code = await generateOrderCode(tx);
+      try {
+        order = await tx.order.create({
+          data: {
+            code,
+            userId,
+            status: OrderStatus.AWAITING_PAYMENT,
+            subtotal,
+            shipping: shippingD,
+            total,
+            items: {
+              create: cartItems.map((ci) => ({
+                productId: ci.productId,
+                quantity: ci.quantity,
+                unitPrice: toDecimal(ci.product.pricePerUnit),
+                lineTotal: toDecimal(ci.product.pricePerUnit).mul(ci.quantity),
+              })),
+            },
+          },
+          include: {
+            items: true,
+          },
+        });
+        break; // success
+      } catch (err: any) {
+        // If unique constraint on code failed, retry a couple times
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === "P2002" &&
+          Array.isArray((err.meta as any)?.target) &&
+          (err.meta as any).target.includes("code")
+        ) {
+          if (attempt === MAX_RETRIES) {
+            throw new CheckoutError("Could not generate a unique order code. Please retry.", 500);
+          }
+          // continue to next attempt
+        } else {
+          throw err;
+        }
+      }
+    }
 
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+    if (!order) {
+      throw new CheckoutError("Unknown error during order creation.", 500);
+    }
 
     // 5) Decrement inventory with a guard to prevent race conditions
     for (const ci of cartItems) {
@@ -98,7 +159,6 @@ export async function passOrderService({ userId, shipping = 5.0 }: PassOrderOpti
 }
 
 export { CheckoutError };
-
 
 /** ---------- GET ALL MY ORDERS ---------- */
 type GetAllMyOrdersOptions = {
@@ -131,7 +191,6 @@ export async function getAllMyOrdersService({
       include: {
         items: {
           include: {
-            // include only what you need; keeping it simple here
             product: true,
           },
         },
