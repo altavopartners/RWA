@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,7 @@ const pickFirstImageUrl = (images: any): string | null => {
   return null;
 };
 
-// ===== Document taxonomy (from your screenshot) =====
+// ===== Document taxonomy =====
 const DOC_CATEGORIES: {
   key: string;
   label: string;
@@ -138,6 +138,29 @@ const statusBadge = (s?: DocumentItem["status"]) => {
   }
 };
 
+// ===== Auth helpers (Bearer from localStorage) =====
+function useReactiveToken(key = "jwtToken") {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const load = () => setToken(localStorage.getItem(key));
+    load();
+    // Update when other tabs/windows change it
+    window.addEventListener("storage", load);
+    return () => window.removeEventListener("storage", load);
+  }, [key]);
+
+  return token;
+}
+
+function authHeaderFrom(token: string | null | undefined): Record<string, string> {
+  if (!token) return {};
+  // Ensure it is prefixed properly once
+  const value = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+  return { Authorization: value };
+}
+
 // ===== Document Upload Card =====
 function DocumentCenter({
   order,
@@ -169,35 +192,61 @@ function DocumentCenter({
 
   const currentCat = useMemo(() => DOC_CATEGORIES.find((c) => c.key === categoryKey)!, [categoryKey]);
 
+  // Reactive token from localStorage
+  const token = useReactiveToken("jwtToken");
+
   const doUpload = async (file: File) => {
     setError(null);
     if (!isAllowed(file)) {
       setError("Unsupported file type.");
       return;
     }
+
+    // If your backend strictly requires a token, you can early-guard:
+    // if (!token) { setError("Not authenticated. Please sign in."); return; }
+
     setBusy(true);
     try {
       if (onUploadDoc) {
         await onUploadDoc(file, {
           categoryKey,
           typeKey,
-          orderId: String((order as any).id || order.orderId),
+          orderId: String((order as any).id || (order as any).orderId),
         });
       } else {
-        // Default naive uploader
+        // Default uploader using Bearer from localStorage
         const fd = new FormData();
         fd.append("file", file);
         fd.append("categoryKey", categoryKey);
         fd.append("typeKey", typeKey);
-        fd.append("orderId", String((order as any).id || order.orderId));
-        await fetch(`${API_BASE}/orders/${(order as any).id || order.orderId}/documents`, {
+        fd.append("orderId", String((order as any).id || (order as any).orderId));
+
+        const res = await fetch(`${API_BASE}/api/documents/upload`, {
           method: "POST",
           body: fd,
+          headers: {
+            ...authHeaderFrom(token),
+          },
+          // NOTE: do NOT set Content-Type when sending FormData; browser sets the boundary
         });
+
+        if (!res.ok) {
+          let message = `Upload failed (${res.status})`;
+          try {
+            const data = await res.json();
+            if (data?.message) message = data.message;
+            if (data?.error) message = data.error;
+          } catch {}
+          throw new Error(message);
+        }
+
+        // Optional: consume returned JSON and update UI
+        // const saved: DocumentItem = await res.json();
+        // You could push it into a local docs state or refetch upstream
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError("Upload failed. Please try again.");
+      setError(e?.message || "Upload failed. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -206,6 +255,7 @@ function DocumentCenter({
   const handleFiles = async (files: FileList | File[]) => {
     const arr = Array.from(files).filter(Boolean);
     for (const f of arr) {
+      // Sequential uploads; if you want parallel, use Promise.allSettled
       await doUpload(f);
     }
   };
@@ -274,7 +324,7 @@ function DocumentCenter({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Documents & Upload</h3>
         <Badge variant="outline" className="bg-muted/40">
-          Order #{order.orderId}
+          Order #{(order as any).code}
         </Badge>
       </div>
 
@@ -506,7 +556,7 @@ export default function OrderFlowDetail({
         <Card className="glass border-border/50 p-6">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold mb-1">{(order as any).orderId}</h2>
+              <h2 className="text-2xl font-bold mb-1">{(order as any).code}</h2>
               <p className="text-sm text-muted-foreground">{itemsCount} item{itemsCount > 1 ? "s" : ""} in this order</p>
             </div>
             <Badge variant="outline" className={`${getStatusColor((order as any).status)}`}>

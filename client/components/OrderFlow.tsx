@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Truck, CheckCircle, Clock, Package, Shield, AlertCircle,  FileCheck, Coins, TrendingUp, Eye, Plus } from "lucide-react";
+import { RefreshCw, Truck, CheckCircle, Clock, Package, Shield, AlertCircle, FileCheck, Coins, TrendingUp, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import OrderFlowDetail from "./OrderFlowDetail";
@@ -46,6 +46,7 @@ export type BackendItem = {
 
 export type BackendOrder = {
   id: string;
+  code?: string; // NEW: human-friendly order code from backend
   userId: string;
   status:
     | "AWAITING_PAYMENT"
@@ -81,7 +82,8 @@ export type OrderMilestone = {
 
 export type Order = {
   id: string;
-  orderId: string;
+  orderId: string; // still keep internal id for fetching details
+  code?: string; // NEW: human-friendly code to display
 
   // preview (1er item) pour la liste
   productName: string;
@@ -195,8 +197,9 @@ export default function OrderFlow() {
       const unitPrice = toNumber(firstItem?.unitPrice, 0);
 
       return {
-        id: b.id,
-        orderId: b.id,
+        id: b.id,                 // keep true backend id
+        orderId: b.id,            // keep for detail route param
+        code: b.code ?? b.id,     // NEW: prefer code for display
 
         productName: firstItem?.product?.name ?? "Product",
         productUnit: firstItem?.product?.unit ?? undefined,
@@ -476,7 +479,7 @@ export default function OrderFlow() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        
+
         {error && (
           <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -489,7 +492,7 @@ export default function OrderFlow() {
             <Card className="glass border-border/50 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
-              
+
                 <Button variant="outline" onClick={fetchOrders} disabled={loading}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Refresh
@@ -518,7 +521,8 @@ export default function OrderFlow() {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{order.orderId}</span>
+                          {/* Display the new code instead of orderId */}
+                          <span className="text-sm font-medium">{order.code}</span>
                           <StatusIcon className="w-4 h-4 text-primary" />
                         </div>
                         <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
