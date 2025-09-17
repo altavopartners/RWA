@@ -1,10 +1,10 @@
-// src/services/document.service.ts (CJS/TS)
+// src/services/document.service.ts
 import { prisma } from "../utils/prisma";
 import crypto from "crypto";
 
+// dynamic import keeps CJS paths happy during ts-node execution
 async function getW3() {
-  // Import the TypeScript module directly
-  return await import("../utils/w3.mts");
+  return await import("../../server/utils/w3"); // <- updated path
 }
 
 export async function saveDocumentForUser(
@@ -15,8 +15,9 @@ export async function saveDocumentForUser(
 ) {
   const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
   const { w3Upload, gatewayUrl } = await getW3();
+
   const cid = await w3Upload(buffer, filename, mimeType);
-  const url = gatewayUrl(cid);
+  const url = await gatewayUrl(cid);
 
   const doc = await prisma.document.create({
     data: { userId, filename, cid, url },

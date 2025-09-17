@@ -15,6 +15,6 @@
     "skipLibCheck": true,
     "sourceMap": true
   },
-  "include": ["**/*.ts", "utils/w3.mts"],        // <- on inclut tous les .ts de server/
+  "include": ["**/*.ts", "utils/w3.ts"],        // <- on inclut tous les .ts de server/
   "exclude": ["../node_modules", "../dist"]
 }
