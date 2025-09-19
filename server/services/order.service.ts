@@ -100,7 +100,7 @@ export async function passOrderService({ userId, shipping = 5.0 }: PassOrderOpti
             status: OrderStatus.AWAITING_PAYMENT,
             subtotal,
             shipping: shippingD,
-            total,
+            total: total.mul(1.05),
             items: {
               create: cartItems.map((ci) => ({
                 productId: ci.productId,

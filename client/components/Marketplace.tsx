@@ -16,6 +16,26 @@ import {
 } from "lucide-react";
 import AddToCartPopup from "@/components/AddToCartPopup";
 
+function money(n: number, product: { unit: string } = { unit: "unit" }) {
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8,
+  }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className="inline-block w-4 h-4 bg-contain bg-no-repeat flex-shrink-0"
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal" }}>BAR</span>
+      <span className="text-gray-500 text-sm">/{product.unit}</span>
+    </span>
+  );
+}
+
+
 // =====================
 // 1) API types (from your example)
 // =====================
@@ -384,17 +404,14 @@ const Marketplace = () => {
 
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <span className="text-2xl font-bold">
-                        ${product.pricePerUnit}
+                      <span className="font-bold">
+                        {money(product.pricePerUnit, { unit: product.unit })}
                       </span>
-                      <span className="text-sm text-muted-foreground ml-1">
-                        /{product.unit}
-                      </span>
+                     
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        {product.quantity}
-                        {product.unit} available
+                        {product.quantity} {product.unit} available
                       </p>
                       {product.minOrderQty ? (
                         <p className="text-xs text-muted-foreground">

@@ -11,6 +11,26 @@ import OrderFlowDetail from "./OrderFlowDetail";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
+
+function money(n: number, w: number = 4) {
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8,
+  }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className={`inline-block w-${w} h-${w} bg-contain bg-no-repeat flex-shrink-0`}
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal" }}>BAR</span>
+    </span>
+  );
+}
+
+
 // ---- BACKEND TYPES (STRICT) ----
 export type BackendProduct = {
   id: number;
@@ -458,9 +478,7 @@ export default function OrderFlow() {
             <div>
               <p className="text-sm text-muted-foreground">Total Spent</p>
               <p className="text-2xl font-bold">
-                {(orders ?? [])
-                  .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0)
-                  .toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                {money((orders ?? []).reduce((sum, o) => sum + (o.totalAmount ?? 0), 0), 6)}
               </p>
             </div>
             <Coins className="w-8 h-8 text-accent" />
@@ -533,7 +551,7 @@ export default function OrderFlow() {
                           <Badge variant="outline" className={getStatusColor(order.status)}>
                             {labelFor(order.status)}
                           </Badge>
-                          <span className="text-sm font-medium ">${order.totalAmount}</span>
+                        <span className="text-sm font-medium">{money(order.totalAmount)}</span>
                         </div>
                       </div>
                     );

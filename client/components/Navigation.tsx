@@ -121,7 +121,7 @@ export default function Navigation() {
           {/* Logo */}
           <div className="flex items-center space-x-4">
             <Link href="/" className="text-2xl font-bold">
-              Hex-Port
+              <img src="/assets/hexportLogo.png" alt="Logo" className="h-16" />
             </Link>
             <Badge variant="outline" className="hidden md:flex">
               Hedera Network

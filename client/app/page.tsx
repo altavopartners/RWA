@@ -61,9 +61,9 @@ export default function HomePage() {
 
           {/* Content */}
           <div className="relative z-10 container mx-auto px-6 text-center">
-            <Badge variant="outline" className="mb-6 glass animate-fade-in">
+            {/* <Badge variant="outline" className="mb-6 glass animate-fade-in">
               🌍 Powered by Hedera Network
-            </Badge>
+            </Badge> */}
 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
               <span className="gradient-sunset bg-clip-text text-transparent">
@@ -82,7 +82,7 @@ export default function HomePage() {
                 variant="default"
                 size="lg"
                 className="animate-float"
-                onClick={() => router.push("/producer-dashboard")}
+                onClick={() => router.push("/producer-add-product")}
               >
                 <Wallet className="w-5 h-5" />
                 Start as Producer
@@ -111,7 +111,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold ">$2M+</div>
+                <div className="text-3xl font-bold ">2M+ HBAR</div>
                 <div className="text-sm text-muted-foreground">
                   Volume Traded
                 </div>
@@ -168,7 +168,7 @@ export default function HomePage() {
               <Button
                 variant="default"
                 size="lg"
-                onClick={() => router.push("/producer-dashboard")}
+                onClick={() => router.push("/producer-add-product")}
               >
                 Start as Producer
               </Button>

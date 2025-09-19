@@ -20,12 +20,24 @@ export type CartItem = {
 };
 
 function money(n: number) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8,
   }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className="inline-block w-4 h-4 bg-contain bg-no-repeat flex-shrink-0"
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal" }}>BAR</span>
+    </span>
+  );
 }
+
+
 
 function joinUrl(base: string, path?: string | null) {
   if (!path) return undefined;
@@ -131,6 +143,7 @@ const passOrder = useCallback(async () => {
 
       setItems([])
       window.dispatchEvent(new Event("cart:updated"));
+      router.push('/order-flow');
     } catch (e: any) {
       console.error(e)
       setError(e?.message || 'Something went wrong')
@@ -232,11 +245,12 @@ const passOrder = useCallback(async () => {
     window.dispatchEvent(new Event("cart:updated"));
   }, []);
 
-  const { subtotal, shipping, total } = useMemo(() => {
+  const { subtotal, shipping, fees, total } = useMemo(() => {
     const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
     const shipping = items.length > 0 ? 5 : 0;
-    const total = subtotal + shipping;
-    return { subtotal, shipping, total };
+    const fees = (subtotal + shipping) * 0.05; // 5% fees
+    const total = subtotal + shipping + fees;
+    return { subtotal, shipping, fees, total };
   }, [items]);
 
   return (
@@ -339,6 +353,12 @@ const passOrder = useCallback(async () => {
                 {money(shipping)}
               </span>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Fees (5%)</span>
+              <span className="font-medium tabular-nums">
+                {money(fees)}
+              </span>
+            </div>
             <Separator />
             <div className="flex items-center justify-between text-lg">
               <span className="font-semibold">Total</span>
@@ -350,6 +370,7 @@ const passOrder = useCallback(async () => {
               onClick={passOrder}
             >
               Confirm Order
+    
             </Button>
           </CardContent>
         </Card>

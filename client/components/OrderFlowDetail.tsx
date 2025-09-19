@@ -30,6 +30,27 @@ import type { Order } from "./OrderFlow";
 // ===== API base =====
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
+
+
+
+function money(n: number, w: number = 4) {
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8,
+  }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className={`inline-block w-${w} h-${w} bg-contain bg-no-repeat flex-shrink-0`}
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal", color:"black" }}>BAR</span>
+    </span>
+  );
+}
+
 // ===== Types for documents =====
 export type DocumentItem = {
   id: string;
@@ -56,8 +77,8 @@ type Props = {
 };
 
 // ===== Helpers =====
-const fmt = (n: number | string) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Number(n));
+// const money = (n: number | string) =>
+//   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Number(n));
 
 const toNumber = (n: any, d = 0) => {
   const v = typeof n === "string" ? Number.parseFloat(n) : Number(n);
@@ -568,15 +589,15 @@ export default function OrderFlowDetail({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div>
               <p className="text-sm text-muted-foreground">Subtotal</p>
-              <p className="font-semibold">{fmt((order as any).subtotal)}</p>
+              <p className="font-semibold">{money((order as any).subtotal)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Shipping</p>
-              <p className="font-semibold">{fmt((order as any).shipping)}</p>
+              <p className="font-semibold">{money((order as any).shipping)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="font-semibold ">{fmt((order as any).totalAmount)}</p>
+              <p className="font-semibold ">{money((order as any).totalAmount)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Progress</p>
@@ -625,13 +646,13 @@ export default function OrderFlowDetail({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{name}</p>
                     <p className="text-sm text-muted-foreground">
-                      Qty: <span className="font-medium">{qty}{unit}</span> · Unit: <span className="font-medium">{fmt(unitPrice)}</span>
+                      Qty: <span className="font-medium">{qty}{unit}</span> · Unit: <span className="font-medium">{money(unitPrice)}</span>
                     </p>
                   </div>
 
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground mb-1">Line Total</p>
-                    <p className="font-semibold">{fmt(lineTotal)}</p>
+                    <p className="font-semibold">{money(lineTotal)}</p>
                   </div>
                 </div>
               );
@@ -642,15 +663,15 @@ export default function OrderFlowDetail({
           <div className="mt-6 border-t pt-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium">{fmt((order as any).subtotal)}</span>
+              <span className="font-medium">{money((order as any).subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
-              <span className="font-medium">{fmt((order as any).shipping)}</span>
+              <span className="font-medium">{money((order as any).shipping)}</span>
             </div>
             <div className="flex justify-between text-base">
               <span className="font-semibold">Total</span>
-              <span className="font-semibold">{fmt((order as any).totalAmount)}</span>
+              <span className="font-semibold">{money((order as any).totalAmount)}</span>
             </div>
           </div>
         </Card>
@@ -668,7 +689,7 @@ export default function OrderFlowDetail({
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Total Escrow Amount</p>
-              <p className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">{fmt((order as any).totalAmount)}</p>
+              <p className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">{money((order as any).totalAmount, 6)}</p>
             </div>
 
             <div>
@@ -715,7 +736,7 @@ export default function OrderFlowDetail({
           </div>
         </Card>
 
-        {/* Actions */}
+        {/* Actions
         <Card className="glass border-border/50 p-6">
           <h3 className="text-lg font-semibold mb-4">Actions</h3>
           <div className="space-y-3">
@@ -734,7 +755,6 @@ export default function OrderFlowDetail({
           </div>
         </Card>
 
-        {/* Producer */}
         <Card className="glass border-border/50 p-6">
           <h3 className="text-lg font-semibold mb-4">Producer</h3>
           <div className="space-y-3">
@@ -753,7 +773,7 @@ export default function OrderFlowDetail({
               Contact Producer
             </Button>
           </div>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

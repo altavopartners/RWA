@@ -29,9 +29,27 @@ type Product = {
 };
 
 function fmtMoney(n?: number) {
-  if (typeof n !== "number" || Number.isNaN(n)) return "-";
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
+  if (typeof n !== "number" || Number.isNaN(n)) {
+    return <span>-</span>;
+  }
+
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8, // HBAR supports up to 8 decimals
+  }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className="inline-block w-4 h-4 bg-contain bg-no-repeat"
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal" }}>BAR</span>
+    </span>
+  );
 }
+
 
 function listifyMedia<T extends { path: string; originalName?: string }>(arr?: T[]) {
   if (!arr || arr.length === 0) return [];

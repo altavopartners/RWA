@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Coins, Upload, Camera, FileCheck, AlertTriangle, CheckCircle2, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
 
 /* --- Taxonomy --- */
 const categories = [
@@ -118,7 +120,34 @@ const RequiredLabel = ({ htmlFor, children }: { htmlFor?: string; children: Reac
   </Label>
 );
 
-export default function ProducerAddProductPage() {
+
+const ProducerAddProductPage = () => {
+  const { isConnected } = useAuth();
+  const { triggerConnect } = useWalletConnect();
+
+  useEffect(() => {
+    if (!isConnected) {
+      triggerConnect();
+    }
+  }, [isConnected, triggerConnect]);
+
+  if (!isConnected) {
+    return (
+      <div className="container py-8">
+        <Card className="max-w-4xl mx-auto p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Profile Access Required</h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view and edit your profile.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <ProducerAddProductPageContent />;
+};
+
+const ProducerAddProductPageContent = () => {
   const [form, setForm] = useState<FormState>(initialValues);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -290,7 +319,7 @@ export default function ProducerAddProductPage() {
                 {errors.unit && <p className="text-sm text-red-600 mt-1">{errors.unit}</p>}
               </div>
               <div>
-                <RequiredLabel htmlFor="pricePerUnit">Price per unit (USD)</RequiredLabel>
+                <RequiredLabel htmlFor="pricePerUnit">Price per unit (HBAR)</RequiredLabel>
                 <Input id="pricePerUnit" type="number" step="0.01" placeholder="2.50" value={form.pricePerUnit} onChange={handleChange("pricePerUnit")} min={0} aria-invalid={!!errors.pricePerUnit} />
                 {errors.pricePerUnit && <p className="text-sm text-red-600 mt-1">{errors.pricePerUnit}</p>}
               </div>
@@ -514,3 +543,7 @@ export default function ProducerAddProductPage() {
     </main>
   );
 }
+
+
+
+export default ProducerAddProductPage;
