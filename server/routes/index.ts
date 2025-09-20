@@ -7,8 +7,13 @@ import didRoutes from "./did.routes";
 import documentRoutes from "./document.routes";
 import profileRoutes from "./profile.routes";
 import sessionRoutes from "./session.routes";
+import web3nftRoutes from "./web3nft.routes";
 
 const router = Router();
+
+
+// Web3 NFT routes
+router.use("/web3nft", web3nftRoutes);
 
 // Product routes
 router.use("/products", productRoutes);

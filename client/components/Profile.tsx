@@ -24,13 +24,13 @@ const Profile = () => {
 
   if (!isConnected) {
     return (
-      <div className="container py-8">
-        <Card className="max-w-4xl mx-auto p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Profile Access Required</h2>
-          <p className="text-muted-foreground">
-            Please connect your wallet to view and edit your profile.
-          </p>
-        </Card>
+      <div className="pt-20 min-h-screen">
+        <div className="container mx-auto px-6 py-8">
+          <Card className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">Profile Access Required</h2>
+            <p className="text-muted-foreground">Please connect your wallet to view your profile.</p>
+          </Card>
+        </div>
       </div>
     );
   }
