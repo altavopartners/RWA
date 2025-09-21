@@ -17,8 +17,9 @@ const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 export const createProductNFT = async (req: Request, res: Response) => {
   try {
     const { product, origin, quantity, priceHBAR, HSCode } = req.body;
+console.log("Creating NFT with data:", req.body);
 
-    // Step 1: Create NFT collection
+    // Create NFT
     const tokenCreateTx = new TokenCreateTransaction()
       .setTokenName(`${product} Collection`)
       .setTokenSymbol(product.substring(0, 4).toUpperCase())
@@ -39,7 +40,7 @@ export const createProductNFT = async (req: Request, res: Response) => {
 
     // Step 2: Mint NFT with product metadata
     const metadata = Buffer.from(
-      JSON.stringify({ product, origin, quantity, priceHBAR, HSCode })
+      JSON.stringify({ product })
     );
 
     const mintTx = new TokenMintTransaction()
