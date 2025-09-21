@@ -17,6 +17,12 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum NFTStatus {
+  PENDING
+  MINTED
+  FAILED
+}
+
 model User {
   id            String  @id @default(cuid())
   walletAddress String  @unique
@@ -124,6 +130,11 @@ model Product {
 
   images    Json?
   documents Json?
+
+  // NFT fields
+  hederaTokenId   String?
+  hederaSerials   Int[]     @default([])
+  nftStatus       NFTStatus @default(PENDING)
 
   // back-relation
   cartItems CartItem[]
