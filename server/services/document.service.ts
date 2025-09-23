@@ -8,11 +8,7 @@ async function getW3() {
 }
 
 export async function saveDocumentForUser(
-  userId: string,
-  filename: string,
-  buffer: Buffer,
-  mimeType?: string
-) {
+userId: string, filename: string, buffer: Buffer, mimeType?: string, categoryKey?: any, typeKey?: any, orderId?: any) {
   const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
   const { w3Upload, gatewayUrl } = await getW3();
 
@@ -20,7 +16,7 @@ export async function saveDocumentForUser(
   const url = await gatewayUrl(cid);
 
   const doc = await prisma.document.create({
-    data: { userId, filename, cid, url },
+    data: { userId, filename, cid, url, category: categoryKey, documentType: typeKey, orderId },
   });
 
   return { doc, cid, url, sha256 };

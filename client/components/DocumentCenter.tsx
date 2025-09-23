@@ -8,34 +8,50 @@ import { Label } from "@/components/ui/label";
 import { Upload, FileText, Download, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import type { Order } from "./OrderFlow";
 
-// ===== API base (local copy) =====
+// ===== API base =====
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
-// ===== Types for documents =====
+// ===== Domain types =====
+type CategoryKey = "commercial" | "transport" | "insurance" | "origin_control" | "other";
+type DocTypeKey =
+  | "commercial_invoice"
+  | "packing_list"
+  | "bill_of_lading"
+  | "air_waybill"
+  | "cmr"
+  | "fcr"
+  | "insurance_policy"
+  | "certificate_of_origin"
+  | "inspection_certificate"
+  | "sanitary_certificate";
+
+// Infos de doc affichées dans l’UI
 export type DocumentItem = {
   id: string;
   fileName: string;
   url: string;
   size?: number;
   uploadedAt?: string;
-  categoryKey: string; // e.g. "commercial"
-  typeKey: string; // e.g. "commercial_invoice"
+  categoryKey: string; // côté UI on accepte string pour tolérer l’API
+  typeKey: string;
   status?: "uploaded" | "verified" | "rejected" | "pending";
 };
 
 type Props = {
   order: Order;
   documents?: DocumentItem[];
-  onUploadDoc?: (file: File, meta: { categoryKey: string; typeKey: string; orderId: string }) => Promise<DocumentItem>;
+  onUploadDoc?: (
+    file: File,
+    meta: { categoryKey: string; typeKey: string; orderId: string }
+  ) => Promise<DocumentItem>;
   onDeleteDoc?: (doc: DocumentItem) => Promise<void>;
 };
 
-// ===== Document taxonomy (local to DocumentCenter) =====
-const DOC_CATEGORIES: {
-  key: string;
-  label: string;
-  docs: { key: string; label: string; required?: boolean }[];
-}[] = [
+// ===== Taxonomy (typée correctement, plus de 'required' error) =====
+type DocDef = { key: DocTypeKey; label: string; required?: boolean };
+type DocCategory = { key: CategoryKey; label: string; docs: DocDef[] };
+
+const DOC_CATEGORIES: DocCategory[] = [
   {
     key: "commercial",
     label: "Documents Commerciaux",
@@ -74,7 +90,7 @@ const DOC_CATEGORIES: {
   },
 ];
 
-// ===== Badges (local to DocumentCenter) =====
+// ===== Badges =====
 const statusBadge = (s?: DocumentItem["status"]) => {
   switch (s) {
     case "verified":
@@ -87,14 +103,12 @@ const statusBadge = (s?: DocumentItem["status"]) => {
           Pending
         </Badge>
       );
-    case "uploaded":
-      return <Badge className="bg-green-600 text-white">Uploaded</Badge>;
     default:
       return <Badge variant="secondary">Uploaded</Badge>;
   }
 };
 
-// ===== Auth helpers (local) =====
+// ===== Auth helpers =====
 function useReactiveToken(key = "jwtToken") {
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
@@ -112,48 +126,84 @@ function authHeaderFrom(token: string | null | undefined): Record<string, string
   return { Authorization: value };
 }
 
+// ===== Mapping util: API -> DocumentItem =====
+function normalizeDoc(row: any): DocumentItem {
+  return {
+    id: row?.id ?? row?.pk ?? crypto.randomUUID(),
+    fileName: row?.fileName ?? row?.filename ?? row?.name ?? "document",
+    url: row?.url ?? row?.path ?? "",
+    size: row?.size ?? row?.bytes ?? undefined,
+    uploadedAt: row?.uploadedAt ?? row?.createdAt ?? row?.created_at ?? new Date().toISOString(),
+    categoryKey: row?.categoryKey ?? row?.category ?? row?.category_key ?? "",
+    typeKey: row?.typeKey ?? row?.documentType ?? row?.type_key ?? "",
+    status: row?.status ?? row?.review_status ?? "uploaded",
+  };
+}
+
+// ===== API fetch helper =====
+async function fetchDocumentsForOrder(orderId: string, token?: string | null): Promise<DocumentItem[]> {
+  if (!orderId) return [];
+  const headers = { ...authHeaderFrom(token) };
+
+  const urls = [
+    `${API_BASE}/api/documents?orderId=${encodeURIComponent(orderId)}`,
+    `${API_BASE}/api/orders/${encodeURIComponent(orderId)}/documents`,
+  ];
+
+  for (const u of urls) {
+    try {
+      const res = await fetch(u, { headers, cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : data?.documents || [];
+        return arr.map(normalizeDoc);
+      }
+    } catch {
+      // try next url
+    }
+  }
+  return [];
+}
+
 export default function DocumentCenter({
   order,
   documents = [],
   onUploadDoc,
   onDeleteDoc,
 }: Props) {
-  const [categoryKey, setCategoryKey] = useState("commercial");
-  const [typeKey, setTypeKey] = useState(DOC_CATEGORIES[0].docs[0].key);
+  // === States (typage corrigé) ===
+  const [categoryKey, setCategoryKey] = useState<CategoryKey>("commercial");
+  const [typeKey, setTypeKey] = useState<DocTypeKey>("commercial_invoice");
   const [busy, setBusy] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ref déclarée UNE SEULE fois (plus d’erreur de redéclaration)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // --- local state + resync without infinite loop
-  const [localDocs, setLocalDocs] = useState<DocumentItem[]>(() => documents ?? []);
-  const prevDocsRef = useRef<DocumentItem[] | null>(null);
+  // Source de vérité UI
+  const [localDocs, setLocalDocs] = useState<DocumentItem[]>(() => (documents ?? []).map(normalizeDoc));
 
-  function shallowEqualDocs(a?: DocumentItem[] | null, b?: DocumentItem[] | null) {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      const x = a[i], y = b[i];
-      if (
-        x.id !== y.id ||
-        x.categoryKey !== y.categoryKey ||
-        x.typeKey !== y.typeKey ||
-        x.url !== y.url ||
-        x.status !== y.status
-      ) return false;
-    }
-    return true;
-  }
+  // Token + orderId
+  const token = useReactiveToken("jwtToken");
+  const orderId = String((order as any)?.id || (order as any)?.orderId || "");
 
+  // Re-fetch on mount / orderId / token change
   useEffect(() => {
-    const next = documents ?? [];
-    const prev = prevDocsRef.current;
-    if (!shallowEqualDocs(prev, next)) {
-      setLocalDocs(next);
-      prevDocsRef.current = next;
-    }
+    let cancelled = false;
+    (async () => {
+      const serverDocs = await fetchDocumentsForOrder(orderId, token);
+      if (!cancelled) setLocalDocs(serverDocs);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, token]);
+
+  // Sync si le parent passe des documents (SSR)
+  useEffect(() => {
+    if (documents?.length) setLocalDocs(documents.map(normalizeDoc));
   }, [documents]);
 
   const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.heic,.tiff,.doc,.docx";
@@ -170,11 +220,18 @@ export default function DocumentCenter({
     return m;
   }, [localDocs]);
 
-  const currentCat = useMemo(() => DOC_CATEGORIES.find((c) => c.key === categoryKey)!, [categoryKey]);
+  const currentCat = useMemo<DocCategory>(() => {
+    return DOC_CATEGORIES.find((c) => c.key === categoryKey) ?? DOC_CATEGORIES[0];
+  }, [categoryKey]);
 
-  // Reactive token from localStorage
-  const token = useReactiveToken("jwtToken");
+  // URL helper
+  const toHref = (u: string) => {
+    if (!u) return "#";
+    if (u.startsWith("http://") || u.startsWith("https://")) return u;
+    return u.startsWith("/") ? `${API_BASE}${u}` : `${API_BASE}/${u}`;
+  };
 
+  // === Upload ===
   const doUpload = async (file: File) => {
     setError(null);
     if (!isAllowed(file)) {
@@ -186,17 +243,13 @@ export default function DocumentCenter({
       let saved: DocumentItem | undefined;
 
       if (onUploadDoc) {
-        saved = await onUploadDoc(file, {
-          categoryKey,
-          typeKey,
-          orderId: String((order as any).id || (order as any).orderId),
-        });
+        saved = await onUploadDoc(file, { categoryKey, typeKey, orderId });
       } else {
         const fd = new FormData();
         fd.append("file", file);
         fd.append("categoryKey", categoryKey);
         fd.append("typeKey", typeKey);
-        fd.append("orderId", String((order as any).id || (order as any).orderId));
+        fd.append("orderId", orderId);
 
         const res = await fetch(`${API_BASE}/api/documents/upload`, {
           method: "POST",
@@ -208,28 +261,21 @@ export default function DocumentCenter({
           let message = `Upload failed (${res.status})`;
           try {
             const data = await res.json();
-            if (data?.message) message = data.message;
-            if (data?.error) message = data.error;
+            message = data?.message || data?.error || message;
           } catch {}
           throw new Error(message);
         }
 
-        saved = await res.json();
+        const raw = await res.json();
+        saved = normalizeDoc(raw);
       }
 
       if (saved) {
-        const hydrated: DocumentItem = {
-          id: saved.id ?? crypto.randomUUID(),
-          fileName: saved.fileName ?? file.name,
-          url: saved.url ?? (saved as any).path ?? "",
-          categoryKey: saved.categoryKey ?? categoryKey,
-          typeKey: saved.typeKey ?? typeKey,
-          size: saved.size ?? file.size,
-          uploadedAt: saved.uploadedAt ?? new Date().toISOString(),
-          status: saved.status ?? "uploaded",
-        };
-
-        setLocalDocs((prev) => [hydrated, ...prev]);
+        // Optimiste
+        setLocalDocs((prev) => [saved!, ...prev]);
+        // Puis vérité serveur
+        const refreshed = await fetchDocumentsForOrder(orderId, token);
+        setLocalDocs(refreshed);
       }
     } catch (e: any) {
       console.error(e);
@@ -242,30 +288,32 @@ export default function DocumentCenter({
   const handleFiles = async (files: FileList | File[]) => {
     const arr = Array.from(files).filter(Boolean);
     for (const f of arr) {
+      // séquentiel pour garder l’ordre et la lisibilité des erreurs
+      // (peut être parallélisé si besoin)
+      // eslint-disable-next-line no-await-in-loop
       await doUpload(f);
     }
   };
 
+  // === DnD & pick & paste ===
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     if (busy) return;
 
-    const dt = e.dataTransfer;
     const picked: File[] = [];
-
-    if (dt.items && dt.items.length) {
+    const dt = e.dataTransfer;
+    if (dt.items?.length) {
       for (const item of Array.from(dt.items)) {
         if (item.kind === "file") {
           const f = item.getAsFile();
           if (f) picked.push(f);
         }
       }
-    } else if (dt.files && dt.files.length) {
+    } else if (dt.files?.length) {
       for (const f of Array.from(dt.files)) picked.push(f);
     }
-
     if (picked.length) await handleFiles(picked);
   };
 
@@ -287,8 +335,8 @@ export default function DocumentCenter({
 
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length) await handleFiles(files);
-    if (fileInputRef.current) fileInputRef.current.value = ""; // reset
+    if (files?.length) await handleFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const onPaste = async (e: React.ClipboardEvent) => {
@@ -322,9 +370,9 @@ export default function DocumentCenter({
             className="w-full h-10 rounded-md border bg-background px-3 text-sm"
             value={categoryKey}
             onChange={(e) => {
-              const ck = e.target.value;
+              const ck = e.target.value as CategoryKey;
               setCategoryKey(ck);
-              const first = DOC_CATEGORIES.find((c) => c.key === ck)!.docs[0]?.key;
+              const first = (DOC_CATEGORIES.find((c) => c.key === ck) ?? DOC_CATEGORIES[0]).docs[0]?.key;
               if (first) setTypeKey(first);
             }}
           >
@@ -341,7 +389,7 @@ export default function DocumentCenter({
           <select
             className="w-full h-10 rounded-md border bg-background px-3 text-sm"
             value={typeKey}
-            onChange={(e) => setTypeKey(e.target.value)}
+            onChange={(e) => setTypeKey(e.target.value as DocTypeKey)}
           >
             {currentCat.docs.map((d) => (
               <option key={d.key} value={d.key}>
@@ -430,13 +478,19 @@ export default function DocumentCenter({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {has ? statusBadge(firstStatus) : <Badge variant="outline" className="border-dashed">Missing</Badge>}
+                          {has ? (
+                            statusBadge(firstStatus)
+                          ) : (
+                            <Badge variant="outline" className="border-dashed">
+                              Missing
+                            </Badge>
+                          )}
                           {has && (
                             <div className="flex items-center gap-1">
                               {list.map((doc) => (
                                 <a
                                   key={doc.id}
-                                  href={doc.url.startsWith("http") ? doc.url : `${API_BASE}${doc.url}`}
+                                  href={toHref(doc.url)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="inline-flex items-center text-xs underline"
@@ -451,7 +505,8 @@ export default function DocumentCenter({
                                   className="h-8 w-8"
                                   onClick={async () => {
                                     await onDeleteDoc(list[0]);
-                                    setLocalDocs((prev) => prev.filter((x) => x.id !== list[0].id));
+                                    const refreshed = await fetchDocumentsForOrder(orderId, token);
+                                    setLocalDocs(refreshed);
                                   }}
                                 >
                                   <Trash2 className="w-4 h-4" />

@@ -16,9 +16,8 @@ export async function uploadDocumentController(req: AuthenticatedRequest, res: R
   try {
     if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
     if (!req.file) return res.status(400).json({ success: false, message: "file required" });
-
     const { originalname, buffer, mimetype } = req.file;
-    const result = await saveDocumentForUser(req.user.id, originalname, buffer, mimetype);
+    const result = await saveDocumentForUser(req.user.id, originalname, buffer, mimetype, req.body.categoryKey, req.body.typeKey, req.body.orderId);
     return res.json({ success: true, data: result });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err?.message ?? "Upload failed" });
