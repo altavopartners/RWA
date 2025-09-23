@@ -73,7 +73,7 @@ export class JWTUtils {
 
   /** Generate access + refresh tokens */
   static generateTokenPair(payload: Omit<JWTPayload, "iat" | "exp">) {
-    const accessToken = this.sign(payload, process.env.JWT_EXPIRES_IN || "15m");
+    const accessToken = this.sign(payload, process.env.JWT_EXPIRES_IN || "24h");
     const refreshToken = this.sign(payload, process.env.JWT_REFRESH_EXPIRES_IN || "7d");
     return { accessToken, refreshToken };
   }

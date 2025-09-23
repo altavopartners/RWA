@@ -67,6 +67,7 @@ export type APIProduct = {
   description: string;
   hsCode?: string;
   incoterm?: string; // e.g. "FOB"
+  hederaTokenId?: string; // e.g. "0.0.12345"
   minOrderQty?: number;
   leadTimeDays?: number;
   images: APIImage[];
@@ -432,9 +433,28 @@ const Marketplace = () => {
                     >
                       View Details
                     </Button>
+                  
 
                     <AddToCartPopup product={product} />
                   </div>
+                  
+                  <div className="flex gap-4 mt-2 ml-4 mr-4">
+                    <Button
+                      variant="outline"
+                      className="flex-1 cursor-pointer bg-transparent"
+                      onClick={() =>
+                        window.open(
+                          `https://hashscan.io/testnet/token/${product.hederaTokenId}`,
+                          "_blank", // ensures it opens in a new tab/window
+                          "noopener,noreferrer" // security best practices
+                        )}
+                    >
+                      View on hashscan.io
+                    </Button>
+                  
+
+                  </div>
+                    
                 </div>
               </Card>
             );

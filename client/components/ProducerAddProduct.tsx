@@ -13,6 +13,7 @@ import { Coins, Upload, Camera, FileCheck, AlertTriangle, CheckCircle2, X } from
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
+import { useRouter } from "next/navigation";
 
 /* --- Taxonomy --- */
 const categories = [
@@ -152,6 +153,7 @@ const ProducerAddProductPageContent = () => {
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const router = useRouter();
 
   const imagesRef = useRef<HTMLInputElement>(null);
   const docsRef = useRef<HTMLInputElement>(null);
@@ -249,6 +251,7 @@ const ProducerAddProductPageContent = () => {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       setSuccessMsg("Product saved successfully.");
+      router.push("/marketplace");
     } catch (err: any) {
       setErrors((prev) => ({ ...prev, form: err?.message || "Failed to create product." }));
       setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);

@@ -98,8 +98,8 @@ function ProfileContent() {
   };
 
   return (
-    <div className="container py-8">
-      <Card className="max-w-4xl mx-auto p-8">
+    <div className="container py-8 max-w-5xl mx-auto">
+      <Card className="p-8 glass border-border/50">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10 pb-6 border-b border-border/50">
           <div className="relative">
             <Avatar className="w-28 h-28">

@@ -24,12 +24,58 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  QrCode,
+  CreditCard,
+  CircleDollarSign,
+  Banknote,
+  Wallet,
+  HandCoins,
 } from "lucide-react";
 import type { Order } from "./OrderFlow";
 
 // ===== API base =====
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
+
+
+// ===== MetaMask / Hedera helpers =====
+type Eip1193Provider = {
+  request: (args: { method: string; params?: any[] | Record<string, any> }) => Promise<any>;
+};
+declare global {
+  interface Window { ethereum?: any }
+}
+
+const HEDERA_TESTNET = {
+  chainId: "0x128", // 296 decimal
+  chainName: "Hedera Testnet",
+  nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
+  rpcUrls: ["https://testnet.hashio.io/api"],
+  blockExplorerUrls: ["https://hashscan.io/testnet"],
+};
+
+/** Adds or switches to Hedera Testnet in MetaMask */
+async function ensureHederaTestnet(provider: Eip1193Provider) {
+  try {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: HEDERA_TESTNET.chainId }] });
+  } catch (err: any) {
+    // 4902 = chain not added
+    if (err?.code === 4902) {
+      await provider.request({ method: "wallet_addEthereumChain", params: [HEDERA_TESTNET] });
+    } else {
+      throw err;
+    }
+  }
+}
+
+/** Lossless decimal -> wei hex (18 decimals) without pulling a lib */
+function toWeiHex(amountHBAR: string | number): string {
+  const s = String(amountHBAR);
+  const [intPart, frac = ""] = s.split(".");
+  const fracPadded = (frac + "0".repeat(18)).slice(0, 18); // pad/trim to 18
+  const weiStr = (BigInt(intPart || "0") * BigInt(Math.pow(10, 18)) + BigInt(fracPadded || "0")).toString(16);
+  return "0x" + weiStr;
+}
 
 
 
@@ -564,6 +610,57 @@ export default function OrderFlowDetail({
   const StatusIcon = getStatusIcon((order as any).status);
   const itemsCount = order.items?.length || 0;
 
+
+
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  async function handlePay() {
+    setPayError(null);
+    setTxHash(null);
+
+    try {
+      if (typeof window === "undefined" || !window.ethereum) {
+        throw new Error("MetaMask not detected. Please install or enable it.");
+      }
+      const provider = window.ethereum;
+
+      // 1) Add/Switch to Hedera Testnet
+      await ensureHederaTestnet(provider);
+
+      // 2) Request account
+      const [from] = await provider.request({ method: "eth_requestAccounts" });
+
+      // 3) Prepare native HBAR payment to the escrow contract
+      const to = "0x96e51caadac0f4ccc74a204fd6e07dade6b32710";
+      if (!to || !to.startsWith("0x") || to.length !== 42) {
+        throw new Error("Invalid escrow contract address.");
+      }
+
+      // Choose the amount to lock — here I send the full order total (HBAR)
+      const amountHBAR = String((order as any).totalAmount ?? "0");
+      const value = toWeiHex(amountHBAR);
+
+      setPaying(true);
+
+      // 4) Send the transaction
+      const txHashLocal: string = await provider.request({
+        method: "eth_sendTransaction",
+        params: [{ from, to, value }],
+      });
+
+      setTxHash(txHashLocal);
+    } catch (e: any) {
+      setPayError(e?.message || "Payment failed.");
+    } finally {
+      setPaying(false);
+    }
+  }
+
+
+
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
       {/* === NEW: Document upload center on top (full width) === */}
@@ -674,6 +771,72 @@ export default function OrderFlowDetail({
               <span className="font-semibold">{money((order as any).totalAmount)}</span>
             </div>
           </div>
+
+          
+          <style jsx global>{`
+            @keyframes blink {
+              0% { opacity: 1; }
+              50% { opacity: 0.4; }
+              100% { opacity: 1; }
+            }
+            .blink {
+              animation: blink 1s infinite;
+            }
+          `}</style>
+
+          <div className="text-center">
+            <Button
+              variant="outline"
+              className="cursor-pointer bg-success/60 text-lg rounded-xl blink"
+              onClick={() => {
+                window.open(
+                  `https://hashscan.io/#/mainnet/contract/${(order as any).escrowContract}`,
+                  "_blank"
+                );
+              }}
+            >
+              <HandCoins className="w-6 h-6 mr-3" />
+              Proceed to Pay
+            </Button>
+          </div>
+
+
+          <div className="text-center space-y-2">
+            <Button
+              variant="default"
+              disabled={paying}
+              className="cursor-pointer bg-success text-lg rounded-xl"
+              onClick={handlePay}
+            >
+              <HandCoins className="w-6 h-6 mr-3" />
+              {paying ? "Processing..." : "Proceed to Pay (Hedera Testnet)"}
+            </Button>
+
+            {txHash && (
+              <p className="text-sm">
+                Payment sent:{" "}
+                <a
+                  className="underline"
+                  href={`https://hashscan.io/testnet/tx/${txHash}`}
+                  target="_blank" rel="noreferrer"
+                >
+                  View on HashScan
+                </a>
+              </p>
+            )}
+            {payError && <p className="text-xs text-destructive">{payError}</p>}
+
+            {/* Keep your original view-contract button if you like */}
+            {(order as any).escrowContract && (
+              <Button
+                variant="ghost"
+                onClick={() => window.open(`https://hashscan.io/#/testnet/contract/${(order as any).escrowContract}`, "_blank")}
+              >
+                View Escrow Contract
+              </Button>
+            )}
+          </div>
+
         </Card>
       </div>
 
@@ -731,7 +894,9 @@ export default function OrderFlowDetail({
                     <span className="text-sm text-warning">Pending Bank Approval</span>
                   </>
                 )}
+
               </div>
+              
             </div>
           </div>
         </Card>

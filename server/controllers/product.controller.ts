@@ -19,7 +19,7 @@ export async function postProduct(req: Request, res: Response, next: NextFunctio
 export async function getProducts(req: Request, res: Response, next: NextFunction) {
   try {
     const page = Math.max(1, toInt(req.query.page as string, 1));
-    const rawSize = Math.max(1, toInt(req.query.pageSize as string, 20));
+    const rawSize = Math.max(1, toInt(req.query.pageSize as string, 99));
     const pageSize = Math.min(rawSize, 100);
     const skip = (page - 1) * pageSize;
     const take = pageSize;
