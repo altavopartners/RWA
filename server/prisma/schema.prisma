@@ -69,17 +69,6 @@ model AuthSession {
   updatedAt    DateTime  @updatedAt
 }
 
-model Document {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  filename  String
-  cid       String
-  url       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model DID {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id])
@@ -131,10 +120,12 @@ model Product {
   images    Json?
   documents Json?
 
+  // Producer Wallet
+  producerWalletId String?
   // NFT fields
-  hederaTokenId   String?
-  hederaSerials   Int[]     @default([])
-  nftStatus       NFTStatus @default(PENDING)
+  hederaTokenId    String?
+  hederaSerials    Int[]     @default([])
+  nftStatus        NFTStatus @default(PENDING)
 
   // back-relation
   cartItems CartItem[]
@@ -166,10 +157,10 @@ model CartItem {
 }
 
 model Order {
-  id    String  @id @default(cuid())
+  id     String  @id @default(cuid())
   userId String
-  code String?
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code   String?
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status OrderStatus @default(PENDING)
 
@@ -178,6 +169,8 @@ model Order {
   total    Decimal @db.Decimal(18, 2)
 
   items OrderedItem[]
+
+  documents Document[] @relation("OrderDocuments")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,4 +213,18 @@ model OrderedItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+model Document {
+  id       String  @id @default(cuid())
+  user     User    @relation(fields: [userId], references: [id])
+  userId   String
+  filename String
+  cid      String
+  url      String
+  order    Order?  @relation("OrderDocuments", fields: [orderId], references: [id])
+  orderId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

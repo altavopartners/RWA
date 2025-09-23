@@ -46,6 +46,8 @@ export type ProductBody = {
 
   minOrderQty: number | null;
   leadTimeDays: number | null;
+
+  producerWalletId?: string | null;
 };
 
 export function buildProductBody(raw: unknown): ProductBody {
@@ -87,5 +89,6 @@ export function buildProductBody(raw: unknown): ProductBody {
 
     minOrderQty: toNumOrNull(r?.minOrderQty),
     leadTimeDays: toNumOrNull(r?.leadTimeDays),
+    producerWalletId: trimOrNull(r?.producerWalletId) || null,
   };
 }

@@ -240,6 +240,7 @@ const ProducerAddProductPageContent = () => {
     if (form.leadTimeDays) fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
     (form.images || []).forEach((file) => fd.append("images", file));
     (form.documents || []).forEach((file) => fd.append("documents", file));
+    fd.append("producerWalletId", String(localStorage.getItem("walletAddress")));
 
     try {
       setSubmitting(true);
@@ -247,7 +248,7 @@ const ProducerAddProductPageContent = () => {
         method: "POST",
         body: fd,
       });
-
+   
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       setSuccessMsg("Product saved successfully.");

@@ -194,6 +194,7 @@ export async function getAllMyOrdersService({
             product: true,
           },
         },
+        documents: true,
       },
     }),
     prisma.order.count({ where }),
@@ -220,16 +221,19 @@ export async function getMyOrderByIdService({
     where: { id, userId }, // protection: must belong to requester
     include: {
       items: {
-        include: {
-          product: true,
-        },
+        include: { product: true },
       },
+      documents: true, 
+      
     },
   });
 
   if (!order) {
     throw new CheckoutError("Order not found.", 404);
   }
-
   return order;
 }
+
+
+
+

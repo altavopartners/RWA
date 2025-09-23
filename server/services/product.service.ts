@@ -56,12 +56,13 @@ export async function createProduct(
       : Prisma.DbNull;
 
   // 1) create first (PENDING)
+  
   const created = await prisma.product.create({
     data: {
       ...(body as any),
       images: imagesValue,
       documents: documentsValue,
-      nftStatus: "PENDING", // <-- added
+      nftStatus: "PENDING",
     },
   });
 
