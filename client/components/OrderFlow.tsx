@@ -82,6 +82,7 @@ export type BackendOrder = {
   createdAt: string;
   updatedAt: string;
   items: BackendItem[];
+  documents: any[]; // Replace 'any' with a specific type if available
 };
 
 export type BackendOrderResponse = {
@@ -114,6 +115,8 @@ export type Order = {
 
   // toutes les lignes de la commande
   items: BackendItem[];
+
+  documents: any[]; // Replace 'any' with a specific type if available
 
   subtotal: number;
   shipping: number;
@@ -228,6 +231,7 @@ export default function OrderFlow() {
         unitPrice,
 
         items: Array.isArray(b.items) ? b.items : [],
+        documents: Array.isArray(b.documents) ? b.documents : [],
 
         subtotal: toNumber(b.subtotal, 0),
         shipping: toNumber(b.shipping, 0),

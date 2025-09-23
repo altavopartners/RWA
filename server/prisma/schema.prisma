@@ -225,6 +225,10 @@ model Document {
   order    Order?  @relation("OrderDocuments", fields: [orderId], references: [id])
   orderId  String?
 
+  category String?
+  documentType String?
+
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
