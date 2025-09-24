@@ -234,6 +234,47 @@ export async function getMyOrderByIdService({
   return order;
 }
 
+//  ---------- DELETE MY ORDER BY ID ----------
+export async function deleteMyOrderService({
+  userId,
+  id,
+}: {
+  userId: string;
+  id: string;
+}) {
+  const order = await prisma.order.findFirst({
+    where: { id, userId }, // protection: must belong to requester
+  });
 
+  if (!order) {
+    throw new CheckoutError("Order not found.", 404);
+  }
 
+  await prisma.order.delete({
+    where: { id },
+  });
+}
 
+//  ---------- UPDATE MY ORDER STATUS BY ID ----------
+export async function updateMyOrderStatusService({
+  userId,
+  id,
+  status,
+}: {
+  userId: string;
+  id: string;
+  status: OrderStatus;
+}) {
+  const order = await prisma.order.findFirst({
+    where: { id, userId }, // protection: must belong to requester
+  });
+
+  if (!order) {
+    throw new CheckoutError("Order not found.", 404);
+  }
+
+  await prisma.order.update({
+    where: { id },
+    data: { status },
+  });
+}

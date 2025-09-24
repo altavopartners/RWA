@@ -4,13 +4,36 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Truck, CheckCircle, Clock, Package, Shield, AlertCircle, FileCheck, Coins, TrendingUp, Plus } from "lucide-react";
+import {
+  RefreshCw,
+  Truck,
+  CheckCircle,
+  Clock,
+  Package,
+  Shield,
+  AlertCircle,
+  FileCheck,
+  Coins,
+  TrendingUp,
+  Plus,
+  TrashIcon,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import OrderFlowDetail from "./OrderFlowDetail";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
-
 
 function money(n: number, w: number = 4) {
   const formatted = new Intl.NumberFormat(undefined, {
@@ -29,7 +52,6 @@ function money(n: number, w: number = 4) {
     </span>
   );
 }
-
 
 // ---- BACKEND TYPES (STRICT) ----
 export type BackendProduct = {
@@ -66,7 +88,7 @@ export type BackendItem = {
 
 export type BackendOrder = {
   id: string;
-  code?: string; // NEW: human-friendly order code from backend
+  code?: string;
   userId: string;
   status:
     | "AWAITING_PAYMENT"
@@ -82,7 +104,7 @@ export type BackendOrder = {
   createdAt: string;
   updatedAt: string;
   items: BackendItem[];
-  documents: any[]; // Replace 'any' with a specific type if available
+  documents: any[];
 };
 
 export type BackendOrderResponse = {
@@ -103,20 +125,17 @@ export type OrderMilestone = {
 
 export type Order = {
   id: string;
-  orderId: string; // still keep internal id for fetching details
-  code?: string; // NEW: human-friendly code to display
+  orderId: string;
+  code?: string;
 
-  // preview (1er item) pour la liste
   productName: string;
   productUnit?: string;
   producer: string;
   quantity: number;
   unitPrice: number;
 
-  // toutes les lignes de la commande
   items: BackendItem[];
-
-  documents: any[]; // Replace 'any' with a specific type if available
+  documents: any[];
 
   subtotal: number;
   shipping: number;
@@ -199,6 +218,10 @@ export default function OrderFlow() {
   // NEW: simple client-side pagination
   const [visibleCount, setVisibleCount] = useState<number>(10);
 
+  // NEW: deletion modal state
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState<boolean>(false);
+
   const token = useToken();
 
   const normalizeMilestones = useCallback((raw: any[]): OrderMilestone[] => {
@@ -220,9 +243,9 @@ export default function OrderFlow() {
       const unitPrice = toNumber(firstItem?.unitPrice, 0);
 
       return {
-        id: b.id,                 // keep true backend id
-        orderId: b.id,            // keep for detail route param
-        code: b.code ?? b.id,     // NEW: prefer code for display
+        id: b.id,
+        orderId: b.id,
+        code: b.code ?? b.id,
 
         productName: firstItem?.product?.name ?? "Product",
         productUnit: firstItem?.product?.unit ?? undefined,
@@ -301,8 +324,6 @@ export default function OrderFlow() {
       setOrders(list);
       if (!selectedId && list.length) setSelectedId(list[0].id);
       setLastFetchedAt(Date.now());
-
-      // NEW: reset the visible page to the first 10 whenever we refetch
       setVisibleCount(10);
     } catch (e: any) {
       console.error(e);
@@ -368,6 +389,13 @@ export default function OrderFlow() {
     fetchOrders();
   }, [isConnected, triggerConnect, fetchOrders]);
 
+
+  useEffect(() => {
+    const handler = () => fetchOrders();
+    window.addEventListener("order:updated", handler);
+    return () => window.removeEventListener("order:updated", handler);
+  }, [fetchOrders]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "awaiting_payment":
@@ -426,17 +454,11 @@ export default function OrderFlow() {
   }, [orders]);
 
   // Only show a slice based on visibleCount
-  const visibleOrders = useMemo(
-    () => sortedOrders.slice(0, visibleCount),
-    [sortedOrders, visibleCount]
-  );
+  const visibleOrders = useMemo(() => sortedOrders.slice(0, visibleCount), [sortedOrders, visibleCount]);
 
   const canLoadMore = visibleCount < sortedOrders.length;
 
-  const currentOrder = useMemo(
-    () => orders.find((o) => o.id === selectedId) || null,
-    [orders, selectedId]
-  );
+  const currentOrder = useMemo(() => orders.find((o) => o.id === selectedId) || null, [orders, selectedId]);
 
   if (!isConnected) {
     return (
@@ -450,6 +472,32 @@ export default function OrderFlow() {
       </div>
     );
   }
+
+  const handleDeleteOrder = async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+    if (!id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/delete-my-order/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        // If the deleted order was selected, clear the selection
+        setSelectedId((prev) => (prev === id ? null : prev));
+        fetchOrders();
+      }
+    } catch (error) {
+      console.error("Failed to delete order:", error);
+    } finally {
+      setDeleteOpen(false);
+      setDeleteId(null);
+    }
+  };
 
   return (
     <div className="pt-20 min-h-screen">
@@ -493,7 +541,9 @@ export default function OrderFlow() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Orders Shipped</p>
-              <p className="text-2xl font-bold">{(orders ?? []).filter(o => (o.status ?? "") === "delivered").length}</p>
+              <p className="text-2xl font-bold">
+                {(orders ?? []).filter((o) => (o.status ?? "") === "delivered").length}
+              </p>
             </div>
             <FileCheck className="w-8 h-8 text-warning" />
           </div>
@@ -501,7 +551,6 @@ export default function OrderFlow() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-
         {error && (
           <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -529,6 +578,7 @@ export default function OrderFlow() {
                   {visibleOrders.map((order) => {
                     const StatusIcon = getStatusIcon(order.status);
                     const extra = Math.max(0, (order.items?.length || 0) - 1);
+                    const canDelete = order.status === "awaiting_payment";
                     return (
                       <div
                         key={order.id}
@@ -543,19 +593,70 @@ export default function OrderFlow() {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          {/* Display the new code instead of orderId */}
                           <span className="text-sm font-medium">{order.code}</span>
-                          <StatusIcon className="w-4 h-4 text-primary" />
+
+                          {canDelete && (
+                            <AlertDialog open={deleteOpen && deleteId === order.id} onOpenChange={setDeleteOpen}>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteId(order.id);
+                                    setDeleteOpen(true);
+                                  }}
+                                  aria-label={`Delete order ${order.code}`}
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this order?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently remove order <span className="font-medium">{order.code}</span>.
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel
+                                    onClick={() => {
+                                      setDeleteOpen(false);
+                                      setDeleteId(null);
+                                    }}
+                                  >
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={async () => {
+                                      if (deleteId) {
+                                        await handleDeleteOrder(deleteId);
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
+
                         <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
                           {order.productName}
                           {extra > 0 ? ` + ${extra} more` : ""}
                         </p>
+
                         <div className="flex items-center justify-between">
                           <Badge variant="outline" className={getStatusColor(order.status)}>
+                            <StatusIcon className="w-3.5 h-3.5 mr-1" />
                             {labelFor(order.status)}
                           </Badge>
-                        <span className="text-sm font-medium">{money(order.totalAmount)}</span>
+                          <span className="text-sm font-medium">{money(order.totalAmount)}</span>
                         </div>
                       </div>
                     );
@@ -564,11 +665,7 @@ export default function OrderFlow() {
                   {/* Load more control */}
                   {canLoadMore && (
                     <div className="pt-2">
-                      <Button
-                        variant="secondary"
-                        className="w-full"
-                        onClick={() => setVisibleCount((c) => c + 10)}
-                      >
+                      <Button variant="secondary" className="w-full" onClick={() => setVisibleCount((c) => c + 10)}>
                         <Plus className="w-4 h-4 mr-2" />
                         load more
                       </Button>
@@ -576,9 +673,7 @@ export default function OrderFlow() {
                   )}
 
                   {lastFetchedAt && (
-                    <div className="text-xs text-muted-foreground">
-                      Last updated: {new Date(lastFetchedAt).toLocaleString()}
-                    </div>
+                    <div className="text-xs text-muted-foreground">Last updated: {new Date(lastFetchedAt).toLocaleString()}</div>
                   )}
                 </div>
               )}

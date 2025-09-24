@@ -2,7 +2,7 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../types/auth";
 import { OrderStatus } from "@prisma/client";
-import { passOrderService, CheckoutError, getAllMyOrdersService, getMyOrderByIdService } from "../services/order.service";
+import { passOrderService, CheckoutError, getAllMyOrdersService, getMyOrderByIdService, deleteMyOrderService, updateMyOrderStatusService } from "../services/order.service";
 
 // POST /api/carts/pass-order
 export async function passOrder(
@@ -115,6 +115,81 @@ export async function getMyOrderById(
       return res
         .status(404)
         .json({ success: false, message: "Order not found." });
+    }
+    next(err);
+  }
+}
+
+
+/** DELETE /api/carts/delete-my-order/:id */
+export async function deleteMyOrder(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const id = req.params.id;
+
+    const order = await getMyOrderByIdService({
+      userId: req.user.id,
+      id,
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found." });
+    }
+
+    await deleteMyOrderService({
+      userId: req.user.id,
+      id,
+    });
+
+    return res.status(204).json({ success: true });
+  } catch (err: any) {
+    if (err instanceof CheckoutError) {
+      return res.status(err.status).json({ success: false, message: err.message });
+    }
+    next(err);
+  }
+}
+
+
+/** PATCH /api/carts/update-my-order-status/:id */
+export async function updateMyOrderStatus(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const id = req.params.id;
+    const { status } = req.body;
+
+    const order = await getMyOrderByIdService({
+      userId: req.user.id,
+      id,
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found." });
+    }
+
+    await updateMyOrderStatusService({
+      userId: req.user.id,
+      id,
+      status,
+    });
+
+    return res.status(204).json({ success: true });
+  } catch (err: any) {
+    if (err instanceof CheckoutError) {
+      return res.status(err.status).json({ success: false, message: err.message });
     }
     next(err);
   }
