@@ -480,7 +480,7 @@ export default function OrderFlow() {
         <Card className="p-6 glass border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-sm text-muted-foreground">Total Amount</p>
               <p className="text-2xl font-bold">
                 {money((orders ?? []).reduce((sum, o) => sum + (o.totalAmount ?? 0), 0), 6)}
               </p>

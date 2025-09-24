@@ -104,7 +104,7 @@ const statusBadge = (s?: DocumentItem["status"]) => {
         </Badge>
       );
     default:
-      return <Badge variant="secondary">Uploaded</Badge>;
+      return <Badge variant="secondary" className="bg-green-200">Uploaded</Badge>;
   }
 };
 
@@ -143,24 +143,27 @@ function normalizeDoc(row: any): DocumentItem {
 // ===== API fetch helper =====
 async function fetchDocumentsForOrder(orderId: string, token?: string | null): Promise<DocumentItem[]> {
   if (!orderId) return [];
-  const headers = { ...authHeaderFrom(token) };
+  //const headers = { ...authHeaderFrom(token) };
 
-  const urls = [
-    `${API_BASE}/api/documents?orderId=${encodeURIComponent(orderId)}`,
-    `${API_BASE}/api/orders/${encodeURIComponent(orderId)}/documents`,
-  ];
+  try {
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null
 
-  for (const u of urls) {
-    try {
-      const res = await fetch(u, { headers, cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        const arr = Array.isArray(data) ? data : data?.documents || [];
-        return arr.map(normalizeDoc);
-      }
-    } catch {
-      // try next url
+    const res = await fetch(`${API_BASE}/api/orders/get-my-order/${encodeURIComponent(orderId)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: 'no-store',
+    })
+    if (res.ok) {
+      const data = await res.json();
+      const arr = Array.isArray(data.order) ? data.order : data.order?.documents || [];
+      return arr.map(normalizeDoc);
     }
+  } catch {
+    // try next url
   }
   return [];
 }
