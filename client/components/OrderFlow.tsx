@@ -72,6 +72,7 @@ export type BackendProduct = {
   documents: any;
   createdAt: string;
   updatedAt: string;
+  producerWalletId: string;
 };
 
 export type BackendItem = {

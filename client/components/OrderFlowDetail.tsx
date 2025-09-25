@@ -8,49 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { Truck, CheckCircle, Clock, Package, Shield, AlertCircle, Image as ImageIcon, Lock, HandCoins } from "lucide-react";
 import type { Order } from "./OrderFlow";
 import DocumentCenter, { DocumentItem } from "./DocumentCenter";
+import PaymentSection from "./PaymentSection";
 
 // ===== API base (local copy) =====
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
-// ===== MetaMask / Hedera helpers (local to OrderDetailsFlow) =====
-type Eip1193Provider = {
-  request: (args: { method: string; params?: any[] | Record<string, any> }) => Promise<any>;
-};
 declare global {
   interface Window {
     ethereum?: any;
   }
-}
-
-const HEDERA_TESTNET = {
-  chainId: "0x128", // 296 decimal
-  chainName: "Hedera Testnet",
-  nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
-  rpcUrls: ["https://testnet.hashio.io/api"],
-  blockExplorerUrls: ["https://hashscan.io/testnet"],
-};
-
-async function ensureHederaTestnet(provider: Eip1193Provider) {
-  try {
-    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: HEDERA_TESTNET.chainId }] });
-  } catch (err: any) {
-    if (err?.code === 4902) {
-      await provider.request({ method: "wallet_addEthereumChain", params: [HEDERA_TESTNET] });
-    } else {
-      throw err;
-    }
-  }
-}
-
-function toWeiHex(amountHBAR: string | number): string {
-  const s = String(amountHBAR);
-  const [intPart, frac = ""] = s.split(".");
-  const fracPadded = (frac + "0".repeat(18)).slice(0, 18);
-  const weiStr = (
-    BigInt(intPart || "0") * BigInt(Math.pow(10, 18)) +
-    BigInt(fracPadded || "0")
-  ).toString(16);
-  return "0x" + weiStr;
 }
 
 // ===== Money UI (HBAR) =====
@@ -146,84 +112,6 @@ export default function OrderDetailsFlow({
 
   const StatusIcon = getStatusIcon((order as any).status);
   const itemsCount = order.items?.length || 0;
-
-  const [paying, setPaying] = useState(false);
-  const [payError, setPayError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
-
-  async function handlePay() {
-  setPayError(null);
-  setTxHash(null);
-  try {
-    if (typeof window === "undefined" || !window.ethereum) {
-      throw new Error("MetaMask not detected. Please install or enable it.");
-    }
-    const provider = window.ethereum as Eip1193Provider;
-    await ensureHederaTestnet(provider);
-    const [from] = await provider.request({ method: "eth_requestAccounts" });
-
-    const to = "0x96e51caadac0f4ccc74a204fd6e07dade6b32710";
-    if (!to || !to.startsWith("0x") || to.length !== 42) {
-      throw new Error("Invalid escrow contract address.");
-    }
-
-    const amountHBAR = String((order as any).totalAmount ?? "0");
-    const value = toWeiHex(amountHBAR);
-
-    setPaying(true);
-    const txHashLocal: string = await provider.request({
-      method: "eth_sendTransaction",
-      params: [{ from, to, value }],
-    });
-    setTxHash(txHashLocal);
-
-    // === NEW: mark the order as PAID on your backend
-    const orderId = (order as any).id ?? (order as any)._id ?? (order as any).orderId;
-    await updateOrderStatusToPaid(orderId);
-
-    // Optional: optimistic UI tweak if you want to reflect it immediately
-    // (order as any).status = "PAID"; // only if you're okay mutating the prop
-  } catch (e: any) {
-    setPayError(e?.message || "Payment failed.");
-  } finally {
-    setPaying(false);
-  }
-}
-
-
-
-  // ===== Update order status helper =====
-async function updateOrderStatusToPaid(orderId: string) {
-  if (!orderId) throw new Error("Missing order id");
-
-  const url = `${API_BASE}/api/orders/update-my-order-status/${encodeURIComponent(orderId)}`;
-
-  const token =
-      typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null
-
-  const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  // Try 1: GET with body (some servers accept it, many proxies don’t)
-    try {
-      const res = await fetch(url, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ status: "PAID" }),
-        credentials: "include",
-      });
-      if (res.ok) {
-        dispatchEvent(new Event("order:updated"));
-      } else {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Failed to update order status. (${res.status})`);
-      }
-    } catch {
-    }
-  }
-
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -333,41 +221,11 @@ async function updateOrderStatusToPaid(orderId: string) {
             </div>
           </div>
 
-          <style jsx global>{`
-            @keyframes blink {
-              0% { opacity: 1; }
-              50% { opacity: 0.4; }
-              100% { opacity: 1; }
-            }
-            .blink {
-              animation: blink 1s infinite;
-            }
-          `}</style>
-          {order.status === "awaiting_payment" && (
-            <div className="text-center space-y-2">
-              <Button
-                variant="default"
-                disabled={paying}
-                className={`cursor-pointer bg-green-600/60 text-lg rounded-xl ${paying ? "blink" : ""}`}
-                onClick={handlePay}
-              >
-                <HandCoins className="w-6 h-6 mr-3" />
-                {paying ? "Processing..." : "Proceed to Pay"}
-              </Button>
-              {payError && <p className="text-xs text-destructive">{payError}</p>}
-            </div>
-            )}
-              {txHash && (
-                <p className="text-sm">
-                  Payment sent:{" "}
-                  <a className="underline" href={`https://hashscan.io/testnet/tx/${txHash}`} target="_blank" rel="noreferrer">
-                    View on HashScan
-                  </a>
-                </p>
-              )}
+          <PaymentSection order={order} />
+
         </Card>
       </div>
-
+      
       {/* Sidebar */}
       <div className="space-y-6">
         <Card className="glass border-border/50 p-6">
