@@ -1,6 +1,5 @@
 "use client";
 
-// hooks/useAuth.tsx
 import {
   createContext,
   useContext,
@@ -22,14 +21,13 @@ interface User {
   walletAddress: string;
   fullName?: string | null;
   email?: string | null;
-  phoneNumber?: string | null; // ✅ added
+  phoneNumber?: string | null;
   businessName?: string | null;
   location?: string | null;
   businessDesc?: string | null;
   profileImage?: string | null;
   cartId?: string | null;
   role: "PRODUCER" | "BUYER" | "ADMIN" | "USER";
-  // isVerified: boolean;in the back i meant by is verified that the user is connected and did generated not the kyc to avoid missunderstanding i removed it
   did?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -50,10 +48,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --------------------------- Wallet Helpers ---------------------------
-const signMessageWithWallet = async (
-  walletAddress: string,
-  message: string
-) => {
+const signMessageWithWallet = async (walletAddress: string, message: string) => {
   if (!window.ethereum || !window.ethereum.isMetaMask) {
     throw new Error("MetaMask not found. Please install MetaMask.");
   }
@@ -96,7 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${BACKEND_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-      if (!res.ok) throw new Error("Failed to fetch profile");
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Failed to fetch profile: ${res.status} - ${errBody}`);
+      }
       const data = await res.json();
       safeSetState(() => setUser(data.data));
     } catch (err) {
@@ -110,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ------------------- Check saved session -------------------
   const checkExistingSession = async () => {
     if (hasCheckedSession) return;
 
@@ -118,13 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (savedToken && savedAddress) {
       try {
-        // First check if MetaMask is available and connected
         if (window.ethereum && window.ethereum.isMetaMask) {
           const accounts = await window.ethereum.request({
             method: "eth_accounts",
           });
 
-          // Only proceed if wallet is connected and matches saved address
           if (
             accounts &&
             accounts.length > 0 &&
@@ -137,27 +134,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setHasCheckedSession(true);
             });
 
-            // Now safely fetch profile since wallet is connected
+            // ✅ Only fetch profile if token exists
             await fetchProfile(savedToken);
           } else {
-            // Wallet not connected or address mismatch, clear session
-            console.log(
-              "Wallet not connected or address mismatch, clearing session"
-            );
+            console.log("Wallet mismatch, clearing session");
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("walletAddress");
             safeSetState(() => setHasCheckedSession(true));
           }
         } else {
-          // MetaMask not available, clear session
           console.log("MetaMask not available, clearing session");
           localStorage.removeItem("jwtToken");
           localStorage.removeItem("walletAddress");
           safeSetState(() => setHasCheckedSession(true));
         }
       } catch (err) {
-        // Error checking wallet connection, clear session
-        console.log("Error checking wallet connection, clearing session");
+        console.log("Error checking wallet, clearing session");
         localStorage.removeItem("jwtToken");
         localStorage.removeItem("walletAddress");
         safeSetState(() => setHasCheckedSession(true));
@@ -173,13 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ------------------- Connect Wallet -------------------
   const connectWallet = async () => {
-    // Check existing session first without MetaMask interaction
-    if (!hasCheckedSession) {
-      await checkExistingSession();
-      if (isConnected) return; // If session restored successfully, don't connect again
-    }
-
-    // Only proceed with MetaMask connection if no valid session exists
     safeSetState(() => setIsLoading(true));
     try {
       if (!window.ethereum || !window.ethereum.isMetaMask) {
@@ -189,8 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      if (!accounts || accounts.length === 0)
-        throw new Error("No wallet accounts found");
+      if (!accounts || accounts.length === 0) throw new Error("No wallet accounts found");
 
       const address = accounts[0];
       safeSetState(() => setWalletAddress(address));
@@ -203,8 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!nonceRes.ok) throw new Error("Failed to get nonce");
       const nonceJson = await nonceRes.json();
-      const nonce =
-        nonceJson?.data?.nonce || `Sign this to login: ${Date.now()}`;
+      const nonce = nonceJson?.data?.nonce || `Sign this to login: ${Date.now()}`;
 
       // Sign nonce with wallet
       const signature = await signMessageWithWallet(address, nonce);
@@ -235,6 +218,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("jwtToken", accessToken);
       localStorage.setItem("walletAddress", address);
 
+      // ✅ Fetch profile only now (after valid token)
+      await fetchProfile(accessToken);
+
       toast({
         title: "Wallet connected",
         description: "Successfully connected your wallet!",
@@ -264,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setWalletAddress(null);
       setToken(null);
       setIsConnected(false);
-      setHasCheckedSession(false); // Reset session check state
+      setHasCheckedSession(false);
     });
     localStorage.removeItem("walletAddress");
     localStorage.removeItem("jwtToken");

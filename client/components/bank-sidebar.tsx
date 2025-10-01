@@ -11,31 +11,31 @@ import { Users, FileText, Shield, Scale, ShoppingCart, ChevronLeft, ChevronRight
 const navigation = [
   {
     name: "Clients",
-    href: "/bank/clients",
+    href: "/bank-clients",
     icon: Users,
     description: "KYC validation and client management",
   },
   {
     name: "Orders",
-    href: "/bank/orders",
+    href: "/bank-orders",
     icon: ShoppingCart,
     description: "Active trade orders and approvals",
   },
   {
     name: "Documents",
-    href: "/bank/documents",
+    href: "/bank-documents",
     icon: FileText,
     description: "Document verification queue",
   },
   {
     name: "Escrows",
-    href: "/bank/escrows",
+    href: "/bank-escrows",
     icon: Shield,
     description: "Multisig escrow approvals",
   },
   {
     name: "Disputes",
-    href: "/bank/disputes",
+    href: "/bank-disputes",
     icon: Scale,
     description: "Arbitration and dispute resolution",
   },
