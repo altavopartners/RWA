@@ -1,0 +1,192 @@
+import {
+  TokenCreateTransaction,
+  TokenType,
+  TokenSupplyType,
+  TokenMintTransaction,
+  PrivateKey,
+  Hbar,
+} from "@hashgraph/sdk";
+import { getHederaClient } from "../config/hedera";
+
+export type CreateProductNFTInput = {
+  name: string;
+  quantity: number;
+  countryOfOrigin: string;
+  pricePerUnit: number;
+  hsCode?: string | null;
+};
+
+export async function createProductNFT(input: CreateProductNFTInput) {
+  const client = getHederaClient();
+
+  // Payer/treasury (assumes your operator is also the treasury)
+  const operatorKey = PrivateKey.fromString(process.env.HEDERA_PRIVATE_KEY!);
+  const treasuryAccountId = process.env.HEDERA_ACCOUNT_ID!;
+
+  // ------------- Supply key -------------
+  // Prefer loading from secure storage so you can mint later in another process.
+  const supplyKey = process.env.HEDERA_SUPPLY_KEY
+    ? PrivateKey.fromString(process.env.HEDERA_SUPPLY_KEY)
+    : PrivateKey.generateED25519();
+  // If you generated it here, persist it securely (KMS/secret store) for future mints.
+
+  const symbol =
+    input.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 5).toUpperCase() || "PROD";
+
+  let tokenId: string = "";
+  try {
+    const tokenCreateTx = new TokenCreateTransaction()
+      .setTokenName(`${input.name} Collection`)
+      .setTokenSymbol(symbol)
+      .setTokenType(TokenType.NonFungibleUnique)
+      .setDecimals(0)                // NFTs must be 0
+      .setInitialSupply(0)           // NFTs must start at 0
+      .setTreasuryAccountId(treasuryAccountId)
+      .setSupplyType(TokenSupplyType.Finite)
+      .setMaxSupply(Math.max(1, input.quantity))
+      .setSupplyKey(supplyKey.publicKey)       // REQUIRED for NFTs (use publicKey here)
+      .setMaxTransactionFee(new Hbar(20))
+      .freezeWith(client);
+
+    // Sign by payer/treasury (operator). Supply key not required on create.
+    const signedCreateTx = await tokenCreateTx.sign(operatorKey);
+    const createSubmit = await signedCreateTx.execute(client);
+    const createReceipt = await createSubmit.getReceipt(client);
+    tokenId = createReceipt.tokenId!.toString();
+  } catch (err) {
+    console.error("Error during token creation:", err);
+    throw err;
+  }
+
+  // // -------------------- PATCH STARTS HERE --------------------
+  // // On-chain metadata must be tiny. Store a pointer (IPFS or HTTPS).
+  // // Configure one of these env vars:
+  // //   - METADATA_CID (for IPFS): e.g. bafy...  -> ipfs://<CID>/<serial>
+  // //   - METADATA_BASE_URL (for HTTPS): e.g. https://api.example.com/nft/PRD
+  // const METADATA_CID = process.env.METADATA_CID; // optional
+  // const METADATA_BASE_URL = process.env.METADATA_BASE_URL; // optional
+  // const MAX_BYTES = 100; // safe ceiling per Hedera NFT metadata slot
+
+  // const makePointer = (serialIndex: number) => {
+  //   const serialOneBased = serialIndex + 1;
+  //   if (METADATA_CID) {
+  //     return `ipfs://${METADATA_CID}/${serialOneBased}`;
+  //   }
+  //   if (METADATA_BASE_URL) {
+  //     return `${METADATA_BASE_URL}/${serialOneBased}`;
+  //   }
+  //   // Fallback: ultra-tiny JSON with just label + unit number
+  //   // (Use only if you don't have IPFS/HTTP set up yet.)
+  //   return JSON.stringify({
+  //     p: (input.name || "PRD").slice(0, 12),
+  //     n: serialOneBased,
+  //   });
+  // };
+
+  // const makeMetadata = (i: number) => {
+  //   const pointer = makePointer(i);
+  //   const buf = Buffer.from(pointer, "utf8");
+  //   const size = buf.byteLength;
+  //   if (size > MAX_BYTES) {
+  //     throw new Error(
+  //       `NFT metadata too long (${size} bytes). Shorten your pointer (env) or switch to tiny JSON.`
+  //     );
+  //   }
+  //   return buf;
+  // };
+  // // -------------------- PATCH ENDS HERE ----------------------
+
+  // -------------------- PATCH STARTS HERE --------------------
+  // Plain-text on-chain metadata with strict byte cap.
+  // Hedera NFT metadata slot: keep at or below 100 bytes (UTF-8).
+  const MAX_BYTES = 100;
+
+  // Safely fit a UTF-8 string within max bytes, never splitting multibyte chars.
+  function fitUtf8(text: string, maxBytes: number): string {
+    const enc = Buffer.from(text, "utf8");
+    if (enc.byteLength <= maxBytes) return text;
+
+    // Reserve 1 byte for an ellipsis character if we need to truncate
+    const ellipsis = "…";
+    const maxNoEllipsis = Math.max(0, maxBytes - Buffer.from(ellipsis, "utf8").byteLength);
+
+    // Fast path: binary search cut point
+    let lo = 0, hi = text.length;
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi + 1) / 2);
+      const slice = text.slice(0, mid);
+      if (Buffer.from(slice, "utf8").byteLength <= maxNoEllipsis) lo = mid;
+      else hi = mid - 1;
+    }
+    const trimmed = text.slice(0, lo);
+    return trimmed + ellipsis;
+  }
+
+  // Build compact, human-readable metadata for each serial.
+  // Example: "n=WidgetA; c=US; p=12.50; hs=1234; u=3/250"
+  function makeTextMetadata(i: number, total: number, input: CreateProductNFTInput): Buffer {
+    const serialOneBased = i + 1;
+
+    // Short keys to conserve bytes
+    const name = (input.name ?? "").replace(/\s+/g, " ").trim();
+    const country = (input.countryOfOrigin ?? "").trim();
+    const price = Number.isFinite(input.pricePerUnit) ? input.pricePerUnit.toFixed(2) : "0.00";
+    const hs = (input.hsCode ?? "").toString().trim();
+
+    // Compose minimal but informative line
+    // Order chosen to keep most useful info up front in case truncation happens.
+    let text = `n=${name}; c=${country}; p=${price};`;
+    if (hs) text += ` hs=${hs};`;
+    text += ` u=${serialOneBased}/${Math.max(1, total)}`;
+
+    // Enforce the hard limit
+    const safe = fitUtf8(text, MAX_BYTES);
+    const size = Buffer.byteLength(safe, "utf8");
+    if (size > MAX_BYTES) {
+      // Should never happen due to fitUtf8, but keep a guard anyway.
+      throw new Error(`Metadata still exceeds ${MAX_BYTES} bytes (${size}).`);
+    }
+    return Buffer.from(safe, "utf8");
+  }
+  // -------------------- PATCH ENDS HERE ----------------------
+
+  const serials: number[] = [];
+  const mintCount = Math.max(1, input.quantity);
+  const chunkSize = 10; // Hedera allows up to 10 metadata entries per mint
+
+  // for (let i = 0; i < mintCount; i += chunkSize) {
+  //   const batch = Array.from({ length: Math.min(chunkSize, mintCount - i) }, (_, k) =>
+  //     makeMetadata(i + k)
+  //   );
+
+  // Restored loop using the new makeTextMetadata builder (keeps comments above intact)
+  for (let i = 0; i < mintCount; i += chunkSize) {
+    const batch = Array.from(
+      { length: Math.min(chunkSize, mintCount - i) },
+      (_, k) => makeTextMetadata(i + k, mintCount, input)
+    );
+
+    try {
+      const mintTx = new TokenMintTransaction()
+        .setTokenId(tokenId)
+        .setMetadata(batch)
+        .setMaxTransactionFee(new Hbar(20)) // ensure enough fee for batch mints
+        .freezeWith(client);
+
+      // // IMPORTANT: sign mint with supplyKey (payer signature via operator is added by the Client)
+
+      // Activate the signing/receipt logic (comments preserved above)
+      // const signedMintTx = await mintTx.sign(supplyKey);
+      // const mintSubmit = await signedMintTx.execute(client);
+      // const mintReceipt = await mintSubmit.getReceipt(client);
+
+      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
+      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
+    } catch (err) {
+      console.error(`Error during minting batch starting at index ${i}:`, err);
+      throw err;
+    }
+  }
+
+  return { tokenId, serials };
+}

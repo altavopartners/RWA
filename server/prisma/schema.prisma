@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/////////////////////////
+// ENUMS
+/////////////////////////
+
+enum UserType {
+  PRODUCER
+  BUYER
+  ADMIN
+  USER
+}
+
+enum KycStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT   // Buyer needs to pay
+  BANK_REVIEW        // Banks reviewing documents & approvals
+  IN_TRANSIT         // Order is shipped
+  DELIVERED          // Order delivered
+  DISPUTED           // Order in dispute
+  CANCELLED          // Order cancelled
+}
+
+
+
+enum DocumentType {
+  KYC_ID
+  BUSINESS_LICENSE
+  ORGANIC_CERT
+  HALAL_CERT
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+enum NFTStatus {
+  PENDING
+  MINTED
+  FAILED
+}
+
+/////////////////////////
+// MODELS
+/////////////////////////
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  accountId     String?  @unique
+  publicKeyHex  String?
+  nonce         String?
+
+  fullName      String?
+  email         String? @unique
+  phoneNumber   String?
+  location      String?
+
+  profileImage  String?
+  businessName  String?
+  businessDesc  String?
+
+  userType      UserType @default(USER)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  nonceIssuedAt DateTime?
+
+  // Bank / KYC integration
+  bankId     String?
+  bank       Bank?     @relation(fields: [bankId], references: [id])
+  kycStatus  KycStatus @default(PENDING)
+  kycExpiry  DateTime?
+
+  // Relations
+  authSessions AuthSession[]
+  documents    Document[]
+  dID          DID?
+  cartItems    CartItem[]
+  orders       Order[]
+  kycReviews   KycReview[]
+}
+
+model Bank {
+  id        String   @id @default(cuid())
+  name      String
+  swiftCode String?
+  country   String?
+
+  users User[]
+
+  // 🆕 Added relation fields for clarity
+  buyerOrders  Order[] @relation("BuyerBankOrders")
+  sellerOrders Order[] @relation("SellerBankOrders")
+
+  // 🆕 Added missing opposite side of BankReview relation
+  bankReviews BankReview[] @relation("BankReviews")
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  token        String
+  refreshToken String?
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DID {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  did       String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  name            String
+  quantity        Int
+  unit            String
+  pricePerUnit    Float
+  countryOfOrigin String
+  category        String
+  subcategory     String?
+  description     String
+  hsCode          String?
+  incoterm        String?
+  minOrderQty     Int?
+  leadTimeDays    Int?
+
+  images    Json?
+  documents Json?
+
+  producerWalletId String?
+  hederaTokenId    String?
+  hederaSerials    Int[]     @default([])
+  nftStatus        NFTStatus @default(PENDING)
+
+  cartItems   CartItem[]
+  orderedItem OrderedItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+model Order {
+  id          String  @id @default(cuid())
+  code        String?
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status      OrderStatus @default(AWAITING_PAYMENT)
+
+  subtotal    Decimal @db.Decimal(18, 2)
+  shipping    Decimal @default(0) @db.Decimal(18, 2)
+  total       Decimal @db.Decimal(18, 2)
+
+  escrowAddress        String?
+  hederaTransactionId  String?
+  shipmentTrackingId   String?
+
+  buyerBankApproved    Boolean @default(false)
+  sellerBankApproved   Boolean @default(false)
+
+  buyerBankId String?
+  buyerBank   Bank? @relation("BuyerBankOrders", fields: [buyerBankId], references: [id])
+
+  sellerBankId String?
+  sellerBank   Bank? @relation("SellerBankOrders", fields: [sellerBankId], references: [id])
+
+  items      OrderedItem[]
+  documents  Document[] @relation("OrderDocuments")
+  paymentReleases PaymentRelease[]
+  bankReviews BankReview[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderedItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(18, 2)
+  lineTotal Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Document {
+  id       String  @id @default(cuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id])
+  orderId  String?
+  order    Order?  @relation("OrderDocuments", fields: [orderId], references: [id])
+
+  filename String
+  cid      String
+  url      String
+
+  category       String?
+  documentType   DocumentType?
+  status         DocumentStatus @default(PENDING)
+  validatedBy    String?
+  validatedAt    DateTime?
+  rejectionReason String?
+  fileSize       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentRelease {
+  id       String  @id @default(cuid())
+  orderId  String
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  type     String  // "PARTIAL50" or "FULL100"
+  amount   Decimal @db.Decimal(18, 2)
+  released Boolean @default(false)
+  transactionId String?
+  releasedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KycReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // "approve", "reject", "request_info"
+  reason    String?
+  reviewer  String?
+  createdAt DateTime @default(now())
+}
+
+/////////////////////////
+// 🆕 NEW MODEL
+/////////////////////////
+
+model BankReview {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  bankId String
+  bank   Bank   @relation("BankReviews", fields: [bankId], references: [id]) // fixed relation with Bank
+
+  action   String   // "request_docs", "approve", "reject"
+  comments String?
+  createdAt DateTime @default(now())
+}

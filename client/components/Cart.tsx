@@ -1,0 +1,401 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Trash2, Minus, Plus, RefreshCw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
+
+export type CartItem = {
+  id: string | number;
+  name: string;
+  price: number;
+  qty: number;
+  image?: string;
+};
+
+function money(n: number) {
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "decimal",
+    maximumFractionDigits: 8,
+  }).format(n);
+
+  return (
+    <span className="flex items-center gap-1">
+      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+      <span
+        className="inline-block w-4 h-4 bg-contain bg-no-repeat flex-shrink-0"
+        style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
+      />
+      <span style={{ fontWeight: "normal" }}>BAR</span>
+    </span>
+  );
+}
+
+function joinUrl(base: string, path?: string | null) {
+  if (!path) return undefined;
+  try {
+    if (/^https?:\/\//i.test(path)) return path;
+    return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+  } catch {
+    return path || undefined;
+  }
+}
+
+function CartContent() {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+  const { isConnected } = useAuth();
+  const router = useRouter();
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+  const normalizeFromBackend = useCallback((raw: any): CartItem[] => {
+    const rows: any[] =
+      (Array.isArray(raw) && raw) ||
+      (Array.isArray(raw?.items) && raw.items) ||
+      (raw && typeof raw === "object" ? [raw] : []);
+
+    return rows.map((row) => {
+      const product = row.product || {};
+      const id =
+        row.id ??
+        row._id ??
+        row.itemId ??
+        row.productId ??
+        product.id ??
+        product._id ??
+        Math.random().toString(36).slice(2);
+
+      const name =
+        product.name ?? product.title ?? row.name ?? row.title ?? "Item";
+
+      const price =
+        Number(
+          product.pricePerUnit ??
+            product.price ??
+            row.price ??
+            row.unitPrice ??
+            0
+        ) || 0;
+
+      const qty = Math.max(1, Number(row.quantity ?? row.qty ?? 1) || 1);
+
+      const firstImagePath =
+        row.image ??
+        row.thumbnail ??
+        product.image ??
+        product.thumbnail ??
+        (Array.isArray(product.images) && product.images.length > 0
+          ? product.images[0]?.path || product.images[0]?.url
+          : undefined);
+
+      const image = joinUrl(API_BASE, firstImagePath);
+
+      return { id, name, price, qty, image } as CartItem;
+    });
+  }, []);
+
+  const passOrder = useCallback(async () => {
+    if (!isConnected) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+
+      const res = await fetch(`${API_BASE}/api/orders/pass-order`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      });
+
+      const txt = await res.text();
+      let data: any = {};
+      try {
+        data = txt ? JSON.parse(txt) : {};
+      } catch {
+        if (!res.ok) throw new Error(txt || "FFailed to pass order");
+      }
+
+      if (!res.ok) {
+        const message =
+          (typeof data?.message === "string" && data.message) ||
+          (typeof data?.error === "string" && data.error) ||
+          txt ||
+          "Failed to pass order";
+        throw new Error(message);
+      }
+
+      setItems([]);
+      window.dispatchEvent(new Event("cart:updated"));
+      router.push("/order-flow");
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Something went wrong");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, normalizeFromBackend]);
+
+  const fetchCartItems = useCallback(async () => {
+    if (!isConnected) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/carts/getmycart`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      });
+
+      const txt = await res.text();
+      let data: any = {};
+      try {
+        data = txt ? JSON.parse(txt) : {};
+      } catch {
+        if (!res.ok) throw new Error(txt || "Failed to fetch cart items");
+      }
+
+      if (!res.ok) {
+        const message =
+          (typeof data?.message === "string" && data.message) ||
+          (typeof data?.error === "string" && data.error) ||
+          txt ||
+          "Failed to fetch cart items";
+        throw new Error(message);
+      }
+
+      console.log("Cart data from server:", data);
+      const normalized = normalizeFromBackend(data);
+      setItems(normalized);
+      setLastFetchedAt(Date.now());
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Something went wrong");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, normalizeFromBackend]);
+
+  useEffect(() => {
+    if (isConnected) fetchCartItems();
+  }, [isConnected, fetchCartItems]);
+
+  const inc = useCallback(async (id: CartItem["id"]) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, qty: it.qty + 1 } : it))
+    );
+    await fetch(`${API_BASE}/api/carts/incrementitemquantity`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ cartItemId: id }),
+    });
+  }, []);
+
+  const dec = useCallback(async (id: CartItem["id"]) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, qty: Math.max(1, it.qty - 1) } : it
+      )
+    );
+    await fetch(`${API_BASE}/api/carts/decrementitemquantity`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ cartItemId: id }),
+    });
+  }, []);
+
+  const removeItem = useCallback(async (id: CartItem["id"]) => {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+    await fetch(`${API_BASE}/api/carts/removeitemfromcart`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ cartItemId: id }),
+    });
+    window.dispatchEvent(new Event("cart:updated"));
+  }, []);
+
+  const { subtotal, shipping, fees, total } = useMemo(() => {
+    const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
+    const shipping = items.length > 0 ? 5 : 0;
+    const fees = (subtotal + shipping) * 0.05; // 5% fees
+    const total = subtotal + shipping + fees;
+    return { subtotal, shipping, fees, total };
+  }, [items]);
+
+  return (
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Your Cart</h1>
+        <Button variant="outline" onClick={fetchCartItems} disabled={loading}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Items */}
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4 sm:p-6">
+            {loading ? (
+              <p className="text-muted-foreground">Loading your cart…</p>
+            ) : error ? (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="space-y-3">
+                <p className="text-muted-foreground">Your cart is empty.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {items.map((it) => (
+                  <div
+                    key={it.id}
+                    className="flex items-center gap-4 p-3 rounded-xl border border-border"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={it.image || "/placeholder.svg"}
+                      alt={it.name}
+                      className="h-16 w-16 rounded-lg object-cover border border-border"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{it.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {money(it.price)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => dec(it.id)}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="w-10 text-center tabular-nums">
+                        {it.qty}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => inc(it.id)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="w-24 text-right font-medium">
+                      {money(it.price * it.qty)}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remove item"
+                      onClick={() => removeItem(it.id)}
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ))}
+                {lastFetchedAt && (
+                  <div className="text-xs text-muted-foreground">
+                    Last updated: {new Date(lastFetchedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Summary */}
+        <Card>
+          <CardContent className="p-4 sm:p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-medium tabular-nums">
+                {money(subtotal)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Shipping</span>
+              <span className="font-medium tabular-nums">
+                {money(shipping)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Fees (5%)</span>
+              <span className="font-medium tabular-nums">{money(fees)}</span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between text-lg">
+              <span className="font-semibold">Total</span>
+              <span className="font-bold tabular-nums">{money(total)}</span>
+            </div>
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={items.length === 0 || loading}
+              onClick={passOrder}
+            >
+              Confirm Order
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function CartPage() {
+  const { isConnected } = useAuth();
+  const { triggerConnect } = useWalletConnect();
+
+  useEffect(() => {
+    if (!isConnected) {
+      triggerConnect();
+    }
+  }, [isConnected, triggerConnect]);
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Cart Access Required</h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view your cart.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <CartContent />;
+}
