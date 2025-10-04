@@ -17,6 +17,7 @@ import {
   LogOut,
   Store,
   Receipt,
+  Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +44,7 @@ export default function Navigation() {
     { href: "/producer-add-product", label: "Add Product", icon: Package },
     { href: "/order-flow", label: "Orders", icon: Receipt },
     { href: "/shipment-tracking", label: "Tracking", icon: Truck },
+    { href: "/bank-dashboard", label: "Bank", icon: Banknote },
     { href: "/profile", label: "Profile", icon: User },
   ];
 
