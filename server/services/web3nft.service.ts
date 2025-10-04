@@ -1,192 +1,274 @@
+// services/productNft.service.ts
 import {
-  TokenCreateTransaction,
-  TokenType,
-  TokenSupplyType,
-  TokenMintTransaction,
-  PrivateKey,
   Hbar,
+  PrivateKey,
+  TokenCreateTransaction,
+  TokenMintTransaction,
+  TokenSupplyType,
+  TokenType,
+  TokenUpdateTransaction,
+  AccountId,
+  Client,
 } from "@hashgraph/sdk";
 import { getHederaClient } from "../config/hedera";
 
-export type CreateProductNFTInput = {
+/* ----------------------------- Types & consts ----------------------------- */
+
+export type NFTDataInput = {
+  /** Collection/line name, e.g., "test32" */
   name: string;
+  /** Number of NFTs to mint (max supply) */
   quantity: number;
-  countryOfOrigin: string;
-  pricePerUnit: number;
-  hsCode?: string | null;
+  /** Optional token memo shown by explorers */
+  memo?: string;
+  /** Optional auto-renew: account ID that pays rent (e.g., "0.0.1234") */
+  autoRenewAccountId?: string;
+  /** Auto-renew period in seconds (e.g., 90 days = 7776000) */
+  autoRenewPeriodSeconds?: number;
 };
 
-export async function createProductNFT(input: CreateProductNFTInput) {
-  const client = getHederaClient();
+export type NFTMintInput = {
+  /** Base name used in per-serial metadata */
+  name: string;
+  /** Country of origin used in per-serial metadata */
+  countryOfOrigin?: string;
+  /** Price per unit used in metadata (2 decimals) */
+  pricePerUnit?: number;
+  /** HS code (optional) */
+  hsCode?: string | number;
+  /** How many to mint (≤ remaining max supply) */
+  quantity: number;
+};
 
-  // Payer/treasury (assumes your operator is also the treasury)
-  const operatorKey = PrivateKey.fromString(process.env.HEDERA_PRIVATE_KEY!);
-  const treasuryAccountId = process.env.HEDERA_ACCOUNT_ID!;
+export type NFTUpdateInput = {
+  /** Optional new token name (collection display name) */
+  name?: string;
+  /** Optional new symbol (A-Z0-9 up to ~5–8 chars recommended) */
+  symbol?: string;
+  /** Optional token memo */
+  memo?: string;
+  /** Optional auto-renew account id */
+  autoRenewAccountId?: string;
+  /** Optional auto-renew period seconds */
+  autoRenewPeriodSeconds?: number;
+};
 
-  // ------------- Supply key -------------
-  // Prefer loading from secure storage so you can mint later in another process.
-  const supplyKey = process.env.HEDERA_SUPPLY_KEY
-    ? PrivateKey.fromString(process.env.HEDERA_SUPPLY_KEY)
-    : PrivateKey.generateED25519();
-  // If you generated it here, persist it securely (KMS/secret store) for future mints.
+const MAX_UTF8_BYTES = 100; // keep metadata compact (Hedera best practice)
+const DEFAULT_MAX_TX_FEE_HBAR = new Hbar(20);
+const MINT_BATCH_SIZE = 10; // Hedera supports batching; 10 metadata entries per tx is a safe default
 
-  const symbol =
-    input.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 5).toUpperCase() || "PROD";
+/* -------------------------------- Helpers -------------------------------- */
 
-  let tokenId: string = "";
-  try {
-    const tokenCreateTx = new TokenCreateTransaction()
-      .setTokenName(`${input.name} Collection`)
-      .setTokenSymbol(symbol)
-      .setTokenType(TokenType.NonFungibleUnique)
-      .setDecimals(0)                // NFTs must be 0
-      .setInitialSupply(0)           // NFTs must start at 0
-      .setTreasuryAccountId(treasuryAccountId)
-      .setSupplyType(TokenSupplyType.Finite)
-      .setMaxSupply(Math.max(1, input.quantity))
-      .setSupplyKey(supplyKey.publicKey)       // REQUIRED for NFTs (use publicKey here)
-      .setMaxTransactionFee(new Hbar(20))
-      .freezeWith(client);
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env var ${name}`);
+  return v;
+}
 
-    // Sign by payer/treasury (operator). Supply key not required on create.
-    const signedCreateTx = await tokenCreateTx.sign(operatorKey);
-    const createSubmit = await signedCreateTx.execute(client);
-    const createReceipt = await createSubmit.getReceipt(client);
-    tokenId = createReceipt.tokenId!.toString();
-  } catch (err) {
-    console.error("Error during token creation:", err);
-    throw err;
+function getOperatorKey(): PrivateKey {
+  return PrivateKey.fromString(requireEnv("HEDERA_PRIVATE_KEY"));
+}
+
+function getTreasuryAccountId(): string {
+  return requireEnv("HEDERA_ACCOUNT_ID");
+}
+
+/** Trim string to fit byte budget in UTF-8 without breaking multibyte chars */
+function fitUtf8(input: string, maxBytes: number): string {
+  const buf = Buffer.from(input, "utf8");
+  if (buf.byteLength <= maxBytes) return input;
+
+  // binary search for max length that fits
+  let lo = 0,
+    hi = input.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    const b = Buffer.byteLength(input.slice(0, mid), "utf8");
+    if (b <= maxBytes) lo = mid;
+    else hi = mid - 1;
   }
+  return input.slice(0, lo);
+}
 
-  // // -------------------- PATCH STARTS HERE --------------------
-  // // On-chain metadata must be tiny. Store a pointer (IPFS or HTTPS).
-  // // Configure one of these env vars:
-  // //   - METADATA_CID (for IPFS): e.g. bafy...  -> ipfs://<CID>/<serial>
-  // //   - METADATA_BASE_URL (for HTTPS): e.g. https://api.example.com/nft/PRD
-  // const METADATA_CID = process.env.METADATA_CID; // optional
-  // const METADATA_BASE_URL = process.env.METADATA_BASE_URL; // optional
-  // const MAX_BYTES = 100; // safe ceiling per Hedera NFT metadata slot
+function safeSymbolFromName(name: string, fallback = "PROD"): string {
+  const s = (name || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .substring(0, 5)
+    .toUpperCase();
+  return s || fallback;
+}
 
-  // const makePointer = (serialIndex: number) => {
-  //   const serialOneBased = serialIndex + 1;
-  //   if (METADATA_CID) {
-  //     return `ipfs://${METADATA_CID}/${serialOneBased}`;
-  //   }
-  //   if (METADATA_BASE_URL) {
-  //     return `${METADATA_BASE_URL}/${serialOneBased}`;
-  //   }
-  //   // Fallback: ultra-tiny JSON with just label + unit number
-  //   // (Use only if you don't have IPFS/HTTP set up yet.)
-  //   return JSON.stringify({
-  //     p: (input.name || "PRD").slice(0, 12),
-  //     n: serialOneBased,
-  //   });
-  // };
+function mustPositiveInt(v: number, field: string): number {
+  if (!Number.isFinite(v) || v <= 0) throw new Error(`${field} must be > 0`);
+  return Math.floor(v);
+}
 
-  // const makeMetadata = (i: number) => {
-  //   const pointer = makePointer(i);
-  //   const buf = Buffer.from(pointer, "utf8");
-  //   const size = buf.byteLength;
-  //   if (size > MAX_BYTES) {
-  //     throw new Error(
-  //       `NFT metadata too long (${size} bytes). Shorten your pointer (env) or switch to tiny JSON.`
-  //     );
-  //   }
-  //   return buf;
-  // };
-  // // -------------------- PATCH ENDS HERE ----------------------
+/* ----------------------------- Create + Mint ------------------------------ */
 
-  // -------------------- PATCH STARTS HERE --------------------
-  // Plain-text on-chain metadata with strict byte cap.
-  // Hedera NFT metadata slot: keep at or below 100 bytes (UTF-8).
-  const MAX_BYTES = 100;
+export const CreateNftService = {
+  /**
+   * Creates an NFT collection and (optionally) mints the entire supply with compact on-chain metadata.
+   * Returns the tokenId and (if a mint happened) the array of serials.
+   */
+  async createFull(
+    data: NFTDataInput,
+    mintInput?: NFTMintInput
+  ): Promise<{ tokenId: string; serials?: number[] }> {
+    const client: Client = getHederaClient();
+    const operatorKey = getOperatorKey();
+    const treasuryAccountId = getTreasuryAccountId();
 
-  // Safely fit a UTF-8 string within max bytes, never splitting multibyte chars.
-  function fitUtf8(text: string, maxBytes: number): string {
-    const enc = Buffer.from(text, "utf8");
-    if (enc.byteLength <= maxBytes) return text;
+    // You should use a persisted SUPPLY KEY you control; don’t generate one at runtime unless you store it.
+    const supplyKeyStr = "3030020100300706052b8104000a04220420f00b73add472af9375f7f38763b3e9fe35acd6afd1adcbb0806de29911171514";
+    const supplyKey = PrivateKey.fromString(supplyKeyStr);
 
-    // Reserve 1 byte for an ellipsis character if we need to truncate
-    const ellipsis = "…";
-    const maxNoEllipsis = Math.max(0, maxBytes - Buffer.from(ellipsis, "utf8").byteLength);
-
-    // Fast path: binary search cut point
-    let lo = 0, hi = text.length;
-    while (lo < hi) {
-      const mid = Math.floor((lo + hi + 1) / 2);
-      const slice = text.slice(0, mid);
-      if (Buffer.from(slice, "utf8").byteLength <= maxNoEllipsis) lo = mid;
-      else hi = mid - 1;
-    }
-    const trimmed = text.slice(0, lo);
-    return trimmed + ellipsis;
-  }
-
-  // Build compact, human-readable metadata for each serial.
-  // Example: "n=WidgetA; c=US; p=12.50; hs=1234; u=3/250"
-  function makeTextMetadata(i: number, total: number, input: CreateProductNFTInput): Buffer {
-    const serialOneBased = i + 1;
-
-    // Short keys to conserve bytes
-    const name = (input.name ?? "").replace(/\s+/g, " ").trim();
-    const country = (input.countryOfOrigin ?? "").trim();
-    const price = Number.isFinite(input.pricePerUnit) ? input.pricePerUnit.toFixed(2) : "0.00";
-    const hs = (input.hsCode ?? "").toString().trim();
-
-    // Compose minimal but informative line
-    // Order chosen to keep most useful info up front in case truncation happens.
-    let text = `n=${name}; c=${country}; p=${price};`;
-    if (hs) text += ` hs=${hs};`;
-    text += ` u=${serialOneBased}/${Math.max(1, total)}`;
-
-    // Enforce the hard limit
-    const safe = fitUtf8(text, MAX_BYTES);
-    const size = Buffer.byteLength(safe, "utf8");
-    if (size > MAX_BYTES) {
-      // Should never happen due to fitUtf8, but keep a guard anyway.
-      throw new Error(`Metadata still exceeds ${MAX_BYTES} bytes (${size}).`);
-    }
-    return Buffer.from(safe, "utf8");
-  }
-  // -------------------- PATCH ENDS HERE ----------------------
-
-  const serials: number[] = [];
-  const mintCount = Math.max(1, input.quantity);
-  const chunkSize = 10; // Hedera allows up to 10 metadata entries per mint
-
-  // for (let i = 0; i < mintCount; i += chunkSize) {
-  //   const batch = Array.from({ length: Math.min(chunkSize, mintCount - i) }, (_, k) =>
-  //     makeMetadata(i + k)
-  //   );
-
-  // Restored loop using the new makeTextMetadata builder (keeps comments above intact)
-  for (let i = 0; i < mintCount; i += chunkSize) {
-    const batch = Array.from(
-      { length: Math.min(chunkSize, mintCount - i) },
-      (_, k) => makeTextMetadata(i + k, mintCount, input)
-    );
+    const maxSupply = mustPositiveInt(data.quantity, "quantity");
+    const symbol = safeSymbolFromName(data.name);
 
     try {
-      const mintTx = new TokenMintTransaction()
-        .setTokenId(tokenId)
-        .setMetadata(batch)
-        .setMaxTransactionFee(new Hbar(20)) // ensure enough fee for batch mints
-        .freezeWith(client);
+      let tx = new TokenCreateTransaction()
+        .setTokenName(`${data.name} Collection`)
+        .setTokenSymbol(symbol)
+        .setTokenType(TokenType.NonFungibleUnique)
+        .setDecimals(0)
+        .setInitialSupply(0)
+        .setTreasuryAccountId(treasuryAccountId)
+        .setSupplyType(TokenSupplyType.Finite)
+        .setMaxSupply(maxSupply)
+        .setSupplyKey(supplyKey.publicKey)
+        .setMaxTransactionFee(DEFAULT_MAX_TX_FEE_HBAR);
 
-      // // IMPORTANT: sign mint with supplyKey (payer signature via operator is added by the Client)
+      if (data.memo) tx = tx.setTokenMemo(data.memo);
+      if (data.autoRenewAccountId) {
+        tx = tx.setAutoRenewAccountId(AccountId.fromString(data.autoRenewAccountId));
+      }
+      if (data.autoRenewPeriodSeconds) {
+        tx = tx.setAutoRenewPeriod(data.autoRenewPeriodSeconds);
+      }
 
-      // Activate the signing/receipt logic (comments preserved above)
-      // const signedMintTx = await mintTx.sign(supplyKey);
-      // const mintSubmit = await signedMintTx.execute(client);
-      // const mintReceipt = await mintSubmit.getReceipt(client);
+      const signed = await tx.freezeWith(client).sign(operatorKey);
+      const submit = await signed.execute(client);
+      const receipt = await submit.getReceipt(client);
+      const tokenId = receipt.tokenId?.toString();
+      if (!tokenId) throw new Error("Token creation returned no tokenId.");
 
-      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
-      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
+      // Optional mint right away
+      if (!mintInput) return { tokenId };
+
+      const serials = await MintProductNftService.mint(tokenId, mintInput);
+      return { tokenId, serials };
     } catch (err) {
-      console.error(`Error during minting batch starting at index ${i}:`, err);
+      console.error("Error during NFT collection creation:", err);
       throw err;
     }
-  }
+  },
+};
 
-  return { tokenId, serials };
-}
+/* --------------------------------- Mint ---------------------------------- */
+
+export const MintProductNftService = {
+  /**
+   * Mints `input.quantity` NFTs for an existing tokenId using SUPPLY KEY.
+   * Each serial receives a compact UTF-8 metadata string:
+   *   n=<name>; c=<country>; p=<price>; hs=<hs>; u=<i>/<total>
+   */
+  async mint(tokenId: string, input: NFTMintInput): Promise<number[]> {
+    if (!tokenId) throw new Error("tokenId is required.");
+
+    const client: Client = getHederaClient();
+    const supplyKeyStr = "3030020100300706052b8104000a04220420f00b73add472af9375f7f38763b3e9fe35acd6afd1adcbb0806de29911171514";
+    const supplyKey = PrivateKey.fromString(supplyKeyStr);
+
+    const mintCount = mustPositiveInt(input.quantity, "quantity");
+    const chunkSize = MINT_BATCH_SIZE;
+
+    const name = (input.name ?? "").replace(/\s+/g, " ").trim();
+    const country = (input.countryOfOrigin ?? "").trim();
+    const price =
+      typeof input.pricePerUnit === "number" && Number.isFinite(input.pricePerUnit)
+        ? input.pricePerUnit.toFixed(2)
+        : "0.00";
+    const hs = (input.hsCode ?? "").toString().trim();
+
+    const makeTextMetadata = (i: number): Buffer => {
+      const serialOneBased = i + 1;
+      let text = `n=${name}; c=${country}; p=${price};`;
+      if (hs) text += ` hs=${hs};`;
+      text += ` u=${serialOneBased}/${mintCount}`;
+      const safe = fitUtf8(text, MAX_UTF8_BYTES);
+      const size = Buffer.byteLength(safe, "utf8");
+      if (size > MAX_UTF8_BYTES) {
+        throw new Error(`Metadata exceeds ${MAX_UTF8_BYTES} bytes (${size}).`);
+      }
+      return Buffer.from(safe, "utf8");
+    };
+
+    const serials: number[] = [];
+
+    for (let i = 0; i < mintCount; i += chunkSize) {
+      const batch = Array.from(
+        { length: Math.min(chunkSize, mintCount - i) },
+        (_, k) => makeTextMetadata(i + k)
+      );
+
+      try {
+        const mintTx = new TokenMintTransaction()
+          .setTokenId(tokenId)
+          .setMetadata(batch)
+          .setMaxTransactionFee(DEFAULT_MAX_TX_FEE_HBAR)
+          .freezeWith(client);
+
+        const signedMintTx = await mintTx.sign(supplyKey);
+        const mintSubmit = await signedMintTx.execute(client);
+        const mintReceipt = await mintSubmit.getReceipt(client);
+
+        for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
+      } catch (err) {
+        console.error(`Error during minting batch starting at index ${i}:`, err);
+        throw err;
+      }
+    }
+
+    return serials;
+  },
+};
+
+/* --------------------------------- Edit ---------------------------------- */
+
+export const EditNftService = {
+  /**
+   * Updates editable, token-level fields for an existing NFT collection.
+   * NOTE: Individual NFT **metadata for a given serial is immutable** on Hedera.
+   */
+  async updateByTokenId(tokenId: string, updates: NFTUpdateInput): Promise<{ tokenId: string }> {
+    if (!tokenId) throw new Error("tokenId is required.");
+
+    const client: Client = getHederaClient();
+    const operatorKey = getOperatorKey();
+
+    // Build update tx
+    let tx = new TokenUpdateTransaction()
+      .setTokenId(tokenId)
+      .setMaxTransactionFee(DEFAULT_MAX_TX_FEE_HBAR);
+
+    if (updates.name) tx = tx.setTokenName(updates.name);
+    if (updates.symbol) tx = tx.setTokenSymbol(updates.symbol);
+    if (typeof updates.memo === "string") tx = tx.setTokenMemo(updates.memo);
+    if (updates.autoRenewAccountId) {
+      tx = tx.setAutoRenewAccountId(AccountId.fromString(updates.autoRenewAccountId));
+    }
+    if (updates.autoRenewPeriodSeconds) {
+      tx = tx.setAutoRenewPeriod(updates.autoRenewPeriodSeconds);
+    }
+
+    try {
+      const signed = await tx.freezeWith(client).sign(operatorKey);
+      const submit = await signed.execute(client);
+      await submit.getReceipt(client);
+      return { tokenId };
+    } catch (err) {
+      console.error(`Error updating token ${tokenId}:`, err);
+      throw err;
+    }
+  },
+};

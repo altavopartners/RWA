@@ -6,9 +6,15 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Users, FileText, Shield, Scale, ShoppingCart, ChevronLeft, ChevronRight, Building2 } from "lucide-react"
+import { Users, FileText, Shield, Scale, ShoppingCart, ChevronLeft, ChevronRight, Building2, LayoutDashboard } from "lucide-react"
 
 const navigation = [
+  {
+    name: "Dashboard",
+    href: "/bank-dashboard",
+    icon: LayoutDashboard,
+    description: "Dashboard",
+  },
   {
     name: "Clients",
     href: "/bank-clients",

@@ -50,7 +50,7 @@ const ConnectWallet = () => {
           <div className="space-y-3 text-left">
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-success" />
-              <span className="text-sm">Secure blockchain authentication</span>
+              <span className="text-sm">Secure authentication</span>
             </div>
             <div className="flex items-center gap-3">
               <Globe className="w-5 h-5 text-success" />

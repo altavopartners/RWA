@@ -1,6 +1,8 @@
 // services/order.service.ts
 import prisma from "../lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
+import { includes } from "zod";
+import { CreateNftService, MintProductNftService } from "./web3nft.service";
 
 class CheckoutError extends Error {
   status: number;
@@ -267,6 +269,7 @@ export async function updateMyOrderStatusService({
 }) {
   const order = await prisma.order.findFirst({
     where: { id, userId }, // protection: must belong to requester
+    include: { items: { include: { product: true } } },
   });
 
   if (!order) {
@@ -277,4 +280,19 @@ export async function updateMyOrderStatusService({
     where: { id },
     data: { status },
   });
+
+  if (status === OrderStatus.PAID) {
+    for (const orderItem of order.items) {
+      const product = await prisma.product.findUnique({
+        where: { id: orderItem.productId },
+      });
+      if (product) {
+        const parentProductId = product.id;
+        //await decreaseNFTParentCreateNftChild({ id: parentProductId, quantity: orderItem.quantity });
+      }
+    }
+  }
+
 }
+
+

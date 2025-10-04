@@ -271,7 +271,7 @@ export default function PaymentSection({ order }: { order: any }) {
             {paying ? "Processing..." : "Proceed to Pay"}
           </Button>
           {payError && <pre className="text-xs text-destructive text-left whitespace-pre-wrap break-words mt-2">{payError}</pre>}
-          {process.env.NODE_ENV !== "production" && preview && (
+          {process.env.NODE_ENV !== "production" && payError && preview && (
             <details className="text-left mx-auto mt-2 max-w-xl">
               <summary className="cursor-pointer text-sm underline">Debug preview</summary>
               <pre className="text-xs whitespace-pre-wrap break-words">

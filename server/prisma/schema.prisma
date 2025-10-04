@@ -208,6 +208,12 @@ model OrderedItem {
   // images          Json?
   // documents       Json?
 
+  
+  // NFT fields
+  hederaTokenId    String?
+  hederaSerials    Int[]     @default([])
+  nftStatus  NFTStatus @default(PENDING)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

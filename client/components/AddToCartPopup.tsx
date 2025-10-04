@@ -144,7 +144,7 @@ export default function AddToCartPopup({
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              ${Number(product?.pricePerUnit || 0).toLocaleString()}/{unit}
+              {Number(product?.pricePerUnit || 0).toLocaleString()}/{unit} HBAR
             </p>
             <p className="text-xs text-muted-foreground">
               Available: {available.toLocaleString()} {unit} • Min:{" "}
@@ -214,7 +214,7 @@ export default function AddToCartPopup({
           <div className="flex items-center justify-between border-t border-border pt-4">
             <span className="text-muted-foreground">Total</span>
             <span className="text-xl font-semibold">
-              ${total.toLocaleString()}
+              {total.toLocaleString()} HBAR
             </span>
           </div>
 
