@@ -8,9 +8,13 @@ import documentRoutes from "./document.routes";
 import profileRoutes from "./profile.routes";
 import sessionRoutes from "./session.routes";
 import web3nftRoutes from "./web3nft.routes";
+import bankRoutes from "./bank.routes";
 
 const router = Router();
 
+
+// Bank routes
+router.use("/bank", bankRoutes);
 
 // Web3 NFT routes
 router.use("/web3nft", web3nftRoutes);

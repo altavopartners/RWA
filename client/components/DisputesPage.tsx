@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { BankHeader } from "@/components/bank-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useMemo, useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { BankHeader } from "@/components/bank-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -17,153 +18,157 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Search,
-  Eye,
-  Scale,
-  Clock,
-  CheckCircle,
-  Building2,
-  User,
-  FileText,
-  Calendar,
-  AlertTriangle,
-  Gavel,
-} from "lucide-react"
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
+import { Search, Eye, Scale, Clock, CheckCircle, Building2, User, FileText, Calendar, AlertTriangle, Gavel } from "lucide-react";
 
-// Mock data - in real app this would come from API
-const mockDisputes = [
-  {
-    id: "1",
-    orderId: "ORD-2024-001",
-    initiatedBy: "Buyer",
-    reason: "Quality does not match specifications",
-    status: "Open",
-    priority: "High",
-    amount: 2500000,
-    currency: "HBAR",
-    createdAt: "2024-01-20T09:30:00Z",
-    producer: {
-      name: "ABC Trading Corp",
-      type: "Producer",
-    },
-    buyer: {
-      name: "Global Imports Ltd",
-      type: "Buyer",
-    },
-    evidence: [
-      {
-        id: "1",
-        submittedBy: "Buyer",
-        documentCid: "QmX1Y2Z3...",
-        description: "Quality inspection report showing defects",
-        createdAt: "2024-01-20T10:15:00Z",
-        fileName: "quality_inspection_report.pdf",
-      },
-      {
-        id: "2",
-        submittedBy: "Producer",
-        documentCid: "QmA1B2C3...",
-        description: "Original quality certificates and manufacturing records",
-        createdAt: "2024-01-20T14:30:00Z",
-        fileName: "manufacturing_certificates.pdf",
-      },
-      {
-        id: "3",
-        submittedBy: "Buyer",
-        documentCid: "QmD4E5F6...",
-        description: "Photos of received goods showing quality issues",
-        createdAt: "2024-01-21T08:45:00Z",
-        fileName: "product_photos.zip",
-      },
-    ],
-    rulings: [],
-  },
-  {
-    id: "2",
-    orderId: "ORD-2024-002",
-    initiatedBy: "Producer",
-    reason: "Payment delay beyond agreed terms",
-    status: "UnderReview",
-    priority: "Medium",
-    amount: 1800000,
-    currency: "HBAR",
-    createdAt: "2024-01-19T11:20:00Z",
-    producer: {
-      name: "Premium Commodities Inc",
-      type: "Producer",
-    },
-    buyer: {
-      name: "European Traders SA",
-      type: "Buyer",
-    },
-    evidence: [
-      {
-        id: "4",
-        submittedBy: "Producer",
-        documentCid: "QmG7H8I9...",
-        description: "Delivery confirmation and shipping documents",
-        createdAt: "2024-01-19T12:00:00Z",
-        fileName: "delivery_confirmation.pdf",
-      },
-      {
-        id: "5",
-        submittedBy: "Buyer",
-        documentCid: "QmJ1K2L3...",
-        description: "Bank records showing payment processing delays",
-        createdAt: "2024-01-19T16:30:00Z",
-        fileName: "payment_records.pdf",
-      },
-    ],
-    rulings: [],
-  },
-  {
-    id: "3",
-    orderId: "ORD-2024-003",
-    initiatedBy: "Buyer",
-    reason: "Goods not delivered within specified timeframe",
-    status: "Resolved",
-    priority: "Low",
-    amount: 950000,
-    currency: "HBAR",
-    createdAt: "2024-01-15T14:10:00Z",
-    producer: {
-      name: "International Suppliers Co",
-      type: "Producer",
-    },
-    buyer: {
-      name: "Retail Chain Ltd",
-      type: "Buyer",
-    },
-    evidence: [
-      {
-        id: "6",
-        submittedBy: "Buyer",
-        documentCid: "QmM4N5O6...",
-        description: "Contract showing agreed delivery dates",
-        createdAt: "2024-01-15T15:00:00Z",
-        fileName: "original_contract.pdf",
-      },
-    ],
-    rulings: [
-      {
-        id: "1",
-        arbitratorId: "ARB001",
-        arbitratorName: "Senior Compliance Officer",
-        ruling: "PartialRefund",
-        amount: 200000,
-        reasoning: "Delivery delay justified partial compensation. Producer provided valid reasons for delay.",
-        createdAt: "2024-01-18T10:30:00Z",
-      },
-    ],
-  },
-]
+/**
+ * =============================
+ * API URL & TYPES
+ * =============================
+ */
+//const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/bank/"; // <-- set in .env
+const API_URL = "http://localhost:4000/api/bank/"; // <-- set in .env
 
+export type Evidence = {
+  id: string;
+  submittedBy: "Buyer" | "Producer" | string;
+  documentCid?: string | null;
+  description?: string | null;
+  createdAt: string;
+  fileName?: string | null;
+  downloadUrl?: string | null;
+};
+
+export type Ruling = {
+  id: string;
+  arbitratorId: string;
+  arbitratorName: string;
+  ruling: "PartialRefund" | "FullRefund" | "ReleaseFunds" | string;
+  amount?: number | null;
+  reasoning: string;
+  createdAt: string;
+};
+
+export type Dispute = {
+  id: string;
+  orderId: string;
+  initiatedBy: "Buyer" | "Producer" | string;
+  reason: string;
+  status: "Open" | "UnderReview" | "Resolved" | string;
+  priority: "High" | "Medium" | "Low" | string;
+  amount: number;
+  currency: string;
+  createdAt: string;
+  producer: { name: string; type?: string };
+  buyer: { name: string; type?: string };
+  evidence: Evidence[];
+  rulings: Ruling[];
+};
+
+export type PaginatedResponse<T> = { data: T[]; page: number; pageSize: number; total: number };
+export type DisputesQuery = {
+  search?: string;
+  status?: "all" | "open" | "underreview" | "resolved";
+  priority?: "all" | "high" | "medium" | "low";
+  page?: number;
+  pageSize?: number;
+};
+
+export type RuleBody = { ruling: "PartialRefund" | "FullRefund" | "ReleaseFunds"; amount?: number | null; reasoning: string };
+
+export type DisputesStats = {
+  total: number;
+  open: number;
+  underreview: number;
+  resolved: number;
+  atStakeHBAR?: number;
+};
+
+/**
+ * =============================
+ * NORMALIZER & API HELPERS
+ * =============================
+ */
+function normalizeDispute(row: any): Dispute {
+  return {
+    id: String(row.id ?? row.pk ?? crypto.randomUUID()),
+    orderId: String(row.orderId ?? row.order_id ?? row.orderCode ?? ""),
+    initiatedBy: String(row.initiatedBy ?? row.initiator ?? "Buyer"),
+    reason: String(row.reason ?? row.description ?? ""),
+    status: String(row.status ?? "Open"),
+    priority: String(row.priority ?? "Medium"),
+    amount: Number(row.amount ?? 0),
+    currency: String(row.currency ?? "HBAR"),
+    createdAt: String(row.createdAt ?? row.created_at ?? new Date().toISOString()),
+    producer: { name: String(row.producer?.name ?? row.producer_name ?? ""), type: row.producer?.type ?? "Producer" },
+    buyer: { name: String(row.buyer?.name ?? row.buyer_name ?? ""), type: row.buyer?.type ?? "Buyer" },
+    evidence: (row.evidence ?? []).map((e: any) => ({
+      id: String(e.id ?? crypto.randomUUID()),
+      submittedBy: String(e.submittedBy ?? e.by ?? e.role ?? "Buyer"),
+      documentCid: e.documentCid ?? e.cid ?? e.ipfsHash ?? null,
+      description: e.description ?? e.note ?? null,
+      createdAt: String(e.createdAt ?? e.created_at ?? new Date().toISOString()),
+      fileName: e.fileName ?? e.filename ?? null,
+      downloadUrl: e.downloadUrl ?? e.url ?? e.path ?? null,
+    })),
+    rulings: (row.rulings ?? []).map((r: any) => ({
+      id: String(r.id ?? crypto.randomUUID()),
+      arbitratorId: String(r.arbitratorId ?? r.arb_id ?? ""),
+      arbitratorName: String(r.arbitratorName ?? r.arb_name ?? "Arbitrator"),
+      ruling: String(r.ruling ?? r.decision ?? "PartialRefund"),
+      amount: r.amount ?? null,
+      reasoning: String(r.reasoning ?? r.reason ?? ""),
+      createdAt: String(r.createdAt ?? r.created_at ?? new Date().toISOString()),
+    })),
+  } as Dispute;
+}
+
+async function fetchDisputes(q: DisputesQuery, signal?: AbortSignal): Promise<PaginatedResponse<Dispute>> {
+  const params = new URLSearchParams();
+  if (q.search) params.set("search", q.search);
+  if (q.status && q.status !== "all") params.set("status", q.status);
+  if (q.priority && q.priority !== "all") params.set("priority", q.priority);
+  if (q.page) params.set("page", String(q.page));
+  if (q.pageSize) params.set("pageSize", String(q.pageSize));
+
+  const res = await fetch(`${API_URL}/disputes?${params.toString()}`, { signal, credentials: "include" });
+  if (!res.ok) throw new Error(await res.text());
+  const json = await res.json();
+  const rows = (Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : []) as any[];
+  const page = json.page ?? 1;
+  const pageSize = json.pageSize ?? rows.length;
+  const total = json.total ?? rows.length;
+  return { data: rows.map(normalizeDispute), page, pageSize, total };
+}
+
+async function fetchDisputeStats(signal?: AbortSignal): Promise<DisputesStats> {
+  const res = await fetch(`${API_URL}/disputes/stats`, { signal, credentials: "include" });
+  if (!res.ok) return { total: 0, open: 0, underreview: 0, resolved: 0, atStakeHBAR: 0 };
+  return res.json();
+}
+
+async function postRuling(id: string, body: RuleBody): Promise<Dispute> {
+  const res = await fetch(`${API_URL}/disputes/${encodeURIComponent(id)}/ruling`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const json = await res.json();
+  return normalizeDispute(json?.data ?? json);
+}
+
+/**
+ * =============================
+ * UI HELPERS
+ * =============================
+ */
 function getStatusBadge(status: string) {
   switch (status) {
     case "Open":
@@ -172,40 +177,54 @@ function getStatusBadge(status: string) {
           <AlertTriangle className="w-3 h-3 mr-1" />
           Open
         </Badge>
-      )
+      );
     case "UnderReview":
       return (
         <Badge variant="outline">
           <Clock className="w-3 h-3 mr-1" />
           Under Review
         </Badge>
-      )
+      );
     case "Resolved":
       return (
         <Badge className="bg-chart-5 text-white">
           <CheckCircle className="w-3 h-3 mr-1" />
           Resolved
         </Badge>
-      )
+      );
     default:
-      return <Badge variant="secondary">{status}</Badge>
+      return <Badge variant="secondary">{status}</Badge>;
   }
 }
 
 function getPriorityBadge(priority: string) {
   switch (priority) {
     case "High":
-      return <Badge variant="destructive">High</Badge>
+      return <Badge variant="destructive">High</Badge>;
     case "Medium":
-      return <Badge variant="outline">Medium</Badge>
+      return <Badge variant="outline">Medium</Badge>;
     case "Low":
-      return <Badge variant="secondary">Low</Badge>
+      return <Badge variant="secondary">Low</Badge>;
     default:
-      return <Badge variant="secondary">{priority}</Badge>
+      return <Badge variant="secondary">{priority}</Badge>;
   }
 }
 
-function DisputeDetailsDialog({ dispute }: { dispute: any }) {
+function useDebouncedValue<T>(value: T, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+/**
+ * =============================
+ * DIALOGS
+ * =============================
+ */
+function DisputeDetailsDialog({ dispute }: { dispute: Dispute }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -265,9 +284,7 @@ function DisputeDetailsDialog({ dispute }: { dispute: any }) {
                   </div>
                   <p className="text-sm text-muted-foreground">Buyer</p>
                   {dispute.initiatedBy === "Buyer" && (
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      Dispute Initiator
-                    </Badge>
+                    <Badge variant="outline" className="mt-1 text-xs">Dispute Initiator</Badge>
                   )}
                 </div>
               </div>
@@ -291,47 +308,50 @@ function DisputeDetailsDialog({ dispute }: { dispute: any }) {
           <TabsContent value="evidence">
             <ScrollArea className="h-[400px]">
               <div className="space-y-4">
-                {dispute.evidence.map((evidence: any, index: number) => (
-                  <div key={evidence.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {evidence.submittedBy === "Producer" ? (
-                            <Building2 className="w-4 h-4" />
-                          ) : (
-                            <User className="w-4 h-4" />
-                          )}
-                          <span className="font-medium">{evidence.submittedBy}</span>
+                {dispute.evidence.map((evidence, index) => {
+                  const href = evidence.downloadUrl
+                    ? evidence.downloadUrl.startsWith("http")
+                      ? evidence.downloadUrl
+                      : `${API_URL.replace(/\/$/, "")}/${evidence.downloadUrl.replace(/^\//, "")}`
+                    : undefined;
+                  return (
+                    <div key={evidence.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {evidence.submittedBy === "Producer" ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                            <span className="font-medium">{evidence.submittedBy}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">Evidence #{index + 1}</Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          Evidence #{index + 1}
-                        </Badge>
+                        <div className="text-xs text-muted-foreground">{new Date(evidence.createdAt).toLocaleString()}</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(evidence.createdAt).toLocaleString()}
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <p className="text-sm">{evidence.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <FileText className="w-3 h-3" />
-                        <span>{evidence.fileName}</span>
-                        <span>•</span>
-                        <span className="font-mono">{evidence.documentCid}</span>
+                      <div className="space-y-2">
+                        <p className="text-sm">{evidence.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <FileText className="w-3 h-3" />
+                          <span>{evidence.fileName}</span>
+                          {evidence.documentCid && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono break-all">{evidence.documentCid}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex gap-2">
+                        <Button asChild variant="outline" size="sm" disabled={!href}>
+                          <a href={href} target="_blank" rel="noreferrer">View Document</a>
+                        </Button>
+                        <Button asChild variant="ghost" size="sm" disabled={!href}>
+                          <a href={href} target="_blank" rel="noreferrer">Download</a>
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="mt-3 flex gap-2">
-                      <Button variant="outline" size="sm">
-                        View Document
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -339,7 +359,7 @@ function DisputeDetailsDialog({ dispute }: { dispute: any }) {
           {dispute.rulings.length > 0 && (
             <TabsContent value="rulings">
               <div className="space-y-4">
-                {dispute.rulings.map((ruling: any) => (
+                {dispute.rulings.map((ruling) => (
                   <div key={ruling.id} className="border rounded-lg p-4 bg-muted/50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -355,7 +375,7 @@ function DisputeDetailsDialog({ dispute }: { dispute: any }) {
                           <Label className="text-xs">Ruling</Label>
                           <p className="text-sm font-medium">{ruling.ruling.replace(/([A-Z])/g, " $1").trim()}</p>
                         </div>
-                        {ruling.amount && (
+                        {typeof ruling.amount === "number" && (
                           <div>
                             <Label className="text-xs">Amount</Label>
                             <p className="text-sm font-medium">{ruling.amount.toLocaleString()} HBAR</p>
@@ -379,34 +399,30 @@ function DisputeDetailsDialog({ dispute }: { dispute: any }) {
         </Tabs>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling: any) => void }) {
-  const [ruling, setRuling] = useState<string>("")
-  const [amount, setAmount] = useState("")
-  const [reasoning, setReasoning] = useState("")
-  const [isOpen, setIsOpen] = useState(false)
+function ArbitrationDialog({ dispute, onRule, pending }: { dispute: Dispute; onRule: (ruling: RuleBody) => void; pending: boolean }) {
+  const [ruling, setRuling] = useState<"PartialRefund" | "FullRefund" | "ReleaseFunds" | "">("");
+  const [amount, setAmount] = useState("");
+  const [reasoning, setReasoning] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = () => {
-    const rulingData = {
-      ruling,
-      amount: amount ? Number.parseFloat(amount) : null,
-      reasoning,
-    }
-    onRule(rulingData)
-    setIsOpen(false)
-    setRuling("")
-    setAmount("")
-    setReasoning("")
-  }
+    const body: RuleBody = { ruling: ruling as any, amount: ruling === "FullRefund" ? dispute.amount : amount ? Number(amount) : null, reasoning };
+    onRule(body);
+    setIsOpen(false);
+    setRuling("");
+    setAmount("");
+    setReasoning("");
+  };
 
-  const isResolved = dispute.status === "Resolved"
+  const isResolved = dispute.status === "Resolved";
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(o) => (pending ? null : setIsOpen(o))}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isResolved}>
+        <Button variant="outline" size="sm" disabled={isResolved || pending}>
           {isResolved ? "Resolved" : "Issue Ruling"}
         </Button>
       </DialogTrigger>
@@ -417,13 +433,10 @@ function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling:
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Dispute Summary */}
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">Dispute Amount</span>
-              <span className="text-lg font-semibold">
-                {dispute.amount.toLocaleString()} {dispute.currency}
-              </span>
+              <span className="text-lg font-semibold">{dispute.amount.toLocaleString()} {dispute.currency}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Initiated by</span>
@@ -434,14 +447,13 @@ function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling:
           <Alert>
             <Scale className="h-4 w-4" />
             <AlertDescription>
-              Your arbitration ruling will be final and recorded on the Hedera blockchain. This decision cannot be
-              reversed.
+              Your arbitration ruling will be final and recorded on the Hedera blockchain. This decision cannot be reversed.
             </AlertDescription>
           </Alert>
 
           <div>
             <Label htmlFor="ruling">Arbitration Decision</Label>
-            <Select value={ruling} onValueChange={setRuling}>
+            <Select value={ruling} onValueChange={(v) => setRuling(v as any)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select your ruling" />
               </SelectTrigger>
@@ -455,7 +467,7 @@ function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling:
 
           {(ruling === "PartialRefund" || ruling === "FullRefund") && (
             <div>
-              <Label htmlFor="amount">{ruling === "PartialRefund" ? "Refund Amount" : "Full Refund Amount"}</Label>
+              <Label htmlFor="amount">{ruling === "FullRefund" ? "Full Refund Amount" : "Refund Amount"}</Label>
               <div className="relative">
                 <Input
                   id="amount"
@@ -466,14 +478,10 @@ function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling:
                   disabled={ruling === "FullRefund"}
                   className="pr-16"
                 />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                  {dispute.currency}
-                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{dispute.currency}</div>
               </div>
               {ruling === "PartialRefund" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Maximum: {dispute.amount.toLocaleString()} {dispute.currency}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Maximum: {dispute.amount.toLocaleString()} {dispute.currency}</p>
               )}
             </div>
           )}
@@ -497,84 +505,114 @@ function ArbitrationDialog({ dispute, onRule }: { dispute: any; onRule: (ruling:
               </div>
               <p className="text-sm">
                 {ruling === "PartialRefund" && `Partial refund of ${amount || "X"} ${dispute.currency} to buyer`}
-                {ruling === "FullRefund" &&
-                  `Full refund of ${dispute.amount.toLocaleString()} ${dispute.currency} to buyer`}
-                {ruling === "ReleaseFunds" &&
-                  `Release full amount of ${dispute.amount.toLocaleString()} ${dispute.currency} to producer`}
+                {ruling === "FullRefund" && `Full refund of ${dispute.amount.toLocaleString()} ${dispute.currency} to buyer`}
+                {ruling === "ReleaseFunds" && `Release full amount of ${dispute.amount.toLocaleString()} ${dispute.currency} to producer`}
               </p>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={pending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!ruling || !reasoning}>
-            Issue Final Ruling
+          <Button onClick={handleSubmit} disabled={pending || !ruling || !reasoning}>
+            {pending ? "Submitting…" : "Issue Final Ruling"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
+/**
+ * =============================
+ * MAIN PAGE (dynamic)
+ * =============================
+ */
 export default function DisputesPage() {
-  const [disputes, setDisputes] = useState(mockDisputes)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [priorityFilter, setPriorityFilter] = useState("all")
+  const { toast } = useToast();
+  const qc = useQueryClient();
 
-  const filteredDisputes = disputes.filter((dispute) => {
-    const matchesSearch =
-      dispute.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dispute.producer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dispute.buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dispute.reason.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || dispute.status.toLowerCase() === statusFilter.toLowerCase()
-    const matchesPriority = priorityFilter === "all" || dispute.priority.toLowerCase() === priorityFilter.toLowerCase()
-    return matchesSearch && matchesStatus && matchesPriority
-  })
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebouncedValue(searchTerm, 350);
+  const [statusFilter, setStatusFilter] = useState<DisputesQuery["status"]>("all");
+  const [priorityFilter, setPriorityFilter] = useState<DisputesQuery["priority"]>("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  const handleRuling = async (disputeId: string, rulingData: any) => {
-    // In real app, this would call the API
-    console.log(`Dispute Ruling: ${rulingData.ruling} for dispute ${disputeId}`, rulingData)
+  const disputesKey = useMemo(
+    () => ["disputes", { search: debouncedSearch, status: statusFilter, priority: priorityFilter, page, pageSize }],
+    [debouncedSearch, statusFilter, priorityFilter, page, pageSize]
+  );
 
-    // Update local state for demo
-    setDisputes((prev) =>
-      prev.map((dispute) => {
-        if (dispute.id === disputeId) {
-          const newRuling = {
-            id: Date.now().toString(),
-            arbitratorId: "ARB001",
+  const { data, isLoading, isFetching, error } = useQuery({
+    queryKey: disputesKey,
+    queryFn: ({ signal }) => fetchDisputes({ search: debouncedSearch, status: statusFilter, priority: priorityFilter, page, pageSize }, signal),
+    keepPreviousData: true,
+  });
+
+  const statsQuery = useQuery({
+    queryKey: ["disputes-stats"],
+    queryFn: ({ signal }) => fetchDisputeStats(signal),
+    staleTime: 30_000,
+  });
+
+  const rows = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const ruleMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RuleBody }) => postRuling(id, body),
+    onMutate: async ({ id, body }) => {
+      await qc.cancelQueries({ queryKey: disputesKey });
+      const previous = qc.getQueryData<PaginatedResponse<Dispute>>(disputesKey);
+      if (previous) {
+        const optimistic: PaginatedResponse<Dispute> = { ...previous };
+        optimistic.data = previous.data.map((d) => {
+          if (d.id !== id) return d;
+          const newRuling: Ruling = {
+            id: crypto.randomUUID(),
+            arbitratorId: "ARB-SELF",
             arbitratorName: "Current Arbitrator",
-            ruling: rulingData.ruling,
-            amount: rulingData.amount,
-            reasoning: rulingData.reasoning,
+            ruling: body.ruling,
+            amount: body.amount ?? null,
+            reasoning: body.reasoning,
             createdAt: new Date().toISOString(),
-          }
+          };
+          return { ...d, status: "Resolved", rulings: [...(d.rulings || []), newRuling] };
+        });
+        qc.setQueryData(disputesKey, optimistic);
+      }
+      return { previous };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(disputesKey, ctx.previous);
+      toast({ title: "Ruling failed", description: (err as Error).message, variant: "destructive" });
+    },
+    onSuccess: (updated) => {
+      qc.setQueryData<PaginatedResponse<Dispute>>(disputesKey, (prev) => {
+        if (!prev) return prev as any;
+        return { ...prev, data: prev.data.map((d) => (d.id === updated.id ? updated : d)) };
+      });
+      toast({ title: "Ruling recorded", description: `${updated.orderId} → ${updated.status}` });
+      qc.invalidateQueries({ queryKey: ["disputes-stats"] });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: disputesKey }),
+  });
 
-          return {
-            ...dispute,
-            status: "Resolved",
-            rulings: [...dispute.rulings, newRuling],
-          }
-        }
-        return dispute
-      }),
-    )
-  }
-
-  const statusCounts = {
-    all: disputes.length,
-    open: disputes.filter((d) => d.status === "Open").length,
-    underreview: disputes.filter((d) => d.status === "UnderReview").length,
-    resolved: disputes.filter((d) => d.status === "Resolved").length,
-  }
-
-  const totalDisputeValue = disputes
-    .filter((d) => d.status !== "Resolved")
-    .reduce((sum, dispute) => sum + dispute.amount, 0)
+  const statusCounts = useMemo(() => {
+    const s = statsQuery.data;
+    if (s) return s;
+    const counts: DisputesStats = { total: rows.length, open: 0, underreview: 0, resolved: 0, atStakeHBAR: 0 };
+    for (const d of rows) {
+      if (d.status === "Open") counts.open++;
+      else if (d.status === "UnderReview") counts.underreview++;
+      else if (d.status === "Resolved") counts.resolved++;
+      if (d.status !== "Resolved") counts.atStakeHBAR! += d.amount;
+    }
+    return counts;
+  }, [statsQuery.data, rows]);
 
   return (
     <div className="space-y-6 p-6">
@@ -587,8 +625,8 @@ export default function DisputesPage() {
             <CardTitle className="text-sm font-medium">Total Disputes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statusCounts.all}</div>
-            <p className="text-xs text-muted-foreground">{totalDisputeValue.toLocaleString()} HBAR at stake</p>
+            <div className="text-2xl font-bold">{statusCounts.total}</div>
+            <p className="text-xs text-muted-foreground">{(statusCounts.atStakeHBAR || 0).toLocaleString()} HBAR at stake</p>
           </CardContent>
         </Card>
 
@@ -631,16 +669,16 @@ export default function DisputesPage() {
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search by order ID, parties, or reason..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                   className="pl-10"
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as DisputesQuery["status"]); setPage(1); }}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -651,7 +689,7 @@ export default function DisputesPage() {
                 <SelectItem value="resolved">Resolved</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v as DisputesQuery["priority"]); setPage(1); }}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
@@ -665,7 +703,7 @@ export default function DisputesPage() {
           </div>
 
           {/* Disputes Table */}
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -680,7 +718,17 @@ export default function DisputesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDisputes.map((dispute) => (
+                {isLoading && (
+                  [...Array(6)].map((_, i) => (
+                    <TableRow key={`sk-${i}`}>
+                      <TableCell colSpan={8}>
+                        <div className="h-10 animate-pulse bg-muted rounded" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+
+                {!isLoading && rows.map((dispute) => (
                   <TableRow key={dispute.id}>
                     <TableCell>
                       <div>
@@ -691,20 +739,12 @@ export default function DisputesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building2 className="w-3 h-3" />
-                          <span>{dispute.producer.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="w-3 h-3" />
-                          <span>{dispute.buyer.name}</span>
-                        </div>
+                        <div className="flex items-center gap-2 text-sm"><Building2 className="w-3 h-3" /><span>{dispute.producer.name}</span></div>
+                        <div className="flex items-center gap-2 text-sm"><User className="w-3 h-3" /><span>{dispute.buyer.name}</span></div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold">
-                        {dispute.amount.toLocaleString()} {dispute.currency}
-                      </div>
+                      <div className="font-semibold">{dispute.amount.toLocaleString()} {dispute.currency}</div>
                     </TableCell>
                     <TableCell>{getStatusBadge(dispute.status)}</TableCell>
                     <TableCell>{getPriorityBadge(dispute.priority)}</TableCell>
@@ -720,20 +760,56 @@ export default function DisputesPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DisputeDetailsDialog dispute={dispute} />
-                        <ArbitrationDialog dispute={dispute} onRule={(ruling) => handleRuling(dispute.id, ruling)} />
+                        <ArbitrationDialog dispute={dispute} onRule={(body) => ruleMutation.mutate({ id: dispute.id, body })} pending={ruleMutation.isPending} />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
+
+                {!isLoading && rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8}>
+                      <div className="text-center py-8 text-muted-foreground">No disputes found matching your criteria.</div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {filteredDisputes.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">No disputes found matching your criteria.</div>
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              {isFetching ? "Refreshing…" : `Showing ${(rows.length && (page - 1) * pageSize + 1) || 0}-${(page - 1) * pageSize + rows.length} of ${total}`}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || isFetching}>Prev</Button>
+              <div className="text-sm self-center">Page {page} / {totalPages}</div>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages || isFetching}>Next</Button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm">{(error as Error).message}</div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
+
+/**
+ * =============================
+ * NOTES / BACKEND CONTRACT
+ * =============================
+ * 1) Endpoints used:
+ *    - GET  /disputes?search=&status=&priority=&page=&pageSize= -> { data: Dispute[], page, pageSize, total }
+ *    - GET  /disputes/stats -> { total, open, underreview, resolved, atStakeHBAR }
+ *    - POST /disputes/:id/ruling { ruling, amount?, reasoning } -> Dispute (updated)
+ *
+ * 2) Evidence preview links use `downloadUrl` when provided (absolute or relative to NEXT_PUBLIC_API_URL).
+ *
+ * 3) Add auth headers globally if required; these requests send credentials: 'include'.
+ *
+ * 4) Wrap your app with React Query Provider + Toaster.
+ */
