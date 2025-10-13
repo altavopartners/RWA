@@ -309,7 +309,7 @@ function KycActionDialog({
  * MAIN PAGE (dynamic)
  * =============================
  */
-export default function ClientsPage() {
+export default function BankClientsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
 

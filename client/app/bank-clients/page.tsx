@@ -1,3 +1,5 @@
 "use client";
-import ClientsPage from "@/components/ClientsPage";
-export default function Page() { return <ClientsPage />; }
+
+import BankClientsPage from "@/components/BankClientsPage";
+
+export default function Page() { return <BankClientsPage />; }

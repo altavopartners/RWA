@@ -393,7 +393,7 @@ export default function BankOrdersPage() {
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{order.id}</span>
+                      <span className="font-medium">{order.code}</span>
                       <StatusBadge status={order.status} />
                     </div>
                     <p className="text-sm text-muted-foreground">{order.product}</p>

@@ -530,7 +530,7 @@ function ArbitrationDialog({ dispute, onRule, pending }: { dispute: Dispute; onR
  * MAIN PAGE (dynamic)
  * =============================
  */
-export default function DisputesPage() {
+export default function BankDisputesPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
 

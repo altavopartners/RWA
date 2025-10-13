@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
-import OrderFlowDetail from "./OrderFlowDetail";
+import OrderFlowDetail from "./BankOrderDetail";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 

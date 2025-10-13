@@ -1,3 +1,3 @@
 "use client";
-import EscrowsPage from "@/components/EscrowsPage";
-export default function Page() { return <EscrowsPage />; }
+import BankEscrowsPage from "@/components/BankEscrowsPage";
+export default function Page() { return <BankEscrowsPage />; }

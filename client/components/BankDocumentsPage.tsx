@@ -419,7 +419,7 @@ export default function DocumentsPage() {
     queryKey: docsKey,
     queryFn: ({ signal }) =>
       fetchDocuments({ search: debouncedSearch, status: statusFilter, type: typeFilter, page, pageSize }, signal),
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const statsQuery = useQuery({

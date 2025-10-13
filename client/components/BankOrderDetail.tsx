@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Truck, CheckCircle, Clock, Package, Shield, AlertCircle, Image as ImageIcon, Lock, HandCoins } from "lucide-react";
 import type { Order } from "./OrderFlow";
-import DocumentCenter, { DocumentItem } from "./DocumentCenter";
+import DocumentCenter, { DocumentItem } from "./BankDocumentCenter";
 import PaymentSection from "./PaymentSection";
 
 // ===== API base (local copy) =====
@@ -63,7 +63,7 @@ type Props = {
   onDeleteDoc?: (doc: DocumentItem) => Promise<void>;
 };
 
-export default function OrderDetailsFlow({
+export default function BankOrderDetailsFlow({
   order,
   loadingDetail,
   onConfirmDelivery,

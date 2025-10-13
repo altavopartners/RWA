@@ -640,7 +640,7 @@ function EscrowApprovalDialog({
  * MAIN PAGE (dynamic)
  * =============================
  */
-export default function EscrowsPage() {
+export default function BankEscrowsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
