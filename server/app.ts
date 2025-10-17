@@ -5,7 +5,10 @@ import { corsOptions } from "./config/cors";
 import { ensureUploadDirs, rootUpload } from "./config/uploads";
 import routes from "./routes";
 import errorHandler from "./middleware/errorHandler";
-
+import bankAuthRoutes from "./routes/bankAuth.routes";
+import bankAccountRoutes from "./routes/bankAccount.routes";
+import paymentApprovalRoutes from "./routes/paymentApproval.routes";
+import banksRoutes from "./routes/banks.routes"; 
 const app = express();
 
 // JSON parsing (allow large payloads)
@@ -33,4 +36,8 @@ app.use("/api", routes);
 // Central error handler
 app.use(errorHandler);
 
+app.use("/api/bank-auth", bankAuthRoutes);
+app.use("/api/bank-accounts", bankAccountRoutes);
+app.use("/api/bank-payments", paymentApprovalRoutes);
+app.use("/api/banks", banksRoutes); // optionnel
 export default app;

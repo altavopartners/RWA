@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import {
   getClients,
-  updateClientKyc,
   getDisputes,
   updateDispute,
   getDocuments,
@@ -24,29 +23,6 @@ export async function getClientsController(req: Request, res: Response) {
     res.json({ success: true, data: clients });
   } catch (err: any) {
     console.error("Error fetching clients:", err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-}
-
-/** PUT /api/bank/clients/:id/kyc */
-export async function updateClientKycController(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const { action, reason, reviewedBy } = req.body;
-
-    if (!action || !reviewedBy)
-      return res
-        .status(400)
-        .json({ success: false, message: "Action and reviewer required" });
-
-    const updatedClient = await updateClientKyc(id, {
-      action,
-      reason,
-      reviewedBy,
-    });
-    res.json({ success: true, data: updatedClient });
-  } catch (err: any) {
-    console.error("Error updating KYC:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 }

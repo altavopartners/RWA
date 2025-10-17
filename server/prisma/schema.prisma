@@ -62,6 +62,23 @@ enum NFTStatus {
   FAILED
 }
 
+enum BankAccountStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+
+enum BankUserRole {
+  BANK_USER
+  BANK_ADMIN
+}
+
+
+enum PaymentAction {
+  APPROVE
+  REJECT
+}
 
 /////////////////////////
 // MODELS
@@ -84,27 +101,102 @@ model User {
   businessName String?
   businessDesc String?
 
-  userType      UserType  @default(USER)
-  isVerified    Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
+  userType    UserType  @default(USER)
+  isVerified  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
   nonceIssuedAt DateTime?
 
   authSessions AuthSession[]
   documents    Document[]
   dID          DID?
 
-  // back-relation
-  cartItems CartItem[]
-  orders    Order[]
+  // shopping
+  cartItems  CartItem[]
+  orders     Order[]
 
-  // Bank / KYC integration
-  bankId     String?
-  bank       Bank?     @relation(fields: [bankId], references: [id])
-  kycStatus  KycStatus @default(PENDING)
-  kycExpiry  DateTime?
-  kycReviews   KycReview[]
+  // 🔹 user’s saved bank accounts
+  bankAccounts BankAccount[]
+
+  // (Removed if you don’t need KYC:)
+  // kycStatus  KycStatus @default(PENDING)
+  // kycExpiry  DateTime?
+  // kycReviews KycReview[]
+}
+
+
+model BankAccount {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  // Choose via code (recommended) and/or relation
+  bankCode    String
+  bank        Bank?    @relation(fields: [bankId], references: [id])
+  bankId      String?
+
+  // From your JSON schema
+  rib                     String    // exactly 20 digits, validate in app layer
+  holderName              String
+  phoneNumber             String    // +216XXXXXXXX
+  email                   String
+  taxIdentificationNumber String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([bankCode])
+}
+
+
+model UserBank {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String?
+  phone        String?
+  passwordHash String
+  role         BankUserRole  @default(BANK_USER)
+  isBanned     Boolean       @default(false)
+
+  bankId String?
+  bank   Bank?               @relation(fields: [bankId], references: [id])
+
+  sessions     BankAuthSession[]
+  approvals    PaymentApproval[]   // 🔹 see below
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+}
+
+model BankAuthSession {
+  id           String   @id @default(cuid())
+  userBankId   String
+  userBank     UserBank @relation(fields: [userBankId], references: [id])
+  token        String
+  refreshToken String?
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+model Bank {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  logo     String?
+  country  String?
+
+  bankAccounts BankAccount[]   // <- ajoute ceci
+  userBanks    UserBank[]      // <- et ceci
+
+  buyerOrders   Order[] @relation("BuyerBankOrders")
+  sellerOrders  Order[] @relation("SellerBankOrders")
+  bankReviews   BankReview[] @relation("BankReviews")
 }
 
 model AuthSession {
@@ -293,47 +385,60 @@ model Document {
 
 
 
-model Bank {
-  id        String   @id @default(cuid())
-  name      String
-  country   String?
+// model Bank {
+//   id        String   @id @default(cuid())
+//   name      String
+//   country   String?
 
-  users User[]
+//   users User[]
 
-  // 🆕 Added relation fields for clarity
-  buyerOrders  Order[] @relation("BuyerBankOrders")
-  sellerOrders Order[] @relation("SellerBankOrders")
+//   // 🆕 Added relation fields for clarity
+//   buyerOrders  Order[] @relation("BuyerBankOrders")
+//   sellerOrders Order[] @relation("SellerBankOrders")
 
-  // 🆕 Added missing opposite side of BankReview relation
-  bankReviews BankReview[] @relation("BankReviews")
-}
+//   // 🆕 Added missing opposite side of BankReview relation
+//   bankReviews BankReview[] @relation("BankReviews")
+// }
+
+
 
 
 model PaymentRelease {
-  id       String  @id @default(cuid())
-  orderId  String
-  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  type     String  // "PARTIAL50" or "FULL100"
-  amount   Decimal @db.Decimal(18, 2)
-  released Boolean @default(false)
+  type        String
+  amount      Decimal @db.Decimal(18, 2)
+  released    Boolean @default(false)
   transactionId String?
   releasedAt    DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  approvals   PaymentApproval[]   // 🔹 record actions by UserBank
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 
-model KycReview {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  action    String   // "approve", "reject", "request_info"
-  reason    String?
-  reviewer  String?
-  createdAt DateTime @default(now())
+model PaymentApproval {
+  id              String       @id @default(cuid())
+  paymentRelease  PaymentRelease @relation(fields: [paymentReleaseId], references: [id], onDelete: Cascade)
+  paymentReleaseId String
+
+  actor       UserBank @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actorId     String
+
+  action      PaymentAction
+  comments    String?
+  createdAt   DateTime @default(now())
+
+  @@index([paymentReleaseId])
+  @@index([actorId])
 }
+
+
+
+
 
 
 model BankReview {

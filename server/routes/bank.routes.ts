@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   getClientsController,
-  updateClientKycController,
   getDisputesController,
   updateDisputeController,
   getDocumentsController,
@@ -24,11 +23,6 @@ const router = Router();
  */
 router.get("/clients", getClientsController);
 
-/**
- * PUT /api/bank/clients/:id/kyc
- * Update a client's KYC status (approve/reject/request_info)
- */
-router.put("/clients/:id/kyc", updateClientKycController);
 
 /**
  * GET /api/bank/disputes

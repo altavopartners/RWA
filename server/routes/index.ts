@@ -9,8 +9,17 @@ import profileRoutes from "./profile.routes";
 import sessionRoutes from "./session.routes";
 import web3nftRoutes from "./web3nft.routes";
 import bankRoutes from "./bank.routes";
+import bankAuthRoutes from "./bankAuth.routes";
+import banksRoutes from "./banks.routes";
+import bankAccountRoutes from "./bankAccount.routes";
+import paymentApprovalRoutes from "./paymentApproval.routes";
 
 const router = Router();
+
+router.use("/bank-auth", bankAuthRoutes);
+router.use("/banks", banksRoutes);
+router.use("/bank-accounts", bankAccountRoutes);
+router.use("/bank-payments", paymentApprovalRoutes);
 
 
 // Bank routes

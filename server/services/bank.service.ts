@@ -12,30 +12,6 @@ export async function getClients() {
   });
 }
 
-/** Update client KYC status */
-export async function updateClientKyc(
-  clientId: string,
-  data: { action: string; reason?: string; reviewedBy: string }
-) {
-  let kycStatus: "PENDING" | "VERIFIED" | "REJECTED" = "PENDING";
-  if (data.action === "approve") kycStatus = "VERIFIED";
-  else if (data.action === "reject") kycStatus = "REJECTED";
-
-  return prisma.user.update({
-    where: { id: clientId },
-    data: {
-      kycStatus,
-      updatedAt: new Date(),
-      kycReviews: {
-        create: {
-          action: data.action,
-          reason: data.reason,
-          reviewer: data.reviewedBy,
-        },
-      },
-    },
-  });
-}
 
 /** ---------- DISPUTES ---------- */
 
