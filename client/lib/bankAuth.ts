@@ -22,7 +22,7 @@ async function safeFetch<T>(
       const msg =
         (data && typeof data === "object" && data.message) ||
         `HTTP ${res.status} ${res.statusText}`;
-      console.error("❌ [bankAuth] Request failed", { url, status: res.status, body: data });
+      console.log("❌ [bankAuth] Request failed", { url, status: res.status, body: data });
       throw new Error(`${msg} — ${url}`);
     }
 
@@ -34,7 +34,7 @@ async function safeFetch<T>(
       err?.message?.includes("Failed to fetch") || err?.name === "TypeError"
         ? "Connection refused or CORS blocked"
         : "Network error";
-    console.error("💥 [bankAuth] Network error", { url, error: err, hint });
+    console.log("💥 [bankAuth] Network error", { url, error: err, hint });
     throw new Error(`${hint}: ${url} — ${err?.message || "unknown error"}`);
   }
 }

@@ -340,7 +340,7 @@ export default function BankClientsPage() {
         { search: debouncedSearch, status: statusFilter, page, pageSize },
         signal
       ),
-    keepPreviousData: true,
+    staleTime:5000,
   });
 
   const clients = data?.data ?? [];
@@ -350,7 +350,7 @@ export default function BankClientsPage() {
     const counts = clients.reduce(
       (acc, c) => {
         acc.all += 1;
-        const s = c.kycStatus.toLowerCase();
+        const s = c.kycStatus?.toLowerCase();
         if (s in acc) (acc as any)[s] += 1;
         return acc;
       },

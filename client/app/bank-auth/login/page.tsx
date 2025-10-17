@@ -1,11 +1,13 @@
 // client/app/bank-auth/login/page.tsx
 "use client";
 import BankLoginForm from "@/components/BankLoginForm";
+import AuthShell from "@/components/ui/AuthShell";
+//import BankLoginForm from "@/components/ui/BankLoginForm";
 
 export default function Page() {
   return (
-    <main className="min-h-screen grid place-items-center p-6">
+    <AuthShell title="Connect" subtitle="Access your customer area.">
       <BankLoginForm />
-    </main>
+    </AuthShell>
   );
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Bell, User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { bankLogout } from "@/lib/bankAuth"
 
 interface BankHeaderProps {
   title: string
@@ -19,6 +21,17 @@ interface BankHeaderProps {
 }
 
 export function BankHeader({ title, description }: BankHeaderProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      bankLogout()
+      router.push("/bank-auth/login")
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
+
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-border">
       <div>
@@ -87,7 +100,7 @@ export function BankHeader({ title, description }: BankHeaderProps) {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </DropdownMenuItem>

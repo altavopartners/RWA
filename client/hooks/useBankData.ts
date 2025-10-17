@@ -3,13 +3,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { bankApi } from "../lib/api";
-import type {
-  Client,
-  Dispute,
-  Document,
-  Escrow,
-  BankOrder,
-} from "../types/bank";
+// minimal local type fallbacks (replace with shared types when ../types/bank exists)
+type Client = { id: string; [key: string]: any };
+type Dispute = { id: string; [key: string]: any };
+type Document = { id: string; [key: string]: any };
+type Escrow = { id: string; [key: string]: any };
+type BankOrder = { id: string; [key: string]: any };
 
 type Resource = "clients" | "disputes" | "documents" | "escrows" | "orders";
 
