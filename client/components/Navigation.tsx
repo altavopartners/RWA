@@ -26,6 +26,7 @@ export default function Navigation() {
   const API_BASE = "http://localhost:4000";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [count, setCount] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -37,6 +38,9 @@ export default function Navigation() {
     disconnectWallet,
     isLoading,
   } = useAuth();
+
+  // Check if we're on the homepage
+  const isHomePage = pathname === "/";
 
   const navItems = [
     { href: "/", label: "Home", icon: TrendingUp },
@@ -52,6 +56,20 @@ export default function Navigation() {
 
   const handleWalletAction = () =>
     isConnected ? disconnectWallet() : connectWallet();
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const fetchCartItemsCount = useCallback(async () => {
     if (!isConnected || !user?.id) {
@@ -117,155 +135,135 @@ export default function Navigation() {
   }, [fetchCartItemsCount, isConnected, user?.id]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50 shadow-sm">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="text-2xl font-bold">
-              <img src="/assets/hexportLogo.png" alt="Logo" className="h-16" />
-            </Link>
-            <Badge variant="outline" className="hidden md:flex">
-              Hedera Network
-            </Badge>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={isActive(href) ? "page" : undefined}
-                className={cn(
-                  "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth",
-                  isActive(href)
-                    ? "bg-primary/20 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-3">
+      <div
+        className={cn(
+          "mx-auto transition-all duration-500",
+          isScrolled
+            ? "bg-white dark:bg-gray-900 shadow-2xl rounded-full border border-gray-100 dark:border-gray-800"
+            : isHomePage
+            ? ""
+            : "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm",
+          // Adjust padding based on connection status
+          isConnected ? "py-3" : isScrolled ? "py-2.5" : "py-3",
+          // Dynamic max-width based on connection
+          isConnected ? "max-w-[95%]" : "max-w-7xl"
+        )}
+      >
+        <div className="px-8">
+          <div className="flex items-center justify-between gap-4">
+            {/* Logo */}
+            <div className="flex items-center space-x-3 flex-shrink-0">
+              <Link href="/" className="flex items-center">
+                <img src="/assets/hexportLogo.png" alt="Logo" className="h-14 w-auto" />
               </Link>
-            ))}
+            </div>
 
-            <Link
-              href="/cart"
-              aria-current={isActive("/cart") ? "page" : undefined}
-              className={cn(
-                "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth relative",
-                isActive("/cart")
-                  ? "bg-primary/20 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
-              )}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {isConnected && user?.id && count > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                  style={{
-                    minWidth: 20,
-                    minHeight: 20,
-                  }}
-                  aria-label={`Cart items: ${count}`}
-                >
-                  {count}
-                </span>
-              )}
-            </Link>
-          </div>
-
-          {/* Wallet / Mobile toggle */}
-          <div className="flex items-center space-x-4">
-            {isConnected && user && (
-              <div className="hidden md:flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium">
-                    {user?.fullName || "User"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <Button
-              variant={isConnected ? "default" : "secondary"}
-              onClick={handleWalletAction}
-              disabled={isLoading}
-              className="hidden md:flex"
-            >
-              {isConnected ? (
-                <LogOut className="w-4 h-4" />
-              ) : (
-                <Wallet className="w-4 h-4" />
-              )}
-              {isConnected
-                ? "Disconnect"
-                : isLoading
-                ? "Connecting..."
-                : "Connect Wallet"}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
-            <div className="space-y-2">
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
               {navItems.map(({ href, label, icon: Icon }) => (
-                <button
+                <Link
                   key={href}
-                  onClick={() => {
-                    router.push(href);
-                    setIsMobileMenuOpen(false);
-                  }}
+                  href={href}
+                  aria-current={isActive(href) ? "page" : undefined}
                   className={cn(
-                    "flex items-center space-x-3 w-full px-3 py-3 rounded-lg transition-smooth",
+                    "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth whitespace-nowrap",
+                    isScrolled ? "text-base" : "text-sm",
                     isActive(href)
-                      ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                      ? isScrolled
+                        ? "bg-primary/10 text-primary dark:bg-white/10 dark:text-white"
+                        : isHomePage
+                        ? "bg-white/10 text-white"
+                        : "bg-primary/20 text-primary"
+                      : isScrolled
+                      ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-white/80 dark:hover:text-white dark:hover:bg-white/10"
+                      : isHomePage
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{label}</span>
-                </button>
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm">{label}</span>
+                </Link>
               ))}
 
+              <Link
+                href="/cart"
+                aria-current={isActive("/cart") ? "page" : undefined}
+                className={cn(
+                  "flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth relative text-sm whitespace-nowrap",
+                  isActive("/cart")
+                    ? isScrolled
+                      ? "bg-primary/10 text-primary dark:bg-white/10 dark:text-white"
+                      : isHomePage
+                      ? "bg-white/10 text-white"
+                      : "bg-primary/20 text-primary"
+                    : isScrolled
+                    ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-white/80 dark:hover:text-white dark:hover:bg-white/10"
+                    : isHomePage
+                    ? "text-white/80 hover:text-white hover:bg-white/10"
+                    : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                )}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {isConnected && user?.id && count > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                    style={{
+                      minWidth: 20,
+                      minHeight: 20,
+                    }}
+                    aria-label={`Cart items: ${count}`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </Link>
+            </div>
+
+            {/* Wallet / Mobile toggle */}
+            <div className="flex items-center space-x-3 flex-shrink-0">
               {isConnected && user && (
-                <div className="p-3 bg-muted/30 rounded-lg mb-3 text-center">
-                  <p className="font-medium">{user?.fullName || "User"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
-                  </p>
+                <div className="hidden lg:flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className={cn(
+                      "text-sm font-medium transition-colors",
+                      isScrolled
+                        ? "text-gray-900 dark:text-white"
+                        : isHomePage
+                        ? "text-white"
+                        : "text-gray-900 dark:text-white"
+                    )}>
+                      {user?.fullName || "User"}
+                    </p>
+                    <p className={cn(
+                      "text-xs transition-colors",
+                      isScrolled
+                        ? "text-gray-600 dark:text-white/70"
+                        : isHomePage
+                        ? "text-white/70"
+                        : "text-gray-600 dark:text-gray-400"
+                    )}>
+                      {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                    </p>
+                  </div>
                 </div>
               )}
 
               <Button
-                variant={isConnected ? "default" : "secondary"}
                 onClick={handleWalletAction}
                 disabled={isLoading}
-                className="w-full"
+                className={cn(
+                  "hidden lg:flex whitespace-nowrap",
+                  "bg-[#edf6f9] text-gray-900 hover:bg-[#d8edf2]",
+                  "dark:bg-[#edf6f9] dark:text-gray-900 dark:hover:bg-[#d8edf2]"
+                )}
+                size="sm"
               >
                 {isConnected ? (
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4 mr-2" />
                 ) : (
-                  <Wallet className="w-4 h-4" />
+                  <Wallet className="w-4 h-4 mr-2" />
                 )}
                 {isConnected
                   ? "Disconnect"
@@ -273,9 +271,145 @@ export default function Navigation() {
                   ? "Connecting..."
                   : "Connect Wallet"}
               </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "lg:hidden transition-colors",
+                  isScrolled
+                    ? "text-gray-900 dark:text-white dark:hover:bg-white/10"
+                    : isHomePage
+                    ? "text-white hover:bg-white/10"
+                    : "text-gray-900 dark:text-white"
+                )}
+                onClick={() => setIsMobileMenuOpen((v) => !v)}
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Mobile Navigation */}
+          {isMobileMenuOpen && (
+            <div className={cn(
+              "lg:hidden py-4 border-t animate-fade-in mt-4",
+              isScrolled
+                ? "border-gray-200 dark:border-white/10"
+                : isHomePage
+                ? "border-white/10"
+                : "border-border/50"
+            )}>
+              <div className="space-y-2">
+                {navItems.map(({ href, label, icon: Icon }) => (
+                  <button
+                    key={href}
+                    onClick={() => {
+                      router.push(href);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center space-x-3 w-full px-3 py-3 rounded-lg transition-smooth",
+                      isActive(href)
+                        ? isScrolled
+                          ? "bg-primary/10 text-primary dark:bg-white/10 dark:text-white"
+                          : isHomePage
+                          ? "bg-white/10 text-white"
+                          : "bg-primary/20 text-primary"
+                        : isScrolled
+                        ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-white/80 dark:hover:text-white dark:hover:bg-white/10"
+                        : isHomePage
+                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+
+                <Link
+                  href="/cart"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center space-x-3 w-full px-3 py-3 rounded-lg transition-smooth relative",
+                    isActive("/cart")
+                      ? isScrolled
+                        ? "bg-primary/10 text-primary dark:bg-white/10 dark:text-white"
+                        : isHomePage
+                        ? "bg-white/10 text-white"
+                        : "bg-primary/20 text-primary"
+                      : isScrolled
+                      ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-white/80 dark:hover:text-white dark:hover:bg-white/10"
+                      : isHomePage
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                  )}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>Cart</span>
+                  {isConnected && user?.id && count > 0 && (
+                    <span className="ml-auto bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {count}
+                    </span>
+                  )}
+                </Link>
+
+                {isConnected && user && (
+                  <div className={cn(
+                    "p-3 rounded-lg mb-3 text-center",
+                    isScrolled
+                      ? "bg-gray-50 dark:bg-white/5"
+                      : isHomePage
+                      ? "bg-white/5"
+                      : "bg-muted/30"
+                  )}>
+                    <p className={cn(
+                      "font-medium",
+                      isScrolled
+                        ? "text-gray-900 dark:text-white"
+                        : isHomePage
+                        ? "text-white"
+                        : ""
+                    )}>{user?.fullName || "User"}</p>
+                    <p className={cn(
+                      "text-xs",
+                      isScrolled
+                        ? "text-gray-600 dark:text-white/70"
+                        : isHomePage
+                        ? "text-white/70"
+                        : "text-muted-foreground"
+                    )}>
+                      {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleWalletAction}
+                  disabled={isLoading}
+                  className="w-full bg-[#edf6f9] text-gray-900 hover:bg-[#d8edf2] dark:bg-[#edf6f9] dark:text-gray-900 dark:hover:bg-[#d8edf2]"
+                >
+                  {isConnected ? (
+                    <LogOut className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Wallet className="w-4 h-4 mr-2" />
+                  )}
+                  {isConnected
+                    ? "Disconnect"
+                    : isLoading
+                    ? "Connecting..."
+                    : "Connect Wallet"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
