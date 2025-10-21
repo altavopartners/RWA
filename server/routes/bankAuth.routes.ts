@@ -4,5 +4,5 @@ import { registerBankUser, loginBankUser, logoutBankUser } from "../controllers/
 const r = Router();
 r.post("/register", registerBankUser);
 r.post("/login", loginBankUser);
-r.get("/logout", logoutBankUser);
+//r.get("/logout", logoutBankUser);
 export default r;

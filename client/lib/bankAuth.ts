@@ -42,19 +42,25 @@ async function safeFetch<T>(
 export async function bankRegister(payload: {
   email: string; password: string; name?: string; phone?: string; bankId?: string;
 }) {
-  return safeFetch("/api/bank-auth/register", {
+  const res = await safeFetch("/api/bank-auth/register", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+ return res;
 }
 
-export async function bankLogin(payload: { email: string; password: string }) {
-  return safeFetch("/api/bank-auth/login", {
+export async function bankLogin({ email, password }: { email: string; password: string }) {
+  const res = await safeFetch("/api/bank-auth/login", {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
+ return res;
 }
+
 
 export async function bankLogout() {
-  return safeFetch("/api/bank-auth/logout", { method: "GET" });
+  document.cookie = "bank_auth_token=; Max-Age=0; path=/; SameSite=Lax";
+  document.cookie = "bank_user=; Max-Age=0; path=/; SameSite=Lax";
 }

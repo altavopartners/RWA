@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie"; // ✅ add cookies like in login
 import { bankRegister } from "@/lib/bankAuth";
 
 // Password policy: min 8 chars, at least 1 uppercase and 1 digit
@@ -14,6 +15,8 @@ export default function BankRegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);       // 👁️
+  const [showConfirm, setShowConfirm] = useState(false);         // 👁️
   const [bankId, setBankId] = useState<string | undefined>(undefined); // optional
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,14 +49,26 @@ export default function BankRegisterForm() {
 
     setSubmitting(true);
     try {
-      await bankRegister({ email, password, name, phone, bankId });
+      // Call backend
+      const data = await bankRegister({ email, password, name, phone, bankId });
+
+      // ✅ Mirror login: store auth in cookies for 7 days
+      //    (httpOnly cookies must be set server-side; this is client-side only like your login form)
+      if (data?.token) {
+        Cookies.set("bank_auth_token", data.token, { expires: 7 });
+      }
+      if (data?.userBank) {
+        Cookies.set("bank_user", JSON.stringify(data.userBank), { expires: 7 });
+      }
+
+      // Go to dashboard
       router.replace("/bank-dashboard");
     } catch (err: any) {
       // Try to extract clean error message
       let message = "Registration failed.";
       if (err?.response?.data?.message) message = err.response.data.message;
       else if (err?.message?.includes("Email already exists")) message = "Email already exists.";
-      else if (err?.message) message = err.message.split("—")[0].trim(); // remove URL or backend trace
+      else if (err?.message) message = err.message.split("—")[0].trim();
       setError(message);
     } finally {
       setSubmitting(false);
@@ -112,19 +127,29 @@ export default function BankRegisterForm() {
 
       <div>
         <label className="block text-sm mb-1" htmlFor="password">Password</label>
-        <input
-          id="password"
-          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="••••••••"
-          autoComplete="new-password"
-          required
-          pattern="^(?=.*[A-Z])(?=.*\d).{8,}$"
-          title="At least 8 characters, 1 uppercase letter, and 1 digit."
-          minLength={8}
-        />
+        <div className="relative">
+          <input
+            id="password"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 pr-12"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            required
+            pattern="^(?=.*[A-Z])(?=.*\d).{8,}$"
+            title="At least 8 characters, 1 uppercase letter, and 1 digit."
+            minLength={8}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(s => !s)}
+            className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:opacity-80"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
 
         {/* rules + strength bar */}
         <div className="mt-2">
@@ -151,17 +176,27 @@ export default function BankRegisterForm() {
 
       <div>
         <label className="block text-sm mb-1" htmlFor="confirm">Confirm password</label>
-        <input
-          id="confirm"
-          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
-          type="password"
-          value={confirm}
-          onChange={e => setConfirm(e.target.value)}
-          placeholder="••••••••"
-          autoComplete="new-password"
-          required
-          aria-invalid={confirm.length > 0 && !isConfirmValid}
-        />
+        <div className="relative">
+          <input
+            id="confirm"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 pr-12"
+            type={showConfirm ? "text" : "password"}
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            required
+            aria-invalid={confirm.length > 0 && !isConfirmValid}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(s => !s)}
+            className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:opacity-80"
+            aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+          >
+            {showConfirm ? "🙈" : "👁️"}
+          </button>
+        </div>
         {confirm.length > 0 && !isConfirmValid && (
           <p className="text-xs text-red-600 mt-1">Passwords do not match.</p>
         )}

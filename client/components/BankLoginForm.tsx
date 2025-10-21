@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie"; // ✅ import js-cookie
 import { bankLogin } from "@/lib/bankAuth";
 
 export default function BankLoginForm() {
@@ -25,11 +26,18 @@ export default function BankLoginForm() {
 
     setSubmitting(true);
     try {
-      await bankLogin({ email, password });
+      // Call backend
+      const data = await bankLogin({ email, password });
+      
+      // ✅ Store token in cookies for 7 days
+      Cookies.set("bank_auth_token", data.token, { expires: 7 });
+
+      // Optional: store minimal user info if needed
+      Cookies.set("bank_user", JSON.stringify(data.userBank), { expires: 7 });
+
       router.replace("/bank-dashboard");
     } catch (err: any) {
-      let message = "Sign-in failed.";
-      setError(message);
+      setError("Sign-in failed. Please check your credentials.");
     } finally {
       setSubmitting(false);
     }
@@ -37,6 +45,7 @@ export default function BankLoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      {/* Email field */}
       <div>
         <label className="block text-sm mb-1" htmlFor="email">Email</label>
         <input
@@ -51,6 +60,7 @@ export default function BankLoginForm() {
         />
       </div>
 
+      {/* Password field */}
       <div>
         <label className="block text-sm mb-1" htmlFor="password">Password</label>
         <div className="relative">
@@ -69,15 +79,16 @@ export default function BankLoginForm() {
             onClick={() => setShowPassword(s => !s)}
             className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:opacity-80"
             aria-label={showPassword ? "Hide password" : "Show password"}
-            title={showPassword ? "Hide" : "Show"}
           >
             {showPassword ? "🙈" : "👁️"}
           </button>
         </div>
       </div>
 
+      {/* Error message */}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
+      {/* Submit button */}
       <button
         type="submit"
         disabled={submitting}
