@@ -111,10 +111,12 @@ function OrderApprovalDialog({
   order,
   onApprove,
   onReleaseEscrow,
+  onRequestDocs,
 }: {
   order: BankOrder;
   onApprove: (bankType: "buyer" | "seller") => void;
   onReleaseEscrow: () => void;
+  onRequestDocs: (requestTo: "buyer" | "seller") => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedBank, setSelectedBank] = useState<"buyer" | "seller" | "">("");
@@ -156,6 +158,32 @@ function OrderApprovalDialog({
 
           {order.status === "BANK_REVIEW" && (
             <>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Request Documents</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRequestDocs("buyer");
+                      setIsOpen(false);
+                    }}
+                  >
+                    From Buyer
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onRequestDocs("seller");
+                      setIsOpen(false);
+                    }}
+                  >
+                    From Seller
+                  </Button>
+                </div>
+              </div>
+
               <Select
                 value={selectedBank}
                 onValueChange={(val) =>
@@ -166,12 +194,16 @@ function OrderApprovalDialog({
                   <SelectValue placeholder="Select your bank type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {order.buyerBankId && (
-                    <SelectItem value="buyer">Buyer Bank</SelectItem>
-                  )}
-                  {order.sellerBankId && (
-                    <SelectItem value="seller">Seller Bank</SelectItem>
-                  )}
+                  <SelectItem value="buyer" disabled={!order.buyerBankId}>
+                    {order.buyerBankId
+                      ? "Buyer Bank"
+                      : "Buyer Bank (not assigned)"}
+                  </SelectItem>
+                  <SelectItem value="seller" disabled={!order.sellerBankId}>
+                    {order.sellerBankId
+                      ? "Seller Bank"
+                      : "Seller Bank (not assigned)"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -230,10 +262,16 @@ export default function BankOrdersPage() {
     bankType: "buyer" | "seller"
   ) => {
     try {
-      await bankApi.updateOrderApproval(order.id, {
-        action: "APPROVE",
-        approvedBy: "BANK_USER",
+      const bankId =
+        bankType === "buyer" ? order.buyerBankId : order.sellerBankId;
+      if (!bankId) {
+        throw new Error(`Missing ${bankType} bank id on order`);
+      }
+      // Use escrow endpoint which records bank approval and triggers 50% release once both approve
+      await bankApi.updateEscrow(order.id, {
+        bankId,
         bankType,
+        comments: "Approved by bank",
       });
       refetch();
     } catch (err) {
@@ -243,14 +281,40 @@ export default function BankOrdersPage() {
 
   const handleReleaseEscrow = async (escrowId: string) => {
     try {
-      await bankApi.updateEscrow(escrowId, {
-        action: "RELEASE",
-        approvedBy: "BANK_USER",
+      // For remaining 50% on delivery, confirm delivery endpoint should be used
+      await bankApi.confirmDelivery(escrowId, {
+        confirmedBy: "BANK_USER",
         notes: "Release remaining 50%",
       });
       refetch();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleRequestDocs = async (
+    order: BankOrder,
+    requestTo: "buyer" | "seller"
+  ) => {
+    try {
+      const bankId =
+        requestTo === "buyer" ? order.buyerBankId : order.sellerBankId;
+      if (!bankId) {
+        alert(`No ${requestTo} bank assigned to this order`);
+        return;
+      }
+      await bankApi.requestDocuments(order.id, {
+        bankId,
+        requestTo,
+        comments: `Please submit required documents for order ${
+          order.code || order.id
+        }`,
+      });
+      alert(`Document request sent to ${requestTo}`);
+      refetch();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to request documents");
     }
   };
 
@@ -281,7 +345,9 @@ export default function BankOrdersPage() {
             </Avatar>
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span>{order.id}</span>
+                <span className="font-mono text-sm" title={order.id}>
+                  {order.code || order.id}
+                </span>
                 <Badge
                   variant={statusColorMap[order.status] as any}
                   className="flex items-center gap-1"
@@ -293,6 +359,11 @@ export default function BankOrdersPage() {
               <p className="text-xs text-muted-foreground">
                 {order.items.map((i) => i.product.name).join(", ")}
               </p>
+              <p className="text-xs text-muted-foreground">
+                👤 Buyer: {order.user.fullName} | 🏦 Buyer Bank:{" "}
+                {order.buyerBankId ? "✓" : "✗"} | Seller Bank:{" "}
+                {order.sellerBankId ? "✓" : "✗"}
+              </p>
               <p className="text-xs text-info font-medium">
                 💰 {getEscrowStatus(order.status)}
               </p>
@@ -303,6 +374,7 @@ export default function BankOrdersPage() {
               order={order}
               onApprove={(bankType) => handleOrderApprove(order, bankType)}
               onReleaseEscrow={() => handleReleaseEscrow(order.id)}
+              onRequestDocs={(requestTo) => handleRequestDocs(order, requestTo)}
             />
           </div>
         </div>

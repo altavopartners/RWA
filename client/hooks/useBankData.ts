@@ -47,7 +47,8 @@ export function useBankData<T extends Resource>(resource: T) {
           result = (await bankApi.getEscrows()) as ResourceMap[T];
           break;
         case "orders":
-          result = (await bankApi.getOrders()) as ResourceMap[T];
+          // Use workflow-enhanced orders to include buyerBankId/sellerBankId
+          result = (await bankApi.getOrdersWithWorkflow()) as ResourceMap[T];
           break;
         default:
           throw new Error(`Unknown resource: ${resource}`);

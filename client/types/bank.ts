@@ -22,6 +22,8 @@ export interface User {
   fullName: string;
   email: string;
   userType: UserType;
+  accountId?: string; // Hedera account ID
+  walletAddress?: string;
 }
 
 /////////////////////////
@@ -74,11 +76,17 @@ export interface BankOrder {
 }
 /////////////////////////
 // Client (User + optional orders / KYC)
+// Matches Prisma User model fields
 /////////////////////////
 
 export interface Client extends User {
   kycStatus?: "PENDING" | "VERIFIED" | "REJECTED";
+  kycExpiry?: string;
   orders?: BankOrder[];
+  // Extended fields (if computed on backend)
+  orderCount?: number;
+  totalVolume?: number;
+  lastActivity?: string;
 }
 
 /////////////////////////

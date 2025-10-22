@@ -38,40 +38,41 @@ import {
 } from "lucide-react";
 import { useBankData } from "@/hooks/useBankData";
 import { bankApi } from "@/lib/api";
-import type { Escrow, Approval } from "@/types/bank";
+import type { Escrow, OrderStatus } from "@/types/bank";
 
-type BankAction =
-  | "verify_docs"
-  | "reject_docs"
-  | "request_more"
-  | "approve"
-  | "reject"
-  | "hold";
+// Bank approvals drive escrow: both banks approve -> IN_TRANSIT (50% released),
+// then confirm delivery -> DELIVERED (100% released)
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: OrderStatus) {
   switch (status) {
-    case "FUNDED":
+    case "BANK_REVIEW":
       return (
-        <Badge className="bg-chart-5 text-white">
-          <Unlock className="w-3 h-3 mr-1" /> Funded
+        <Badge variant="secondary">
+          <Clock className="w-3 h-3 mr-1" /> Awaiting Approval
         </Badge>
       );
-    case "PARTIAL_RELEASED":
+    case "IN_TRANSIT":
       return (
         <Badge className="bg-chart-3 text-white">
-          <Truck className="w-3 h-3 mr-1" /> Partial Released
+          <Truck className="w-3 h-3 mr-1" /> 50% Released
         </Badge>
       );
-    case "FULLY_RELEASED":
+    case "DELIVERED":
       return (
         <Badge className="bg-chart-1 text-white">
-          <CheckCircle className="w-3 h-3 mr-1" /> Fully Released
+          <CheckCircle className="w-3 h-3 mr-1" /> 100% Released
         </Badge>
       );
     case "DISPUTED":
       return (
         <Badge variant="destructive">
           <Lock className="w-3 h-3 mr-1" /> Disputed
+        </Badge>
+      );
+    case "CANCELLED":
+      return (
+        <Badge variant="destructive">
+          <XCircle className="w-3 h-3 mr-1" /> Cancelled
         </Badge>
       );
     default:
@@ -113,9 +114,7 @@ function EscrowDetailsDialog({ escrow }: { escrow: Escrow }) {
             </div>
             <div>
               <Label>Order ID</Label>
-              <p className="font-mono">
-                {escrow.order?.code || escrow.orderId}
-              </p>
+              <p className="font-mono">{escrow.code || escrow.id}</p>
             </div>
           </div>
           <div>
@@ -136,39 +135,54 @@ function EscrowApprovalDialog({
   escrow: Escrow;
   onApproved: () => void;
 }) {
-  const [action, setAction] = useState<BankAction | "">("");
+  const [selectedBank, setSelectedBank] = useState<"buyer" | "seller" | "">("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!action) return;
+  const readyToApprove =
+    escrow.status === "BANK_REVIEW" &&
+    (!escrow.buyerBankApproved || !escrow.sellerBankApproved);
+
+  const buyerBankId =
+    (escrow as any).buyerBank?.id ?? escrow.buyerBankId ?? undefined;
+  const sellerBankId =
+    (escrow as any).sellerBank?.id ?? escrow.sellerBankId ?? undefined;
+
+  const autoRemainingBank: "buyer" | "seller" | "" = !escrow.buyerBankApproved
+    ? "buyer"
+    : !escrow.sellerBankApproved
+    ? "seller"
+    : "";
+
+  const handleApprove = async () => {
+    const bankType = (selectedBank || autoRemainingBank) as "buyer" | "seller";
+    const bankId = bankType === "buyer" ? buyerBankId : sellerBankId;
+    if (!bankType || !bankId) return;
+
     setSubmitting(true);
     try {
       await bankApi.updateEscrow(escrow.id, {
-        action,
-        approvedBy: "CurrentBank", // replace with actual bank identifier
-        notes: notes || undefined,
+        bankId,
+        bankType,
+        comments: notes || undefined,
       });
       onApproved();
     } catch (err) {
-      console.error("Failed to update escrow", err);
+      console.error("Failed to approve escrow", err);
       alert(
-        "Failed to update escrow: " + (err as any)?.message || "Unknown error"
+        "Failed to approve escrow: " +
+          ((err as any)?.message || "Unknown error")
       );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const readyToApprove =
-    escrow.status === "FUNDED" &&
-    (!escrow.buyerBankApproved || !escrow.sellerBankApproved);
-
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" disabled={!readyToApprove}>
-          {readyToApprove ? "Process Approval" : "Already Processed"}
+          {readyToApprove ? "Approve as Bank" : "Already Approved"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
@@ -179,39 +193,46 @@ function EscrowApprovalDialog({
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              Both buyer and seller banks must approve the escrow before fund
-              release.
+              Both buyer and seller banks must approve before the first 50% is
+              released.
             </AlertDescription>
           </Alert>
           <div>
-            <Label>Bank Decision</Label>
+            <Label>Approve as</Label>
             <Select
-              value={action}
-              onValueChange={(v) => setAction(v as BankAction)}
+              value={selectedBank}
+              onValueChange={(v) => setSelectedBank(v as any)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select decision" />
+                <SelectValue
+                  placeholder={
+                    autoRemainingBank
+                      ? `Auto: ${autoRemainingBank} bank`
+                      : "Select bank"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="approve">Approve</SelectItem>
-                <SelectItem value="reject">Reject</SelectItem>
-                <SelectItem value="hold">Place Hold</SelectItem>
+                {buyerBankId && !escrow.buyerBankApproved && (
+                  <SelectItem value="buyer">Buyer Bank</SelectItem>
+                )}
+                {sellerBankId && !escrow.sellerBankApproved && (
+                  <SelectItem value="seller">Seller Bank</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
-          {(action === "reject" || action === "hold") && (
-            <div>
-              <Label>Notes / Reason</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          )}
+          <div>
+            <Label>Notes (optional)</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={!action || submitting}>
-            Submit
+          <Button onClick={handleApprove} disabled={submitting}>
+            Approve
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -231,13 +252,11 @@ export default function EscrowsPage() {
         {escrows.map((escrow) => (
           <Card key={escrow.id}>
             <CardHeader className="flex justify-between items-center">
-              <CardTitle>{escrow.order?.code || escrow.id}</CardTitle>
+              <CardTitle>{escrow.code || escrow.id}</CardTitle>
               {getStatusBadge(escrow.status)}
             </CardHeader>
             <CardContent className="flex justify-between items-center">
-              <div>
-                ${escrow.amount.toLocaleString()} {escrow.currency}
-              </div>
+              <div>${Number(escrow.total).toLocaleString()} HBAR</div>
               <div className="flex gap-2">
                 <EscrowDetailsDialog escrow={escrow} />
                 <EscrowApprovalDialog escrow={escrow} onApproved={refetch} />

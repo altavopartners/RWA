@@ -63,6 +63,72 @@ export async function passOrderService({
       }
     }
 
+    // Get buyer (logged-in user) and their bank
+    const buyer = await tx.user.findUnique({
+      where: { id: userId },
+      select: { bankId: true },
+    });
+
+    if (!buyer) {
+      throw new CheckoutError("Buyer not found.", 404);
+    }
+
+    // Extract unique producer wallet IDs from cart items
+    const producerWalletIds = [
+      ...new Set(
+        cartItems
+          .map((ci) => ci.product.producerWalletId)
+          .filter((id): id is string => !!id)
+      ),
+    ];
+
+    if (producerWalletIds.length === 0) {
+      throw new CheckoutError(
+        "Products missing producer information. Cannot process order.",
+        400
+      );
+    }
+
+    // For now, support single-seller orders only
+    if (producerWalletIds.length > 1) {
+      throw new CheckoutError(
+        "Multi-seller orders not supported yet. Please order from one producer at a time.",
+        400
+      );
+    }
+
+    // Find the seller (producer) and their bank
+    const seller = await tx.user.findFirst({
+      where: {
+        walletAddress: producerWalletIds[0],
+        userType: "PRODUCER",
+      },
+      select: { id: true, bankId: true },
+    });
+
+    if (!seller) {
+      throw new CheckoutError(
+        "Producer not found for this order. Contact support.",
+        404
+      );
+    }
+
+    // Ensure banks exist/are assigned. Fallback to the first configured bank if missing (demo-friendly).
+    let buyerBankIdToUse = buyer.bankId as string | null;
+    let sellerBankIdToUse = seller.bankId as string | null;
+
+    if (!buyerBankIdToUse || !sellerBankIdToUse) {
+      const anyBank = await tx.bank.findFirst();
+      if (!anyBank) {
+        throw new CheckoutError(
+          "No banks configured. Please seed or create at least one bank.",
+          500
+        );
+      }
+      if (!buyerBankIdToUse) buyerBankIdToUse = anyBank.id;
+      if (!sellerBankIdToUse) sellerBankIdToUse = anyBank.id;
+    }
+
     const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
     const subtotal = cartItems.reduce(
       (acc, ci) => acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)),
@@ -81,10 +147,12 @@ export async function passOrderService({
           data: {
             code,
             userId,
-            status: OrderStatus.AWAITING_PAYMENT,
+            status: OrderStatus.AWAITING_PAYMENT, // Start awaiting payment; move to BANK_REVIEW after on-chain payment
             subtotal,
             shipping: shippingD,
             total,
+            buyerBankId: buyerBankIdToUse, // Ensure buyer's bank exists
+            sellerBankId: sellerBankIdToUse, // Ensure seller's bank exists
             items: {
               create: cartItems.map((ci) => ({
                 productId: ci.productId,

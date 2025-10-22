@@ -163,6 +163,35 @@ export async function updateEscrowController(req: Request, res: Response) {
   }
 }
 
+/** POST /api/bank/orders/:id/request-documents */
+export async function requestDocumentsController(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { bankId, comments, requestTo } = req.body;
+
+    if (!bankId || !requestTo)
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Bank ID and requestTo (buyer/seller) required",
+        });
+
+    const { requestDocumentsFromBank } = await import(
+      "../services/bank.service"
+    );
+    const review = await requestDocumentsFromBank(
+      id,
+      bankId,
+      comments || `Document request to ${requestTo}`
+    );
+    res.json({ success: true, data: review });
+  } catch (err: any) {
+    console.error("Error requesting documents:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 /** ---------- ORDERS ---------- */
 
 /** GET /api/bank/orders */

@@ -67,7 +67,6 @@ function getKycStatusBadge(status: Client["kycStatus"]) {
         </Badge>
       );
     case "PENDING":
-    case "SUBMITTED":
       return (
         <Badge variant="outline" className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
@@ -82,7 +81,7 @@ function getKycStatusBadge(status: Client["kycStatus"]) {
         </Badge>
       );
     default:
-      return <Badge variant="secondary">{status}</Badge>;
+      return <Badge variant="secondary">{status || "Unknown"}</Badge>;
   }
 }
 
@@ -134,17 +133,19 @@ function KycActionDialog({ client, onAction }: KycActionDialogProps) {
             <div>
               <Label className="text-sm font-medium">Client Type</Label>
               <div className="flex items-center gap-2 mt-1">
-                {client.type === "PRODUCER" ? (
+                {client.userType === "PRODUCER" ? (
                   <Building2 className="w-4 h-4" />
                 ) : (
                   <User className="w-4 h-4" />
                 )}
-                <span className="text-sm">{client.type}</span>
+                <span className="text-sm">{client.userType}</span>
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium">Hedera ID</Label>
-              <p className="text-sm font-mono mt-1">{client.hederaId}</p>
+              <Label className="text-sm font-medium">Account ID</Label>
+              <p className="text-sm font-mono mt-1">
+                {client.accountId || "N/A"}
+              </p>
             </div>
           </div>
 
@@ -351,18 +352,18 @@ export default function ClientsPage() {
                           {client.email}
                         </div>
                         <div className="text-xs text-muted-foreground font-mono">
-                          {client.hederaId}
+                          {client.accountId || "N/A"}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {client.type === "PRODUCER" ? (
+                        {client.userType === "PRODUCER" ? (
                           <Building2 className="w-4 h-4" />
                         ) : (
                           <User className="w-4 h-4" />
                         )}
-                        {client.type}
+                        {client.userType}
                       </div>
                     </TableCell>
                     <TableCell>{getKycStatusBadge(client.kycStatus)}</TableCell>

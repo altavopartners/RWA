@@ -87,12 +87,12 @@ export const bankApi = {
     return data.data;
   },
 
-  /** Update escrow approval status */
+  /** Bank approval (triggers 50% release when both banks approved) */
   updateEscrow: async (
-    escrowId: string,
-    payload: { action: string; approvedBy: string; notes?: string }
-  ): Promise<Escrow> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/escrows/${escrowId}`, {
+    orderId: string,
+    payload: { bankId: string; bankType: "buyer" | "seller"; comments?: string }
+  ): Promise<BankOrder> => {
+    const res = await fetch(`${BACKEND_URL}/api/bank/escrows/${orderId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -173,6 +173,28 @@ export const bankApi = {
       }
     );
     if (!res.ok) throw new Error("Failed to confirm delivery");
+    const data = await res.json();
+    return data.data;
+  },
+
+  /** Request documents from buyer or seller */
+  requestDocuments: async (
+    orderId: string,
+    payload: {
+      bankId: string;
+      requestTo: "buyer" | "seller";
+      comments?: string;
+    }
+  ): Promise<any> => {
+    const res = await fetch(
+      `${BACKEND_URL}/api/bank/orders/${orderId}/request-documents`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+    if (!res.ok) throw new Error("Failed to request documents");
     const data = await res.json();
     return data.data;
   },

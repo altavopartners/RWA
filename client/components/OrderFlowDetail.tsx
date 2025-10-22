@@ -62,14 +62,15 @@ async function ensureHederaTestnet(provider: Eip1193Provider) {
 }
 
 function toWeiHex(amountHBAR: string | number): string {
-  const s = String(amountHBAR);
-  const [intPart, frac = ""] = s.split(".");
+  const s = String(amountHBAR ?? 0).trim();
+  if (!s || s === "NaN") return "0x0";
+  const [intPartRaw, fracRaw = ""] = s.split(".");
+  const intPart = intPartRaw.replace(/[^0-9]/g, "") || "0";
+  const frac = fracRaw.replace(/[^0-9]/g, "");
   const fracPadded = (frac + "0".repeat(18)).slice(0, 18);
-  const weiStr = (
-    BigInt(intPart || "0") * BigInt(10 ** 18) +
-    BigInt(fracPadded || "0")
-  ).toString(16);
-  return "0x" + weiStr;
+  const WEI_PER_HBAR = BigInt("1000000000000000000");
+  const wei = BigInt(intPart) * WEI_PER_HBAR + BigInt(fracPadded || "0");
+  return "0x" + wei.toString(16);
 }
 
 function money(n: number, w: number = 4) {

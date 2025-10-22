@@ -14,6 +14,7 @@ import {
   confirmDeliveryController,
   getOrdersWithWorkflowController,
   getBanksController,
+  requestDocumentsController,
 } from "../controllers/bank.controller";
 
 const router = Router();
@@ -77,6 +78,12 @@ router.get("/orders", getOrdersController);
  * Update order bank approval status
  */
 router.put("/orders/:id/approval", updateOrderApprovalController);
+
+/**
+ * POST /api/bank/orders/:id/request-documents
+ * Request documents from buyer or seller
+ */
+router.post("/orders/:id/request-documents", requestDocumentsController);
 
 /**
  * GET /api/bank/orders/workflow
