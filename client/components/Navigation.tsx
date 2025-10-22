@@ -47,8 +47,7 @@ export default function Navigation() {
     { href: "/marketplace", label: "Marketplace", icon: Store },
     { href: "/producer-add-product", label: "Add Product", icon: Package },
     { href: "/order-flow", label: "Orders", icon: Receipt },
-    { href: "/shipment-tracking", label: "Tracking", icon: Truck },
-    { href: "/bank-dashboard", label: "Bank", icon: Banknote },
+    //{ href: "/shipment-tracking", label: "Tracking", icon: Truck },
     { href: "/profile", label: "Profile", icon: User },
   ];
 

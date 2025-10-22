@@ -18,7 +18,7 @@ import { getJWTSecret } from "./crypto"; // centralize secret handling here
 
 export class JWTUtils {
   /** Sign a token. Payload must contain userId, walletAddress, userType, sessionId. */
-  static sign(payload: Omit<JWTPayload, "iat" | "exp">, expiresIn: string | number = "24h"): string {
+static sign(payload: Omit<JWTPayload, "iat" | "exp">, expiresIn: string | number = "24h"): string {
     try {
       const secret = getJWTSecret();
       const options: SignOptions = {

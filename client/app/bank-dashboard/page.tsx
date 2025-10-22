@@ -1,24 +1,15 @@
-"use client";
-import { useEffect, useState } from "react";
-import BankDashboard from "@/components/BankOrderDetailsCard";
+// app/bank/page.tsx  (or wherever your route lives)
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import BankDashboard from "@/components/BankOrderDetailsCard"; // can be server or client
 
-export function isConnected(): boolean {
-    if (typeof document === "undefined") return false;
-    const cookies = document.cookie.split("; ");
-    console.log("Current cookies:", cookies);
-    return cookies.some((cookie) => cookie.startsWith("bank_auth_token="));
-}
+export default async function Page() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("bank_auth_token")?.value;
 
-export default function Page() {
-    const [connected, setConnected] = useState(false);
+  if (!token) {
+    redirect("/bank-auth/login");
+  }
 
-    useEffect(() => {
-        setConnected(isConnected());
-    }, []);
-
-    if (!connected) {
-        return <div>Please connect your bank (bankAccessToken cookie not found)</div>;
-    }
-
-    return <BankDashboard />;
+  return <BankDashboard />;
 }
