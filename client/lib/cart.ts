@@ -12,7 +12,9 @@ type AddItemResponse =
     }
   | { success: false; message: string; code?: string };
 
-const API_BASE = "http://localhost:4000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+  "http://localhost:4000";
 
 export async function addItemToCart(
   payload: AddItemPayload
