@@ -41,7 +41,10 @@ export const isValidEthereumAddress = (addr: string): boolean => {
 };
 
 /** Validate based on wallet type */
-export const validateWalletAddress = (addr: string, walletType: WalletType): boolean => {
+export const validateWalletAddress = (
+  addr: string,
+  walletType: WalletType
+): boolean => {
   if (walletType === "hashpack") return isValidHederaAddress(addr);
   if (walletType === "metamask") return isValidEthereumAddress(addr);
   return false;
@@ -50,7 +53,33 @@ export const validateWalletAddress = (addr: string, walletType: WalletType): boo
 /** Get JWT secret from env or throw */
 export const getJWTSecret = (): string => {
   const s = process.env.JWT_SECRET;
-  if (!s) throw new Error("JWT_SECRET is not defined");
+
+  // Production: require strong secret
+  if (process.env.NODE_ENV === "production") {
+    if (!s || s.length < 32) {
+      throw new Error(
+        "JWT_SECRET must be set in production and be at least 32 characters long"
+      );
+    }
+    return s;
+  }
+
+  // Development: warn if using default
+  if (!s) {
+    console.warn(
+      "⚠️  JWT_SECRET not set. Using default for development. " +
+        "DO NOT USE IN PRODUCTION!"
+    );
+    return "dev-secret-please-change-in-production-min-32-chars";
+  }
+
+  if (s.length < 32) {
+    console.warn(
+      `⚠️  JWT_SECRET is only ${s.length} characters. ` +
+        "Recommended minimum is 32 characters."
+    );
+  }
+
   return s;
 };
 
@@ -60,7 +89,10 @@ export const hashData = (data: string): string => {
 };
 
 /** Nonce expiration check (createdAt is when nonce was set on user.updatedAt) */
-export const isNonceValid = (updatedAt?: Date | null, expirationMinutes = 10): boolean => {
+export const isNonceValid = (
+  updatedAt?: Date | null,
+  expirationMinutes = 10
+): boolean => {
   if (!updatedAt) return false;
   const now = Date.now();
   const expiry = new Date(updatedAt).getTime() + expirationMinutes * 60 * 1000;

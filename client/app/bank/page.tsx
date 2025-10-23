@@ -36,7 +36,7 @@ import {
 // ------------------------------
 // Status mapping
 // ------------------------------
-const statusColorMap: Record<OrderStatus, string> = {
+const statusColorMap: Partial<Record<OrderStatus, string>> = {
   BANK_REVIEW: "warning",
   IN_TRANSIT: "info",
   DELIVERED: "success",
@@ -44,7 +44,7 @@ const statusColorMap: Record<OrderStatus, string> = {
   CANCELLED: "destructive",
 };
 
-const statusIconMap: Record<OrderStatus, ReactNode> = {
+const statusIconMap: Partial<Record<OrderStatus, ReactNode>> = {
   BANK_REVIEW: <Clock className="h-4 w-4" />,
   IN_TRANSIT: <Truck className="h-4 w-4" />,
   DELIVERED: <CheckCircle className="h-4 w-4" />,
@@ -349,7 +349,7 @@ export default function BankOrdersPage() {
                   {order.code || order.id}
                 </span>
                 <Badge
-                  variant={statusColorMap[order.status] as any}
+                  variant={(statusColorMap[order.status] as any) ?? "secondary"}
                   className="flex items-center gap-1"
                 >
                   {statusIconMap[order.status]}

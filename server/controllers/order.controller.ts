@@ -142,3 +142,32 @@ export async function getMyOrderById(
     next(err);
   }
 }
+
+// GET /api/orders/:orderId/documents
+export async function getOrderDocuments(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "orderId required" });
+    }
+
+    const { prisma } = await import("../utils/prisma");
+    const documents = await prisma.document.findMany({
+      where: { orderId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json({ success: true, documents });
+  } catch (err: any) {
+    next(err);
+  }
+}

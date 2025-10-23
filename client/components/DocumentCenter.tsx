@@ -5,14 +5,28 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Download, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Download,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import type { Order } from "./OrderFlow";
 
 // ===== API base =====
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+).replace(/\/$/, "");
 
 // ===== Domain types =====
-type CategoryKey = "commercial" | "transport" | "insurance" | "origin_control" | "other";
+type CategoryKey =
+  | "commercial"
+  | "transport"
+  | "insurance"
+  | "origin_control"
+  | "other";
 type DocTypeKey =
   | "commercial_invoice"
   | "packing_list"
@@ -56,7 +70,11 @@ const DOC_CATEGORIES: DocCategory[] = [
     key: "commercial",
     label: "Documents Commerciaux",
     docs: [
-      { key: "commercial_invoice", label: "Facture commerciale (Commercial Invoice)", required: true },
+      {
+        key: "commercial_invoice",
+        label: "Facture commerciale (Commercial Invoice)",
+        required: true,
+      },
       { key: "packing_list", label: "Liste de colisage (Packing List)" },
     ],
   },
@@ -64,8 +82,14 @@ const DOC_CATEGORIES: DocCategory[] = [
     key: "transport",
     label: "Documents de Transport",
     docs: [
-      { key: "bill_of_lading", label: "Connaissement Maritime (Bill of Lading - B/L)" },
-      { key: "air_waybill", label: "Lettre de transport aérien (Air Waybill - AWB)" },
+      {
+        key: "bill_of_lading",
+        label: "Connaissement Maritime (Bill of Lading - B/L)",
+      },
+      {
+        key: "air_waybill",
+        label: "Lettre de transport aérien (Air Waybill - AWB)",
+      },
       { key: "cmr", label: "CMR (Convention des Marchandises par Route)" },
       { key: "fcr", label: "FCR (Forwarder’s Cargo Receipt)" },
     ],
@@ -73,20 +97,36 @@ const DOC_CATEGORIES: DocCategory[] = [
   {
     key: "insurance",
     label: "Documents d'Assurance",
-    docs: [{ key: "insurance_policy", label: "Police d'assurance (Insurance Policy/Certificate)" }],
+    docs: [
+      {
+        key: "insurance_policy",
+        label: "Police d'assurance (Insurance Policy/Certificate)",
+      },
+    ],
   },
   {
     key: "origin_control",
     label: "Documents d'Origine et Contrôle",
     docs: [
-      { key: "certificate_of_origin", label: "Certificat d'origine (Certificate of Origin)" },
-      { key: "inspection_certificate", label: "Certificat d'inspection (Inspection Certificate)" },
+      {
+        key: "certificate_of_origin",
+        label: "Certificat d'origine (Certificate of Origin)",
+      },
+      {
+        key: "inspection_certificate",
+        label: "Certificat d'inspection (Inspection Certificate)",
+      },
     ],
   },
   {
     key: "other",
     label: "Autres Documents",
-    docs: [{ key: "sanitary_certificate", label: "Certificat sanitaire / phytosanitaire" }],
+    docs: [
+      {
+        key: "sanitary_certificate",
+        label: "Certificat sanitaire / phytosanitaire",
+      },
+    ],
   },
 ];
 
@@ -120,7 +160,9 @@ function useReactiveToken(key = "jwtToken") {
   }, [key]);
   return token;
 }
-function authHeaderFrom(token: string | null | undefined): Record<string, string> {
+function authHeaderFrom(
+  token: string | null | undefined
+): Record<string, string> {
   if (!token) return {};
   const value = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
   return { Authorization: value };
@@ -133,7 +175,11 @@ function normalizeDoc(row: any): DocumentItem {
     fileName: row?.fileName ?? row?.filename ?? row?.name ?? "document",
     url: row?.url ?? row?.path ?? "",
     size: row?.size ?? row?.bytes ?? undefined,
-    uploadedAt: row?.uploadedAt ?? row?.createdAt ?? row?.created_at ?? new Date().toISOString(),
+    uploadedAt:
+      row?.uploadedAt ??
+      row?.createdAt ??
+      row?.created_at ??
+      new Date().toISOString(),
     categoryKey: row?.categoryKey ?? row?.category ?? row?.category_key ?? "",
     typeKey: row?.typeKey ?? row?.documentType ?? row?.type_key ?? "",
     status: row?.status ?? row?.review_status ?? "uploaded",
@@ -141,8 +187,11 @@ function normalizeDoc(row: any): DocumentItem {
 }
 
 // ===== API fetch helper =====
-async function fetchDocumentsForOrder(orderId: string, token?: string | null): Promise<DocumentItem[]> {
-  if (!orderId) return [];
+async function fetchDocumentsForOrder(
+  orderId: string,
+  token?: string | null
+): Promise<DocumentItem[]> {
+  if (!orderId || !token) return [];
   const headers = { ...authHeaderFrom(token) };
 
   const urls = [
@@ -158,6 +207,8 @@ async function fetchDocumentsForOrder(orderId: string, token?: string | null): P
         const arr = Array.isArray(data) ? data : data?.documents || [];
         return arr.map(normalizeDoc);
       }
+      // If 401, don't try other URLs (authentication issue)
+      if (res.status === 401) break;
     } catch {
       // try next url
     }
@@ -183,7 +234,9 @@ export default function DocumentCenter({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Source de vérité UI
-  const [localDocs, setLocalDocs] = useState<DocumentItem[]>(() => (documents ?? []).map(normalizeDoc));
+  const [localDocs, setLocalDocs] = useState<DocumentItem[]>(() =>
+    (documents ?? []).map(normalizeDoc)
+  );
 
   // Token + orderId
   const token = useReactiveToken("jwtToken");
@@ -191,6 +244,9 @@ export default function DocumentCenter({
 
   // Re-fetch on mount / orderId / token change
   useEffect(() => {
+    // Don't fetch if no token available yet (avoid 401 errors)
+    if (!token) return;
+
     let cancelled = false;
     (async () => {
       const serverDocs = await fetchDocumentsForOrder(orderId, token);
@@ -208,7 +264,8 @@ export default function DocumentCenter({
 
   const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.heic,.tiff,.doc,.docx";
   const acceptList = ACCEPT.split(",").map((s) => s.trim().toLowerCase());
-  const isAllowed = (file: File) => acceptList.some((ext) => file.name.toLowerCase().endsWith(ext));
+  const isAllowed = (file: File) =>
+    acceptList.some((ext) => file.name.toLowerCase().endsWith(ext));
 
   const docsMap = useMemo(() => {
     const m = new Map<string, DocumentItem[]>();
@@ -221,7 +278,9 @@ export default function DocumentCenter({
   }, [localDocs]);
 
   const currentCat = useMemo<DocCategory>(() => {
-    return DOC_CATEGORIES.find((c) => c.key === categoryKey) ?? DOC_CATEGORIES[0];
+    return (
+      DOC_CATEGORIES.find((c) => c.key === categoryKey) ?? DOC_CATEGORIES[0]
+    );
   }, [categoryKey]);
 
   // URL helper
@@ -372,7 +431,9 @@ export default function DocumentCenter({
             onChange={(e) => {
               const ck = e.target.value as CategoryKey;
               setCategoryKey(ck);
-              const first = (DOC_CATEGORIES.find((c) => c.key === ck) ?? DOC_CATEGORIES[0]).docs[0]?.key;
+              const first = (
+                DOC_CATEGORIES.find((c) => c.key === ck) ?? DOC_CATEGORIES[0]
+              ).docs[0]?.key;
               if (first) setTypeKey(first);
             }}
           >
@@ -401,10 +462,21 @@ export default function DocumentCenter({
         </div>
 
         <div className="w-full flex flex-col justify-end">
-          <Button disabled={busy} onClick={() => fileInputRef.current?.click()} className="w-full">
+          <Button
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full"
+          >
             <Upload className="w-4 h-4 mr-2" /> Choose file
           </Button>
-          <input ref={fileInputRef} type="file" onChange={onPick} accept={ACCEPT} className="hidden" multiple />
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={onPick}
+            accept={ACCEPT}
+            className="hidden"
+            multiple
+          />
         </div>
       </div>
 
@@ -425,14 +497,22 @@ export default function DocumentCenter({
         aria-label="Upload files by drag-and-drop or click"
       >
         <Upload className="w-6 h-6 mx-auto mb-2" />
-        <p className="text-sm">Drag & drop files here, click to choose, or paste from clipboard.</p>
-        {busy && <p className="text-xs text-muted-foreground mt-1">Uploading…</p>}
+        <p className="text-sm">
+          Drag & drop files here, click to choose, or paste from clipboard.
+        </p>
+        {busy && (
+          <p className="text-xs text-muted-foreground mt-1">Uploading…</p>
+        )}
         {error && <p className="text-xs text-destructive mt-1">{error}</p>}
       </div>
 
       {/* Toggle Available Docs */}
       <div className="mt-4 text-center">
-        <Button variant="ghost" size="sm" onClick={() => setShowDocs((s) => !s)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowDocs((s) => !s)}
+        >
           {showDocs ? (
             <>
               <ChevronUp className="w-4 h-4 mr-1" /> Hide Documents
@@ -469,7 +549,9 @@ export default function DocumentCenter({
                             <p className="text-sm truncate">{d.label}</p>
                             <p className="text-xs text-muted-foreground">
                               {has
-                                ? `${list.length} file${list.length > 1 ? "s" : ""}`
+                                ? `${list.length} file${
+                                    list.length > 1 ? "s" : ""
+                                  }`
                                 : d.required
                                 ? "Required"
                                 : "Optional"}
@@ -505,7 +587,11 @@ export default function DocumentCenter({
                                   className="h-8 w-8"
                                   onClick={async () => {
                                     await onDeleteDoc(list[0]);
-                                    const refreshed = await fetchDocumentsForOrder(orderId, token);
+                                    const refreshed =
+                                      await fetchDocumentsForOrder(
+                                        orderId,
+                                        token
+                                      );
                                     setLocalDocs(refreshed);
                                   }}
                                 >

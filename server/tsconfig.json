@@ -5,8 +5,8 @@
     "module": "commonjs",
     "moduleResolution": "node",
 
-    "rootDir": ".",              // <- on compile tout le dossier server/
-    "outDir": "../dist",         // <- JS généré dans dist/ à la racine
+    "rootDir": ".", // <- on compile tout le dossier server/
+    "outDir": "./dist", // JS output stays inside server/dist
 
     "strict": true,
     "esModuleInterop": true,
@@ -15,6 +15,6 @@
     "skipLibCheck": true,
     "sourceMap": true
   },
-  "include": ["**/*.ts", "utils/w3.ts"],        // <- on inclut tous les .ts de server/
+  "include": ["**/*.ts", "utils/w3.ts"], // <- on inclut tous les .ts de server/
   "exclude": ["../node_modules", "../dist"]
 }

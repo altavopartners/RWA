@@ -7,7 +7,12 @@ export type OrderStatus =
   | "IN_TRANSIT" // Order shipped
   | "DELIVERED" // Delivered but not yet completed
   | "DISPUTED" // Order in dispute
-  | "CANCELLED"; // Order cancelled
+  | "CANCELLED" // Order cancelled
+  // Extended statuses used by PaymentReleasePanel/UI workflow
+  | "banks_approved"
+  | "shipped_50_released"
+  | "received_100_released"
+  | "completed";
 
 export type DocumentStatus = "PENDING" | "VALIDATED" | "REJECTED";
 
@@ -49,6 +54,30 @@ export interface Document {
   filename: string;
   documentType?: string;
   status: DocumentStatus;
+}
+
+export interface BankDocument {
+  id: string;
+  filename: string;
+  cid: string;
+  url: string;
+  category?: string;
+  documentType?: string;
+  status: "PENDING" | "VALIDATED" | "REJECTED";
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    userType: string;
+  };
+  order?: {
+    id: string;
+    code: string;
+  };
+  createdAt: string;
+  validatedBy?: string;
+  validatedAt?: string;
+  rejectionReason?: string;
 }
 
 /////////////////////////
@@ -98,7 +127,7 @@ export interface Dispute {
   orderId: string;
   initiatedBy: "Buyer" | "Producer";
   reason: string;
-  status: "Open" | "Closed";
+  status: "Open" | "UnderReview" | "Resolved" | "Closed";
   priority: "Low" | "Medium" | "High";
   amount: number;
   currency: string;

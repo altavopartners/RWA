@@ -16,7 +16,7 @@ type Resource = "clients" | "disputes" | "documents" | "escrows" | "orders";
 type ResourceMap = {
   clients: Client[];
   disputes: Dispute[];
-  documents: Document[];
+  documents: import("../types/bank").BankDocument[];
   escrows: Escrow[];
   orders: BankOrder[];
 };

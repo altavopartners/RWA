@@ -199,3 +199,52 @@ export const bankApi = {
     return data.data;
   },
 };
+
+/** Document API (IPFS-backed storage) */
+export const documentApi = {
+  /** Upload a document with metadata */
+  upload: async (
+    file: File,
+    metadata: {
+      categoryKey?: string;
+      typeKey?: string;
+      orderId?: string;
+    },
+    token?: string
+  ): Promise<any> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (metadata.categoryKey)
+      formData.append("categoryKey", metadata.categoryKey);
+    if (metadata.typeKey) formData.append("typeKey", metadata.typeKey);
+    if (metadata.orderId) formData.append("orderId", metadata.orderId);
+
+    const headers: HeadersInit = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${BACKEND_URL}/api/documents/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Upload failed");
+    }
+
+    return await res.json();
+  },
+
+  /** Download a document by CID */
+  download: async (cid: string): Promise<Blob> => {
+    const res = await fetch(`${BACKEND_URL}/api/documents/${cid}/download`);
+    if (!res.ok) throw new Error("Download failed");
+    return await res.blob();
+  },
+
+  /** Get document URL by CID */
+  getUrl: (cid: string): string => {
+    return `${BACKEND_URL}/api/documents/${cid}/download`;
+  },
+};
