@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { bankLogin } from "@/lib/bankAuth";
+import { useBankAuth } from "@/hooks/useBankAuth";
 
 export default function BankLoginForm() {
   const router = useRouter();
+  const { login } = useBankAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,11 +26,10 @@ export default function BankLoginForm() {
 
     setSubmitting(true);
     try {
-      await bankLogin({ email, password });
-      router.replace("/bank-dashboard");
+      await login(email, password);
+      router.replace("/bank");
     } catch (err: any) {
-      let message = "Sign-in failed.";
-      setError(message);
+      setError(err.message || "Sign-in failed.");
     } finally {
       setSubmitting(false);
     }
@@ -38,13 +38,15 @@ export default function BankLoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
-        <label className="block text-sm mb-1" htmlFor="email">Email</label>
+        <label className="block text-sm mb-1" htmlFor="email">
+          Email
+        </label>
         <input
           id="email"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="email@bank.com"
           autoComplete="username"
           required
@@ -52,21 +54,23 @@ export default function BankLoginForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1" htmlFor="password">Password</label>
+        <label className="block text-sm mb-1" htmlFor="password">
+          Password
+        </label>
         <div className="relative">
           <input
             id="password"
             className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 pr-12"
             type={showPassword ? "text" : "password"}
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             autoComplete="current-password"
             required
           />
           <button
             type="button"
-            onClick={() => setShowPassword(s => !s)}
+            onClick={() => setShowPassword((s) => !s)}
             className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:opacity-80"
             aria-label={showPassword ? "Hide password" : "Show password"}
             title={showPassword ? "Hide" : "Show"}
@@ -76,7 +80,11 @@ export default function BankLoginForm() {
         </div>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
@@ -88,7 +96,9 @@ export default function BankLoginForm() {
 
       <p className="text-sm text-center mt-2 text-slate-700 dark:text-slate-200">
         No account?{" "}
-        <a className="underline" href="/bank-auth/register">Create one</a>
+        <a className="underline" href="/bank-auth/register">
+          Create one
+        </a>
       </p>
     </form>
   );
