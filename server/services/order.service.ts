@@ -64,13 +64,13 @@ export async function passOrderService({
       }
     }
 
-    // Get buyer (logged-in user) and their bank
-    const buyer = await tx.user.findUnique({
+    // Ensure buyer exists
+    const buyerExists = await tx.user.findUnique({
       where: { id: userId },
-      select: { bankId: true },
+      select: { id: true },
     });
 
-    if (!buyer) {
+    if (!buyerExists) {
       throw new CheckoutError("Buyer not found.", 404);
     }
 
@@ -98,37 +98,32 @@ export async function passOrderService({
       );
     }
 
-    // Find the seller (producer) and their bank
-    const seller = await tx.user.findFirst({
+    // Ensure the seller (producer) exists
+    const sellerExists = await tx.user.findFirst({
       where: {
         walletAddress: producerWalletIds[0],
         userType: "PRODUCER",
       },
-      select: { id: true, bankId: true },
+      select: { id: true },
     });
 
-    if (!seller) {
+    if (!sellerExists) {
       throw new CheckoutError(
         "Producer not found for this order. Contact support.",
         404
       );
     }
 
-    // Ensure banks exist/are assigned. Fallback to the first configured bank if missing (demo-friendly).
-    let buyerBankIdToUse = buyer.bankId as string | null;
-    let sellerBankIdToUse = seller.bankId as string | null;
-
-    if (!buyerBankIdToUse || !sellerBankIdToUse) {
-      const anyBank = await tx.bank.findFirst();
-      if (!anyBank) {
-        throw new CheckoutError(
-          "No banks configured. Please seed or create at least one bank.",
-          500
-        );
-      }
-      if (!buyerBankIdToUse) buyerBankIdToUse = anyBank.id;
-      if (!sellerBankIdToUse) sellerBankIdToUse = anyBank.id;
+    // Assign banks: use any configured bank (demo-friendly fallback)
+    const anyBank = await tx.bank.findFirst();
+    if (!anyBank) {
+      throw new CheckoutError(
+        "No banks configured. Please seed or create at least one bank.",
+        500
+      );
     }
+    const buyerBankIdToUse = anyBank.id;
+    const sellerBankIdToUse = anyBank.id;
 
     const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
     const subtotal = cartItems.reduce(

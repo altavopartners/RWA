@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { 
+import {
   Search,
   MapPin,
   Truck,
@@ -18,7 +18,7 @@ import {
   Globe,
   Thermometer,
   Shield,
-  QrCode
+  QrCode,
 } from "lucide-react";
 
 const ShipmentTracking = () => {
@@ -49,16 +49,16 @@ const ShipmentTracking = () => {
           timestamp: "2024-01-22 08:00",
           description: "Package picked up from producer",
           icon: Package,
-          completed: true
+          completed: true,
         },
         {
-          id: "2", 
+          id: "2",
           status: "warehouse",
           location: "Export Processing Zone, Tema",
           timestamp: "2024-01-23 14:30",
           description: "Arrived at export warehouse for inspection",
           icon: Shield,
-          completed: true
+          completed: true,
         },
         {
           id: "3",
@@ -67,7 +67,7 @@ const ShipmentTracking = () => {
           timestamp: "2024-01-24 09:15",
           description: "Customs clearance completed",
           icon: CheckCircle,
-          completed: true
+          completed: true,
         },
         {
           id: "4",
@@ -76,7 +76,7 @@ const ShipmentTracking = () => {
           timestamp: "2024-01-25 16:00",
           description: "Departed from origin port",
           icon: Ship,
-          completed: true
+          completed: true,
         },
         {
           id: "5",
@@ -86,7 +86,7 @@ const ShipmentTracking = () => {
           description: "In transit via ocean freight",
           icon: Truck,
           completed: false,
-          current: true
+          current: true,
         },
         {
           id: "6",
@@ -95,7 +95,7 @@ const ShipmentTracking = () => {
           timestamp: null,
           description: "Arrived at destination port",
           icon: MapPin,
-          completed: false
+          completed: false,
         },
         {
           id: "7",
@@ -104,16 +104,16 @@ const ShipmentTracking = () => {
           timestamp: null,
           description: "Package delivered to buyer",
           icon: CheckCircle,
-          completed: false
-        }
-      ]
+          completed: false,
+        },
+      ],
     },
     {
       id: "2",
       trackingNumber: "HEX987654321",
       orderId: "ORD-2024-002",
       productName: "Authentic Kente Cloth",
-      origin: "Kumasi, Ghana", 
+      origin: "Kumasi, Ghana",
       destination: "New York, USA",
       status: "pending",
       progress: 15,
@@ -131,7 +131,7 @@ const ShipmentTracking = () => {
           timestamp: "2024-01-20 10:00",
           description: "Order confirmed, weaving in progress",
           icon: Package,
-          completed: true
+          completed: true,
         },
         {
           id: "2",
@@ -141,23 +141,28 @@ const ShipmentTracking = () => {
           description: "Quality inspection pending",
           icon: Shield,
           completed: false,
-          current: true
-        }
-      ]
-    }
+          current: true,
+        },
+      ],
+    },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "bg-warning";
-      case "in_transit": return "bg-info";
-      case "delivered": return "bg-success";
-      case "delayed": return "bg-destructive";
-      default: return "bg-muted";
+      case "pending":
+        return "bg-warning";
+      case "in_transit":
+        return "bg-info";
+      case "delivered":
+        return "bg-success";
+      case "delayed":
+        return "bg-destructive";
+      default:
+        return "bg-muted";
     }
   };
 
-  const currentShipment = mockShipments.find(s => s.id === selectedShipment)!;
+  const currentShipment = mockShipments.find((s) => s.id === selectedShipment)!;
 
   const handleSearch = () => {
     console.log("Searching for tracking number:", trackingNumber);
@@ -173,7 +178,9 @@ const ShipmentTracking = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Shipment Tracking</h1>
-          <p className="text-muted-foreground">Track your products in real-time across the globe</p>
+          <p className="text-muted-foreground">
+            Track your products in real-time across the globe
+          </p>
         </div>
 
         {/* Search Bar */}
@@ -210,15 +217,20 @@ const ShipmentTracking = () => {
                     key={shipment.id}
                     onClick={() => setSelectedShipment(shipment.id)}
                     className={`p-4 rounded-lg cursor-pointer transition-smooth border ${
-                      selectedShipment === shipment.id 
-                        ? "border-primary bg-primary/10" 
+                      selectedShipment === shipment.id
+                        ? "border-primary bg-primary/10"
                         : "border-border/50 hover:border-primary/50"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">{shipment.trackingNumber}</span>
-                      <Badge variant="outline" className={getStatusColor(shipment.status)}>
-                        {shipment.status.replace('_', ' ')}
+                      <span className="text-sm font-medium">
+                        {shipment.trackingNumber}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor(shipment.status)}
+                      >
+                        {shipment.status.replace("_", " ")}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
@@ -227,7 +239,9 @@ const ShipmentTracking = () => {
                     <div className="space-y-1">
                       <div className="flex items-center text-xs text-muted-foreground">
                         <MapPin className="w-3 h-3 mr-1" />
-                        <span>{shipment.origin} → {shipment.destination}</span>
+                        <span>
+                          {shipment.origin} → {shipment.destination}
+                        </span>
                       </div>
                       <Progress value={shipment.progress} className="h-1" />
                     </div>
@@ -246,22 +260,38 @@ const ShipmentTracking = () => {
                 <Card className="glass border-border/50 p-6">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-bold mb-1">{currentShipment.trackingNumber}</h2>
-                      <p className="text-muted-foreground mb-2">{currentShipment.productName}</p>
+                      <h2 className="text-2xl font-bold mb-1">
+                        {currentShipment.trackingNumber}
+                      </h2>
+                      <p className="text-muted-foreground mb-2">
+                        {currentShipment.productName}
+                      </p>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <MapPin className="w-4 h-4 mr-1" />
-                        <span>{currentShipment.origin} → {currentShipment.destination}</span>
+                        <span>
+                          {currentShipment.origin} →{" "}
+                          {currentShipment.destination}
+                        </span>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`${getStatusColor(currentShipment.status)} text-white`}>
-                      {currentShipment.status.replace('_', ' ')}
+                    <Badge
+                      variant="outline"
+                      className={`${getStatusColor(
+                        currentShipment.status
+                      )} text-white`}
+                    >
+                      {currentShipment.status.replace("_", " ")}
                     </Badge>
                   </div>
 
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Delivery Progress</span>
-                      <span className="text-sm text-muted-foreground">{currentShipment.progress}%</span>
+                      <span className="text-sm font-medium">
+                        Delivery Progress
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {currentShipment.progress}%
+                      </span>
                     </div>
                     <Progress value={currentShipment.progress} />
                   </div>
@@ -276,12 +306,20 @@ const ShipmentTracking = () => {
                       <p className="font-semibold">{currentShipment.weight}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Est. Delivery</p>
-                      <p className="font-semibold">{currentShipment.estimatedDelivery}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Est. Delivery
+                      </p>
+                      <p className="font-semibold">
+                        {currentShipment.estimatedDelivery}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Current Location</p>
-                      <p className="font-semibold line-clamp-1">{currentShipment.currentLocation}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Current Location
+                      </p>
+                      <p className="font-semibold line-clamp-1">
+                        {currentShipment.currentLocation}
+                      </p>
                     </div>
                   </div>
                 </Card>
@@ -298,26 +336,34 @@ const ShipmentTracking = () => {
                       const EventIcon = event.icon;
                       return (
                         <div key={event.id} className="flex items-start gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            event.completed 
-                              ? "bg-success/20" 
-                              : event.current 
-                                ? "bg-warning/20 animate-pulse" 
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              event.completed
+                                ? "bg-success/20"
+                                : event.current
+                                ? "bg-warning/20 animate-pulse"
                                 : "bg-muted/20"
-                          }`}>
-                            <EventIcon className={`w-5 h-5 ${
-                              event.completed 
-                                ? "text-success" 
-                                : event.current 
-                                  ? "text-warning" 
+                            }`}
+                          >
+                            <EventIcon
+                              className={`w-5 h-5 ${
+                                event.completed
+                                  ? "text-success"
+                                  : event.current
+                                  ? "text-warning"
                                   : "text-muted-foreground"
-                            }`} />
+                              }`}
+                            />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
-                              <h4 className={`font-medium ${
-                                event.completed || event.current ? "text-foreground" : "text-muted-foreground"
-                              }`}>
+                              <h4
+                                className={`font-medium ${
+                                  event.completed || event.current
+                                    ? "text-foreground"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
                                 {event.description}
                               </h4>
                               {event.timestamp && (
@@ -346,20 +392,30 @@ const ShipmentTracking = () => {
                     <Thermometer className="w-5 h-5 mr-2" />
                     Live Conditions
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Temperature</span>
-                      <span className="font-semibold">{currentShipment.temperature}</span>
+                      <span className="text-sm text-muted-foreground">
+                        Temperature
+                      </span>
+                      <span className="font-semibold">
+                        {currentShipment.temperature}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Humidity</span>
-                      <span className="font-semibold">{currentShipment.humidity}</span>
+                      <span className="text-sm text-muted-foreground">
+                        Humidity
+                      </span>
+                      <span className="font-semibold">
+                        {currentShipment.humidity}
+                      </span>
                     </div>
                     <div className="p-3 bg-success/10 rounded-lg">
                       <div className="flex items-center text-success">
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        <span className="text-sm font-medium">Optimal Conditions</span>
+                        <span className="text-sm font-medium">
+                          Optimal Conditions
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -368,18 +424,18 @@ const ShipmentTracking = () => {
                 {/* Quick Actions */}
                 <Card className="glass border-border/50 p-6">
                   <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-                  
+
                   <div className="space-y-3">
                     <Button variant="outline" className="w-full">
                       <Calendar className="w-4 h-4 mr-2" />
                       Schedule Delivery
                     </Button>
-                    
+
                     <Button variant="outline" className="w-full">
                       <AlertTriangle className="w-4 h-4 mr-2" />
                       Report Issue
                     </Button>
-                    
+
                     <Button variant="outline" className="w-full">
                       <Globe className="w-4 h-4 mr-2" />
                       View on Map
@@ -390,15 +446,17 @@ const ShipmentTracking = () => {
                 {/* Delivery Estimate */}
                 <Card className="glass border-border/50 p-6">
                   <h3 className="text-lg font-semibold mb-4">Delivery Info</h3>
-                  
+
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">Estimated Arrival</p>
+                      <p className="text-sm text-muted-foreground">
+                        Estimated Arrival
+                      </p>
                       <p className="text-lg font-bold gradient-primary bg-clip-text text-transparent">
                         {currentShipment.estimatedDelivery}
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-info/10 rounded-lg">
                       <div className="flex items-center text-info">
                         <Clock className="w-4 h-4 mr-2" />

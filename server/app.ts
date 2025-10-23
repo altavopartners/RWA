@@ -5,7 +5,6 @@ import { corsOptions } from "./config/cors";
 import { ensureUploadDirs, rootUpload } from "./config/uploads";
 import routes from "./routes";
 import errorHandler from "./middleware/errorHandler";
-
 const app = express();
 
 // JSON parsing (allow large payloads)
@@ -32,5 +31,4 @@ app.use("/api", routes);
 
 // Central error handler
 app.use(errorHandler);
-
 export default app;

@@ -16,6 +16,7 @@ exports.confirmDelivery = confirmDelivery;
 exports.getOrdersWithWorkflow = getOrdersWithWorkflow;
 exports.getBanks = getBanks;
 const prisma_1 = require("../utils/prisma");
+const escrow_deploy_service_1 = require("./escrow-deploy.service");
 /** ---------- CLIENT / KYC ---------- */
 /** Fetch all clients (with orders and KYC info) */
 async function getClients() {
@@ -99,13 +100,18 @@ async function getDisputes() {
 }
 /** Update dispute status */
 async function updateDispute(disputeId, data) {
+    console.log("Service: Updating dispute", disputeId, data);
     let orderStatus = "DISPUTED";
-    if (data.action === "resolve")
-        orderStatus = "COMPLETED";
-    return prisma_1.prisma.order.update({
+    if (data.action === "resolve") {
+        orderStatus = "DELIVERED"; // Mark as delivered when dispute is resolved
+        console.log("Service: Resolving dispute, setting status to DELIVERED");
+    }
+    const updatedOrder = await prisma_1.prisma.order.update({
         where: { id: disputeId },
         data: { status: orderStatus, updatedAt: new Date() },
     });
+    console.log("Service: Order updated successfully", updatedOrder.id, updatedOrder.status);
+    return updatedOrder;
 }
 /** ---------- DOCUMENTS ---------- */
 /** Fetch all documents */
@@ -180,6 +186,27 @@ async function approveOrderByBankService(orderId, bankId, bankType, comments) {
             updates.buyerBankApproved = true;
         if (bankType === "seller")
             updates.sellerBankApproved = true;
+        // Call smart contract to approve on blockchain
+        if (order.escrowAddress) {
+            console.log(`Calling blockchain ${bankType} bank approval for escrow:`, order.escrowAddress);
+            try {
+                if (bankType === "buyer") {
+                    await (0, escrow_deploy_service_1.approveBuyerBank)(order.escrowAddress);
+                    console.log("Buyer bank approved on blockchain");
+                }
+                else {
+                    await (0, escrow_deploy_service_1.approveSellerBank)(order.escrowAddress);
+                    console.log("Seller bank approved on blockchain");
+                }
+            }
+            catch (err) {
+                console.error("Failed to approve on blockchain:", err);
+                throw new Error(`Failed to approve ${bankType} bank on blockchain: ${err}`);
+            }
+        }
+        else {
+            console.warn("No escrow address found - skipping blockchain approval");
+        }
         // Determine future approval state
         const willBeBuyerApproved = bankType === "buyer" ? true : order.buyerBankApproved;
         const willBeSellerApproved = bankType === "seller" ? true : order.sellerBankApproved;
@@ -188,16 +215,41 @@ async function approveOrderByBankService(orderId, bankId, bankType, comments) {
             willBeSellerApproved &&
             order.status !== "IN_TRANSIT") {
             updates.status = "IN_TRANSIT";
-            // Create first 50% payment release
-            await tx.paymentRelease.create({
-                data: {
-                    orderId,
-                    type: "PARTIAL50",
-                    amount: order.total.div(2), // use .div(2) if total is Decimal
-                    released: true,
-                    releasedAt: new Date(),
-                },
-            });
+            // Release first 50% payment on blockchain
+            if (order.escrowAddress) {
+                console.log("Both banks approved - releasing first payment on blockchain");
+                try {
+                    const txResult = await (0, escrow_deploy_service_1.releaseFirstPayment)(order.escrowAddress);
+                    console.log("First payment released on blockchain:", txResult.transactionHash);
+                    // Create payment release record with transaction hash
+                    await tx.paymentRelease.create({
+                        data: {
+                            orderId,
+                            type: "PARTIAL50",
+                            amount: order.total.div(2),
+                            released: true,
+                            releasedAt: new Date(),
+                            transactionId: txResult.transactionHash,
+                        },
+                    });
+                }
+                catch (err) {
+                    console.error("Failed to release first payment on blockchain:", err);
+                    throw new Error(`Failed to release first payment: ${err}`);
+                }
+            }
+            else {
+                // No escrow address - just create DB record
+                await tx.paymentRelease.create({
+                    data: {
+                        orderId,
+                        type: "PARTIAL50",
+                        amount: order.total.div(2),
+                        released: true,
+                        releasedAt: new Date(),
+                    },
+                });
+            }
         }
         // Update order
         return tx.order.update({ where: { id: orderId }, data: updates });

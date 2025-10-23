@@ -11,6 +11,7 @@ exports.getMyOrderByIdService = getMyOrderByIdService;
 // services/order.service.ts
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const client_1 = require("@prisma/client");
+const escrow_deploy_service_1 = require("./escrow-deploy.service");
 class CheckoutError extends Error {
     constructor(message, status = 400) {
         super(message);
@@ -49,12 +50,12 @@ async function passOrderService({ userId, shipping = 5.0, }) {
                 throw new CheckoutError(`Insufficient stock for "${ci.product.name}".`, 409);
             }
         }
-        // Get buyer (logged-in user) and their bank
-        const buyer = await tx.user.findUnique({
+        // Ensure buyer exists
+        const buyerExists = await tx.user.findUnique({
             where: { id: userId },
-            select: { bankId: true },
+            select: { id: true },
         });
-        if (!buyer) {
+        if (!buyerExists) {
             throw new CheckoutError("Buyer not found.", 404);
         }
         // Extract unique producer wallet IDs from cart items
@@ -70,30 +71,24 @@ async function passOrderService({ userId, shipping = 5.0, }) {
         if (producerWalletIds.length > 1) {
             throw new CheckoutError("Multi-seller orders not supported yet. Please order from one producer at a time.", 400);
         }
-        // Find the seller (producer) and their bank
-        const seller = await tx.user.findFirst({
+        // Ensure the seller (producer) exists
+        const sellerExists = await tx.user.findFirst({
             where: {
                 walletAddress: producerWalletIds[0],
                 userType: "PRODUCER",
             },
-            select: { id: true, bankId: true },
+            select: { id: true },
         });
-        if (!seller) {
+        if (!sellerExists) {
             throw new CheckoutError("Producer not found for this order. Contact support.", 404);
         }
-        // Ensure banks exist/are assigned. Fallback to the first configured bank if missing (demo-friendly).
-        let buyerBankIdToUse = buyer.bankId;
-        let sellerBankIdToUse = seller.bankId;
-        if (!buyerBankIdToUse || !sellerBankIdToUse) {
-            const anyBank = await tx.bank.findFirst();
-            if (!anyBank) {
-                throw new CheckoutError("No banks configured. Please seed or create at least one bank.", 500);
-            }
-            if (!buyerBankIdToUse)
-                buyerBankIdToUse = anyBank.id;
-            if (!sellerBankIdToUse)
-                sellerBankIdToUse = anyBank.id;
+        // Assign banks: use any configured bank (demo-friendly fallback)
+        const anyBank = await tx.bank.findFirst();
+        if (!anyBank) {
+            throw new CheckoutError("No banks configured. Please seed or create at least one bank.", 500);
         }
+        const buyerBankIdToUse = anyBank.id;
+        const sellerBankIdToUse = anyBank.id;
         const toDecimal = (n) => new client_1.Prisma.Decimal(n);
         const subtotal = cartItems.reduce((acc, ci) => acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)), toDecimal(0));
         const shippingD = toDecimal(shipping ?? 0);
@@ -152,6 +147,42 @@ async function passOrderService({ userId, shipping = 5.0, }) {
             }
         }
         await tx.cartItem.deleteMany({ where: { userId } });
+        // Deploy escrow contract for this order
+        try {
+            const buyerUser = await tx.user.findUnique({
+                where: { id: userId },
+                select: { walletAddress: true },
+            });
+            const sellerWalletAddress = producerWalletIds[0];
+            if (!buyerUser?.walletAddress) {
+                console.warn(`⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`);
+            }
+            else if (!sellerWalletAddress) {
+                console.warn(`⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`);
+            }
+            else {
+                console.log(`🚀 Deploying escrow for order ${order.id}...`);
+                const escrowResult = await (0, escrow_deploy_service_1.deployEscrowContract)({
+                    buyerAddress: buyerUser.walletAddress,
+                    sellerAddress: sellerWalletAddress,
+                    totalAmount: total.toString(), // HBAR amount as string
+                });
+                // Save escrow address to order
+                await tx.order.update({
+                    where: { id: order.id },
+                    data: {
+                        escrowAddress: escrowResult.contractAddress,
+                        hederaTransactionId: escrowResult.transactionHash,
+                    },
+                });
+                console.log(`✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`);
+            }
+        }
+        catch (escrowError) {
+            // Log error but don't fail order creation
+            console.error(`❌ Failed to deploy escrow for order ${order.id}:`, escrowError.message);
+            // Order is still created, escrow can be deployed manually later
+        }
         return order;
     });
 }

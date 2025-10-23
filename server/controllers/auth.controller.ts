@@ -103,13 +103,19 @@ export async function updateProfileController(
     } = {};
 
     // Core identity fields
-    if (req.body.fullName !== undefined) updateData.fullName = req.body.fullName;
+    if (req.body.fullName !== undefined)
+      updateData.fullName = req.body.fullName;
     if (req.body.email !== undefined) updateData.email = req.body.email;
-    if (req.body.phoneNumber !== undefined) updateData.phoneNumber = req.body.phoneNumber;
-    if (req.body.location !== undefined) updateData.location = req.body.location;
-    if (req.body.profileImage !== undefined) updateData.profileImage = req.body.profileImage;
-    if (req.body.businessName !== undefined) updateData.businessName = req.body.businessName;
-    if (req.body.businessDesc !== undefined) updateData.businessDesc = req.body.businessDesc;
+    if (req.body.phoneNumber !== undefined)
+      updateData.phoneNumber = req.body.phoneNumber;
+    if (req.body.location !== undefined)
+      updateData.location = req.body.location;
+    if (req.body.profileImage !== undefined)
+      updateData.profileImage = req.body.profileImage;
+    if (req.body.businessName !== undefined)
+      updateData.businessName = req.body.businessName;
+    if (req.body.businessDesc !== undefined)
+      updateData.businessDesc = req.body.businessDesc;
 
     console.log("🟣 Backend updating with:", updateData);
 

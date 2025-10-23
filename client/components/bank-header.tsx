@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import { Bell, User, Settings, LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation";
+import { Bell, User, Settings, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,21 +10,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { bankLogout } from "@/lib/bankAuth";
 
 interface BankHeaderProps {
-  title: string
-  description?: string
+  title: string;
+  description?: string;
 }
 
 export function BankHeader({ title, description }: BankHeaderProps) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      bankLogout();
+      router.push("/bank-auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-border">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
-        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -32,7 +47,10 @@ export function BankHeader({ title, description }: BankHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-5 w-5" />
-              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs">
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs"
+              >
                 3
               </Badge>
             </Button>
@@ -43,19 +61,25 @@ export function BankHeader({ title, description }: BankHeaderProps) {
             <DropdownMenuItem>
               <div className="flex flex-col gap-1">
                 <p className="font-medium">KYC Approval Required</p>
-                <p className="text-xs text-muted-foreground">Client ABC Corp needs verification</p>
+                <p className="text-xs text-muted-foreground">
+                  Client ABC Corp needs verification
+                </p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <div className="flex flex-col gap-1">
                 <p className="font-medium">Document Validation</p>
-                <p className="text-xs text-muted-foreground">2 documents pending review</p>
+                <p className="text-xs text-muted-foreground">
+                  2 documents pending review
+                </p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <div className="flex flex-col gap-1">
                 <p className="font-medium">Escrow Approval</p>
-                <p className="text-xs text-muted-foreground">Multisig signature required</p>
+                <p className="text-xs text-muted-foreground">
+                  Multisig signature required
+                </p>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -87,7 +111,10 @@ export function BankHeader({ title, description }: BankHeaderProps) {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </DropdownMenuItem>
@@ -95,5 +122,5 @@ export function BankHeader({ title, description }: BankHeaderProps) {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }
