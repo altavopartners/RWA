@@ -1,6 +1,4 @@
 "use client";
-
-import { useRouter } from "next/navigation";
 import { Bell, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { bankLogout } from "@/lib/bankAuth";
+import { useBankAuth } from "@/hooks/useBankAuth";
 
 interface BankHeaderProps {
   title: string;
@@ -21,12 +19,11 @@ interface BankHeaderProps {
 }
 
 export function BankHeader({ title, description }: BankHeaderProps) {
-  const router = useRouter();
+  const { logout } = useBankAuth();
 
   const handleLogout = async () => {
     try {
-      bankLogout();
-      router.push("/bank-auth/login");
+      await logout();
     } catch (error) {
       console.error("Logout error:", error);
     }
