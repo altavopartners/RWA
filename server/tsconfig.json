@@ -4,6 +4,7 @@
     "lib": ["ES2020"],
     "module": "commonjs",
     "moduleResolution": "node",
+    "types": ["node"],
 
     "rootDir": ".", // <- on compile tout le dossier server/
     "outDir": "./dist", // JS output stays inside server/dist
