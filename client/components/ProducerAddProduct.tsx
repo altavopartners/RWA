@@ -9,8 +9,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Coins, Upload, Camera, FileCheck, AlertTriangle, CheckCircle2, X } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Coins,
+  Upload,
+  Camera,
+  FileCheck,
+  AlertTriangle,
+  CheckCircle2,
+  X,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import { useRouter } from "next/navigation";
@@ -65,7 +79,7 @@ type FormState = {
   unit: "kg" | "ton" | "piece" | "litre";
   pricePerUnit: string;
   countryOfOrigin: string;
-  category?: (typeof categories)[number]["id"]; 
+  category?: (typeof categories)[number]["id"];
   subcategory?: string;
   description: string;
   images?: File[];
@@ -114,13 +128,18 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 };
 
-const RequiredLabel = ({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) => (
+const RequiredLabel = ({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: React.ReactNode;
+}) => (
   <Label htmlFor={htmlFor} className="flex items-center gap-1">
     <span>{children}</span>
     <span className="text-red-600">*</span>
   </Label>
 );
-
 
 const ProducerAddProductPage = () => {
   const { isConnected } = useAuth();
@@ -134,14 +153,18 @@ const ProducerAddProductPage = () => {
 
   if (!isConnected) {
     return (
-        <div className="pt-20 min-h-screen">
-          <div className="container mx-auto px-6 py-8">
-            <Card className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-2">Producer Access Required</h2>
-              <p className="text-muted-foreground">Please connect your wallet to view and add a product.</p>
-            </Card>
-          </div>
+      <div className="pt-20 min-h-screen">
+        <div className="container mx-auto px-6 py-8">
+          <Card className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              Producer Access Required
+            </h2>
+            <p className="text-muted-foreground">
+              Please connect your wallet to view and add a product.
+            </p>
+          </Card>
         </div>
+      </div>
     );
   }
 
@@ -164,7 +187,7 @@ const ProducerAddProductPageContent = () => {
     [form.category]
   );
 
-  const setField = (key: keyof FormState, value: any) =>
+  const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((s) => ({ ...s, [key]: value }));
 
   const handleChange =
@@ -177,7 +200,7 @@ const ProducerAddProductPageContent = () => {
     const e: Errors = {};
 
     for (const k of REQUIRED_FIELDS) {
-      const v: any = (f as any)[k];
+      const v = f[k];
       if (v === undefined || v === null || String(v).trim() === "") {
         e[k] = "This field is required.";
       }
@@ -188,16 +211,28 @@ const ProducerAddProductPageContent = () => {
       e.images = "Please upload at least one image.";
     }
 
-    if (f.quantity && (!/^\d+$/.test(f.quantity) || Number.parseInt(f.quantity) <= 0)) {
+    if (
+      f.quantity &&
+      (!/^\d+$/.test(f.quantity) || Number.parseInt(f.quantity) <= 0)
+    ) {
       e.quantity = "Quantity must be a positive integer.";
     }
-    if (f.pricePerUnit && (isNaN(Number(f.pricePerUnit)) || Number(f.pricePerUnit) <= 0)) {
+    if (
+      f.pricePerUnit &&
+      (isNaN(Number(f.pricePerUnit)) || Number(f.pricePerUnit) <= 0)
+    ) {
       e.pricePerUnit = "Price per unit must be a positive number.";
     }
-    if (f.minOrderQty && (!/^\d+$/.test(f.minOrderQty) || Number.parseInt(f.minOrderQty) <= 0)) {
+    if (
+      f.minOrderQty &&
+      (!/^\d+$/.test(f.minOrderQty) || Number.parseInt(f.minOrderQty) <= 0)
+    ) {
       e.minOrderQty = "Min order qty must be a positive integer.";
     }
-    if (f.leadTimeDays && (!/^\d+$/.test(f.leadTimeDays) || Number.parseInt(f.leadTimeDays) <= 0)) {
+    if (
+      f.leadTimeDays &&
+      (!/^\d+$/.test(f.leadTimeDays) || Number.parseInt(f.leadTimeDays) <= 0)
+    ) {
       e.leadTimeDays = "Lead time must be a positive integer (days).";
     }
     if (f.hsCode && !/^\d{2,4}(?:\.|\d)*$/.test(f.hsCode)) {
@@ -221,7 +256,14 @@ const ProducerAddProductPageContent = () => {
     setErrors(v);
 
     if (Object.keys(v).length > 0) {
-      setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      setTimeout(
+        () =>
+          topRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        0
+      );
       return;
     }
 
@@ -236,11 +278,16 @@ const ProducerAddProductPageContent = () => {
     fd.append("description", form.description.trim());
     if (form.hsCode) fd.append("hsCode", form.hsCode.trim());
     if (form.incoterm) fd.append("incoterm", form.incoterm);
-    if (form.minOrderQty) fd.append("minOrderQty", String(Number.parseInt(form.minOrderQty)));
-    if (form.leadTimeDays) fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
+    if (form.minOrderQty)
+      fd.append("minOrderQty", String(Number.parseInt(form.minOrderQty)));
+    if (form.leadTimeDays)
+      fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
     (form.images || []).forEach((file) => fd.append("images", file));
     (form.documents || []).forEach((file) => fd.append("documents", file));
-    fd.append("producerWalletId", String(localStorage.getItem("walletAddress")));
+    fd.append(
+      "producerWalletId",
+      String(localStorage.getItem("walletAddress"))
+    );
 
     try {
       setSubmitting(true);
@@ -248,14 +295,24 @@ const ProducerAddProductPageContent = () => {
         method: "POST",
         body: fd,
       });
-   
+
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       setSuccessMsg("Product saved successfully.");
       router.push("/marketplace");
-    } catch (err: any) {
-      setErrors((prev) => ({ ...prev, form: err?.message || "Failed to create product." }));
-      setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    } catch (err: unknown) {
+      setErrors((prev) => ({
+        ...prev,
+        form: err instanceof Error ? err.message : "Failed to create product.",
+      }));
+      setTimeout(
+        () =>
+          topRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        0
+      );
     } finally {
       setSubmitting(false);
     }
@@ -279,7 +336,9 @@ const ProducerAddProductPageContent = () => {
               <AlertTriangle className="h-5 w-5" />
               <AlertTitle>We found some issues</AlertTitle>
               <AlertDescription>
-                Please review the highlighted fields below. All fields marked with <span className="text-red-600 font-semibold">*</span> are required.
+                Please review the highlighted fields below. All fields marked
+                with <span className="text-red-600 font-semibold">*</span> are
+                required.
               </AlertDescription>
             </Alert>
           )}
@@ -296,20 +355,42 @@ const ProducerAddProductPageContent = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <RequiredLabel htmlFor="name">Product Name</RequiredLabel>
-                <Input id="name" placeholder="e.g., Premium Cocoa Beans" value={form.name} onChange={handleChange("name")} aria-invalid={!!errors.name} />
-                {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
+                <Input
+                  id="name"
+                  placeholder="e.g., Premium Cocoa Beans"
+                  value={form.name}
+                  onChange={handleChange("name")}
+                  aria-invalid={!!errors.name}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-600 mt-1">{errors.name}</p>
+                )}
               </div>
               <div>
                 <RequiredLabel htmlFor="quantity">Quantity</RequiredLabel>
-                <Input id="quantity" type="number" placeholder="1000" value={form.quantity} onChange={handleChange("quantity")} min={0} step="1" aria-invalid={!!errors.quantity} />
-                {errors.quantity && <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>}
+                <Input
+                  id="quantity"
+                  type="number"
+                  placeholder="1000"
+                  value={form.quantity}
+                  onChange={handleChange("quantity")}
+                  min={0}
+                  step="1"
+                  aria-invalid={!!errors.quantity}
+                />
+                {errors.quantity && (
+                  <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <RequiredLabel>Unit</RequiredLabel>
-                <Select value={form.unit} onValueChange={(v: FormState["unit"]) => setField("unit", v)}>
+                <Select
+                  value={form.unit}
+                  onValueChange={(v: FormState["unit"]) => setField("unit", v)}
+                >
                   <SelectTrigger aria-invalid={!!errors.unit}>
                     <SelectValue placeholder="kg / ton / piece / litre" />
                   </SelectTrigger>
@@ -320,29 +401,71 @@ const ProducerAddProductPageContent = () => {
                     <SelectItem value="litre">litre</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.unit && <p className="text-sm text-red-600 mt-1">{errors.unit}</p>}
+                {errors.unit && (
+                  <p className="text-sm text-red-600 mt-1">{errors.unit}</p>
+                )}
               </div>
               <div>
-                <RequiredLabel htmlFor="pricePerUnit">Price per unit (HBAR)</RequiredLabel>
-                <Input id="pricePerUnit" type="number" step="0.01" placeholder="2.50" value={form.pricePerUnit} onChange={handleChange("pricePerUnit")} min={0} aria-invalid={!!errors.pricePerUnit} />
-                {errors.pricePerUnit && <p className="text-sm text-red-600 mt-1">{errors.pricePerUnit}</p>}
+                <RequiredLabel htmlFor="pricePerUnit">
+                  Price per unit (HBAR)
+                </RequiredLabel>
+                <Input
+                  id="pricePerUnit"
+                  type="number"
+                  step="0.01"
+                  placeholder="2.50"
+                  value={form.pricePerUnit}
+                  onChange={handleChange("pricePerUnit")}
+                  min={0}
+                  aria-invalid={!!errors.pricePerUnit}
+                />
+                {errors.pricePerUnit && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.pricePerUnit}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <RequiredLabel htmlFor="countryOfOrigin">Country of Origin</RequiredLabel>
-                <Input id="countryOfOrigin" placeholder="Ghana" value={form.countryOfOrigin} onChange={handleChange("countryOfOrigin")} aria-invalid={!!errors.countryOfOrigin} />
-                {errors.countryOfOrigin && <p className="text-sm text-red-600 mt-1">{errors.countryOfOrigin}</p>}
+                <RequiredLabel htmlFor="countryOfOrigin">
+                  Country of Origin
+                </RequiredLabel>
+                <Input
+                  id="countryOfOrigin"
+                  placeholder="Ghana"
+                  value={form.countryOfOrigin}
+                  onChange={handleChange("countryOfOrigin")}
+                  aria-invalid={!!errors.countryOfOrigin}
+                />
+                {errors.countryOfOrigin && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.countryOfOrigin}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="hsCode">HS Code (optional)</Label>
-                <Input id="hsCode" placeholder="1801.00" value={form.hsCode || ""} onChange={handleChange("hsCode")} aria-invalid={!!errors.hsCode} />
-                {errors.hsCode && <p className="text-sm text-red-600 mt-1">{errors.hsCode}</p>}
+                <Input
+                  id="hsCode"
+                  placeholder="1801.00"
+                  value={form.hsCode || ""}
+                  onChange={handleChange("hsCode")}
+                  aria-invalid={!!errors.hsCode}
+                />
+                {errors.hsCode && (
+                  <p className="text-sm text-red-600 mt-1">{errors.hsCode}</p>
+                )}
               </div>
               <div>
                 <Label>Incoterm (optional)</Label>
-                <Select value={form.incoterm || ""} onValueChange={(v: NonNullable<FormState["incoterm"]>) => setField("incoterm", v)}>
+                <Select
+                  value={form.incoterm || ""}
+                  onValueChange={(v: NonNullable<FormState["incoterm"]>) =>
+                    setField("incoterm", v)
+                  }
+                >
                   <SelectTrigger aria-invalid={!!errors.incoterm}>
                     <SelectValue placeholder="FOB / CIF / EXW / DAP" />
                   </SelectTrigger>
@@ -353,20 +476,48 @@ const ProducerAddProductPageContent = () => {
                     <SelectItem value="DAP">DAP</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.incoterm && <p className="text-sm text-red-600 mt-1">{errors.incoterm}</p>}
+                {errors.incoterm && (
+                  <p className="text-sm text-red-600 mt-1">{errors.incoterm}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="minOrderQty">Min Order Qty (optional)</Label>
-                <Input id="minOrderQty" type="number" placeholder="500" value={form.minOrderQty || ""} onChange={handleChange("minOrderQty")} min={0} step="1" aria-invalid={!!errors.minOrderQty} />
-                {errors.minOrderQty && <p className="text-sm text-red-600 mt-1">{errors.minOrderQty}</p>}
+                <Input
+                  id="minOrderQty"
+                  type="number"
+                  placeholder="500"
+                  value={form.minOrderQty || ""}
+                  onChange={handleChange("minOrderQty")}
+                  min={0}
+                  step="1"
+                  aria-invalid={!!errors.minOrderQty}
+                />
+                {errors.minOrderQty && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.minOrderQty}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="leadTimeDays">Lead Time (days, optional)</Label>
-                <Input id="leadTimeDays" type="number" placeholder="14" value={form.leadTimeDays || ""} onChange={handleChange("leadTimeDays")} min={0} step="1" aria-invalid={!!errors.leadTimeDays} />
-                {errors.leadTimeDays && <p className="text-sm text-red-600 mt-1">{errors.leadTimeDays}</p>}
+                <Input
+                  id="leadTimeDays"
+                  type="number"
+                  placeholder="14"
+                  value={form.leadTimeDays || ""}
+                  onChange={handleChange("leadTimeDays")}
+                  min={0}
+                  step="1"
+                  aria-invalid={!!errors.leadTimeDays}
+                />
+                {errors.leadTimeDays && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.leadTimeDays}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -376,7 +527,11 @@ const ProducerAddProductPageContent = () => {
                 <Select
                   value={form.category}
                   onValueChange={(v: string | undefined) =>
-                    setForm((s) => ({ ...s, category: v as FormState["category"], subcategory: undefined }))
+                    setForm((s) => ({
+                      ...s,
+                      category: v as FormState["category"],
+                      subcategory: undefined,
+                    }))
                   }
                 >
                   <SelectTrigger aria-invalid={!!errors.category}>
@@ -390,14 +545,26 @@ const ProducerAddProductPageContent = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+                {errors.category && (
+                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+                )}
               </div>
 
               <div>
                 <Label>Subcategory (optional)</Label>
-                <Select value={form.subcategory} onValueChange={(v: any) => setField("subcategory", v)} disabled={!form.category}>
+                <Select
+                  value={form.subcategory}
+                  onValueChange={(v: string) => setField("subcategory", v)}
+                  disabled={!form.category}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder={form.category ? "Pick a subcategory" : "Select a category first"} />
+                    <SelectValue
+                      placeholder={
+                        form.category
+                          ? "Pick a subcategory"
+                          : "Select a category first"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {(availableSubcats || []).map((sc) => (
@@ -412,8 +579,19 @@ const ProducerAddProductPageContent = () => {
 
             <div>
               <RequiredLabel htmlFor="description">Description</RequiredLabel>
-              <Textarea id="description" rows={4} placeholder="Describe your product, farming methods, certifications..." value={form.description} onChange={handleChange("description")} aria-invalid={!!errors.description} />
-              {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+              <Textarea
+                id="description"
+                rows={4}
+                placeholder="Describe your product, farming methods, certifications..."
+                value={form.description}
+                onChange={handleChange("description")}
+                aria-invalid={!!errors.description}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-600 mt-1">
+                  {errors.description}
+                </p>
+              )}
             </div>
 
             <Separator />
@@ -427,7 +605,9 @@ const ProducerAddProductPageContent = () => {
                 multiple
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => setField("images", Array.from(e.target.files || []))}
+                onChange={(e) =>
+                  setField("images", Array.from(e.target.files || []))
+                }
                 aria-invalid={!!errors.images}
               />
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
@@ -436,18 +616,30 @@ const ProducerAddProductPageContent = () => {
                   {imageFiles.length > 0 ? (
                     <>
                       <Badge variant="secondary" className="text-sm">
-                        {imageFiles.length} image{imageFiles.length > 1 ? "s" : ""} selected
+                        {imageFiles.length} image
+                        {imageFiles.length > 1 ? "s" : ""} selected
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {imageFiles.map((f) => f.name).slice(0, 2).join(", ")}
-                        {imageFiles.length > 2 ? ` +${imageFiles.length - 2} more` : ""}
+                        {imageFiles
+                          .map((f) => f.name)
+                          .slice(0, 2)
+                          .join(", ")}
+                        {imageFiles.length > 2
+                          ? ` +${imageFiles.length - 2} more`
+                          : ""}
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm text-muted-foreground">No files chosen yet</span>
+                    <span className="text-sm text-muted-foreground">
+                      No files chosen yet
+                    </span>
                   )}
                 </div>
-                <Button type="button" variant="outline" onClick={() => imagesRef.current?.click()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => imagesRef.current?.click()}
+                >
                   <Upload className="w-4 h-4 mr-2" />
                   Choose Images
                 </Button>
@@ -455,11 +647,24 @@ const ProducerAddProductPageContent = () => {
                 {imageFiles.length > 0 && (
                   <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {imageFiles.map((file, idx) => (
-                      <div key={idx} className="relative rounded-lg overflow-hidden border">
-                        <img src={URL.createObjectURL(file) || "/placeholder.svg"} alt={file.name} className="aspect-video object-cover w-full h-full" />
+                      <div
+                        key={idx}
+                        className="relative rounded-lg overflow-hidden border"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={URL.createObjectURL(file) || "/placeholder.svg"}
+                          alt={file.name}
+                          className="aspect-video object-cover w-full h-full"
+                        />
                         <button
                           type="button"
-                          onClick={() => setField("images", imageFiles.filter((_, i) => i !== idx))}
+                          onClick={() =>
+                            setField(
+                              "images",
+                              imageFiles.filter((_, i) => i !== idx)
+                            )
+                          }
                           className="absolute top-1 right-1 bg-white/80 hover:bg-white rounded-full p-1 shadow"
                           aria-label={`Remove ${file.name}`}
                         >
@@ -473,7 +678,9 @@ const ProducerAddProductPageContent = () => {
                   </div>
                 )}
               </div>
-              {errors.images && <p className="text-sm text-red-600 mt-1">{errors.images}</p>}
+              {errors.images && (
+                <p className="text-sm text-red-600 mt-1">{errors.images}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -484,7 +691,9 @@ const ProducerAddProductPageContent = () => {
                 multiple
                 accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 className="hidden"
-                onChange={(e) => setField("documents", Array.from(e.target.files || []))}
+                onChange={(e) =>
+                  setField("documents", Array.from(e.target.files || []))
+                }
               />
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                 <FileCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
@@ -492,18 +701,30 @@ const ProducerAddProductPageContent = () => {
                   {docFiles.length > 0 ? (
                     <>
                       <Badge variant="secondary" className="text-sm">
-                        {docFiles.length} file{docFiles.length > 1 ? "s" : ""} selected
+                        {docFiles.length} file{docFiles.length > 1 ? "s" : ""}{" "}
+                        selected
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {docFiles.map((f) => f.name).slice(0, 3).join(", ")}
-                        {docFiles.length > 3 ? ` +${docFiles.length - 3} more` : ""}
+                        {docFiles
+                          .map((f) => f.name)
+                          .slice(0, 3)
+                          .join(", ")}
+                        {docFiles.length > 3
+                          ? ` +${docFiles.length - 3} more`
+                          : ""}
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm text-muted-foreground">No files chosen yet</span>
+                    <span className="text-sm text-muted-foreground">
+                      No files chosen yet
+                    </span>
                   )}
                 </div>
-                <Button type="button" variant="outline" onClick={() => docsRef.current?.click()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => docsRef.current?.click()}
+                >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Documents
                 </Button>
@@ -511,11 +732,29 @@ const ProducerAddProductPageContent = () => {
                 {docFiles.length > 0 && (
                   <ul className="mt-4 text-left text-sm">
                     {docFiles.map((f, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-2 py-1 border-b last:border-b-0">
-                        <span className="truncate" title={f.name}>{f.name}</span>
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between gap-2 py-1 border-b last:border-b-0"
+                      >
+                        <span className="truncate" title={f.name}>
+                          {f.name}
+                        </span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs text-muted-foreground">{formatBytes(f.size)}</span>
-                          <Button type="button" size="icon" variant="ghost" onClick={() => setField("documents", docFiles.filter((_, i) => i !== idx))} aria-label={`Remove ${f.name}`}>
+                          <span className="text-xs text-muted-foreground">
+                            {formatBytes(f.size)}
+                          </span>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onClick={() =>
+                              setField(
+                                "documents",
+                                docFiles.filter((_, i) => i !== idx)
+                              )
+                            }
+                            aria-label={`Remove ${f.name}`}
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -526,7 +765,13 @@ const ProducerAddProductPageContent = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="default" size="lg" className="w-full" disabled={submitting || (form.images?.length ?? 0) < 1}>
+            <Button
+              type="submit"
+              variant="default"
+              size="lg"
+              className="w-full"
+              disabled={submitting || (form.images?.length ?? 0) < 1}
+            >
               {submitting ? "Saving..." : "Save Product"}
             </Button>
 
@@ -540,14 +785,13 @@ const ProducerAddProductPageContent = () => {
           </form>
 
           <p className="mt-6 text-xs text-muted-foreground">
-            Fields marked with <span className="text-red-600 font-semibold">*</span> are required.
+            Fields marked with{" "}
+            <span className="text-red-600 font-semibold">*</span> are required.
           </p>
         </Card>
       </div>
     </main>
   );
-}
-
-
+};
 
 export default ProducerAddProductPage;

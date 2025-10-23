@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -150,11 +151,16 @@ function DocumentVerificationDialog({
             <Label className="text-sm font-medium">Document Preview</Label>
             <div className="mt-2 border rounded-lg overflow-hidden">
               {["jpg", "jpeg", "png", "gif"].includes(fileExtension || "") ? (
-                <img
-                  src={documentUrl || "/placeholder.svg"}
-                  alt={document.filename}
-                  className="w-full max-h-96 object-contain"
-                />
+                <div className="relative w-full h-96">
+                  <Image
+                    src={documentUrl || "/placeholder.svg"}
+                    alt={document.filename}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 700px"
+                    unoptimized
+                  />
+                </div>
               ) : fileExtension === "pdf" ? (
                 <iframe
                   src={documentUrl}

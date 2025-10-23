@@ -10,17 +10,22 @@ import { addItemToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthAction } from "@/components/auth-guard";
 
-type Unit = "kg" | "ct";
-
 type AddToCartPopupProps = {
-  product: any;
+  product: {
+    id: string | number;
+    name?: string;
+    pricePerUnit?: number;
+    minOrder?: number;
+    minOrderQty?: number;
+    unit?: string;
+    [key: string]: unknown;
+  };
   onConfirm?: (qty: number) => Promise<void> | void;
   triggerClassName?: string;
 };
 
 export default function AddToCartPopup({
   product,
-  onConfirm,
   triggerClassName,
 }: AddToCartPopupProps) {
   const { toast } = useToast();
@@ -87,10 +92,10 @@ export default function AddToCartPopup({
   const confirm = async () => {
     setSaving(true);
     try {
-      const resp = await addItemToCart(
-        { idofproduct: product.id, qty },
-        { useCookieAuth: true }
-      );
+      const resp = await addItemToCart({
+        idofproduct: String(product.id),
+        qty,
+      });
 
       if (!resp.success) {
         console.error("Add failed:", resp.message);
@@ -254,27 +259,25 @@ export default function AddToCartPopup({
       </Card>
     </div>
   );
-return (
-  <>
-    <Button
-      onClick={handleAddToCart}
-      variant="default"
-      className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
-      disabled={
-        saving || outOfStock || qty < minOrder || qty > available
-      }
-    >
-      {outOfStock || qty < minOrder || qty > available ? (
-        <>❌ Sold Out</>
-      ) : (
-        <>
-          <ShoppingCart className="w-4 h-4 mr-2" />
-          Add to cart
-        </>
-      )}
-    </Button>
+  return (
+    <>
+      <Button
+        onClick={handleAddToCart}
+        variant="default"
+        className={`flex-1 cursor-pointer ${triggerClassName ?? ""}`}
+        disabled={saving || outOfStock || qty < minOrder || qty > available}
+      >
+        {outOfStock || qty < minOrder || qty > available ? (
+          <>❌ Sold Out</>
+        ) : (
+          <>
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Add to cart
+          </>
+        )}
+      </Button>
 
-    {open && mounted && createPortal(overlay, document.body)}
-  </>
+      {open && mounted && createPortal(overlay, document.body)}
+    </>
   );
 }

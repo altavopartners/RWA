@@ -27,15 +27,9 @@ const API_BASE =
 type Eip1193Provider = {
   request: (args: {
     method: string;
-    params?: any[] | Record<string, any>;
-  }) => Promise<any>;
+    params?: unknown[] | Record<string, unknown>;
+  }) => Promise<unknown>;
 };
-
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
 
 const HEDERA_TESTNET = {
   chainId: "0x128",
@@ -51,8 +45,8 @@ async function ensureHederaTestnet(provider: Eip1193Provider) {
       method: "wallet_switchEthereumChain",
       params: [{ chainId: HEDERA_TESTNET.chainId }],
     });
-  } catch (err: any) {
-    if (err?.code === 4902) {
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err && err.code === 4902) {
       await provider.request({
         method: "wallet_addEthereumChain",
         params: [HEDERA_TESTNET],
@@ -219,23 +213,40 @@ export default function OrderFlowDetail({
     console.log("handlePay called for order:", order.id);
 
     try {
-      if (!window.ethereum) throw new Error("MetaMask not detected.");
-      if (!token) throw new Error("User not authenticated"); // ✅ check here
+      const eth = (window as any).ethereum;
+      if (!eth) throw new Error("MetaMask not detected.");
+      if (!token) throw new Error("User not authenticated");
 
-      const provider = window.ethereum as Eip1193Provider;
+      // Use order-specific escrow address (deployed by backend)
+      const contractAddress = order.escrowAddress;
+      if (!contractAddress) {
+        throw new Error(
+          "Escrow contract not deployed for this order yet. Please contact support."
+        );
+      }
+
+      const provider = eth as Eip1193Provider;
       await ensureHederaTestnet(provider);
 
-      const [from] = await provider.request({ method: "eth_requestAccounts" });
-      const contractAddress = process.env.NEXT_PUBLIC_ESCROW_CONTRACT;
-      if (!contractAddress) throw new Error("Escrow contract not defined.");
+      const accountsResult = await provider.request({
+        method: "eth_requestAccounts",
+      });
+      if (!Array.isArray(accountsResult) || accountsResult.length === 0) {
+        throw new Error("No accounts found in MetaMask");
+      }
+      const from = String(accountsResult[0] || "");
+      if (!from) throw new Error("Invalid account address");
 
       const value = toWeiHex(order.totalAmount ?? 0);
       setPaying(true);
 
-      const txHashLocal: string = await provider.request({
+      const txHashResult = await provider.request({
         method: "eth_sendTransaction",
         params: [{ from, to: contractAddress, value }],
       });
+      const txHashLocal = String(txHashResult || "");
+      if (!txHashLocal)
+        throw new Error("Transaction failed - no hash returned");
       setTxHash(txHashLocal);
 
       // ✅ Update backend DB status with JWT
@@ -262,9 +273,9 @@ export default function OrderFlowDetail({
 
       // ✅ tell parent about the update
       onOrderUpdate?.(updatedOrder.order);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Payment error:", e);
-      setPayError(e?.message || "Payment failed.");
+      setPayError(e instanceof Error ? e.message : "Payment failed.");
     } finally {
       setPaying(false);
     }
@@ -272,7 +283,7 @@ export default function OrderFlowDetail({
 
   const StatusIcon = getStatusIcon(currentStatus);
   const itemsCount = order.items?.length || 0;
-  const paymentSchedule = (order as any).paymentSchedule || {
+  const paymentSchedule = {
     onApproval: 0,
     onShipment: 0,
     onDelivery: 0,

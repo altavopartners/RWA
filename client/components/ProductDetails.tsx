@@ -50,8 +50,9 @@ function fmtMoney(n?: number) {
   );
 }
 
-
-function listifyMedia<T extends { path: string; originalName?: string }>(arr?: T[]) {
+function listifyMedia<T extends { path: string; originalName?: string }>(
+  arr?: T[]
+) {
   if (!arr || arr.length === 0) return [];
   return arr.map((f) => ({
     url: `http://localhost:4000${f.path}`,
@@ -74,8 +75,9 @@ export default function ProductDetails({ id }: { id: string }) {
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         const data = (await res.json()) as Product;
         if (!cancelled) setProduct(data);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Failed to fetch product.");
+      } catch (e: unknown) {
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Failed to fetch product.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -89,7 +91,10 @@ export default function ProductDetails({ id }: { id: string }) {
 
   // ✅ Hooks always called, even if product is null
   const imgs = useMemo(() => listifyMedia(product?.images), [product?.images]);
-  const docs = useMemo(() => listifyMedia(product?.documents), [product?.documents]);
+  const docs = useMemo(
+    () => listifyMedia(product?.documents),
+    [product?.documents]
+  );
 
   if (loading) return <p className="p-6">Loading…</p>;
 
@@ -117,8 +122,12 @@ export default function ProductDetails({ id }: { id: string }) {
             {product.name}
           </h1>
           <div className="flex gap-2">
-            {product.category && <Badge variant="secondary">{product.category}</Badge>}
-            {product.subcategory && <Badge variant="outline">{product.subcategory}</Badge>}
+            {product.category && (
+              <Badge variant="secondary">{product.category}</Badge>
+            )}
+            {product.subcategory && (
+              <Badge variant="outline">{product.subcategory}</Badge>
+            )}
           </div>
         </div>
 
@@ -162,11 +171,17 @@ export default function ProductDetails({ id }: { id: string }) {
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Price / Unit</div>
-            <div className="text-base font-medium">{fmtMoney(product.pricePerUnit)}</div>
+            <div className="text-base font-medium">
+              {fmtMoney(product.pricePerUnit)}
+            </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Country of Origin</div>
-            <div className="text-base font-medium">{product.countryOfOrigin}</div>
+            <div className="text-sm text-muted-foreground">
+              Country of Origin
+            </div>
+            <div className="text-base font-medium">
+              {product.countryOfOrigin}
+            </div>
           </div>
         </div>
 
@@ -178,21 +193,29 @@ export default function ProductDetails({ id }: { id: string }) {
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Incoterm</div>
-            <div className="text-base font-medium">{product.incoterm || "-"}</div>
+            <div className="text-base font-medium">
+              {product.incoterm || "-"}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Min Order Qty</div>
             <div className="text-base font-medium">
-              {typeof product.minOrderQty === "number" ? product.minOrderQty : "-"}
+              {typeof product.minOrderQty === "number"
+                ? product.minOrderQty
+                : "-"}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <div>
-            <div className="text-sm text-muted-foreground">Lead Time (days)</div>
+            <div className="text-sm text-muted-foreground">
+              Lead Time (days)
+            </div>
             <div className="text-base font-medium">
-              {typeof product.leadTimeDays === "number" ? product.leadTimeDays : "-"}
+              {typeof product.leadTimeDays === "number"
+                ? product.leadTimeDays
+                : "-"}
             </div>
           </div>
           <div>
@@ -215,7 +238,9 @@ export default function ProductDetails({ id }: { id: string }) {
         {docs.length > 0 && (
           <>
             <Separator className="my-6" />
-            <h2 className="text-lg font-semibold mb-3">Certificates & Documents</h2>
+            <h2 className="text-lg font-semibold mb-3">
+              Certificates & Documents
+            </h2>
             <ul className="space-y-2">
               {docs.map((d, i) => (
                 <li key={i} className="flex items-center justify-between gap-2">

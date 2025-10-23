@@ -35,7 +35,6 @@ function money(n: number, product: { unit: string } = { unit: "unit" }) {
   );
 }
 
-
 // =====================
 // 1) API types (from your example)
 // =====================
@@ -175,8 +174,8 @@ const Marketplace = () => {
       const json: APIResponse = await res.json();
       setProducts(Array.isArray(json.data) ? json.data : []);
       setHasLoaded(true);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load products");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -408,7 +407,6 @@ const Marketplace = () => {
                       <span className="font-bold">
                         {money(product.pricePerUnit, { unit: product.unit })}
                       </span>
-                     
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
@@ -433,11 +431,10 @@ const Marketplace = () => {
                     >
                       View Details
                     </Button>
-                  
 
                     <AddToCartPopup product={product} />
                   </div>
-                  
+
                   <div className="flex gap-4 mt-2 ml-4 mr-4">
                     <Button
                       variant="outline"
@@ -447,14 +444,12 @@ const Marketplace = () => {
                           `https://hashscan.io/testnet/token/${product.hederaTokenId}`,
                           "_blank", // ensures it opens in a new tab/window
                           "noopener,noreferrer" // security best practices
-                        )}
+                        )
+                      }
                     >
                       View on hashscan.io
                     </Button>
-                  
-
                   </div>
-                    
                 </div>
               </Card>
             );

@@ -67,22 +67,29 @@ export async function getDisputesController(req: Request, res: Response) {
 /** PUT /api/bank/disputes/:id */
 export async function updateDisputeController(req: Request, res: Response) {
   try {
+    console.log("Controller: PUT /api/bank/disputes/:id", req.params.id);
+    console.log("Controller: Request body:", req.body);
+
     const { id } = req.params;
     const { action, ruling, reviewedBy } = req.body;
 
-    if (!action || !reviewedBy)
+    if (!action || !reviewedBy) {
+      console.log("Controller: Missing required fields");
       return res
         .status(400)
         .json({ success: false, message: "Action and reviewer required" });
+    }
 
     const updatedDispute = await updateDispute(id, {
       action,
       ruling,
       reviewedBy,
     });
+
+    console.log("Controller: Dispute updated successfully:", updatedDispute.id);
     res.json({ success: true, data: updatedDispute });
   } catch (err: any) {
-    console.error("Error updating dispute:", err);
+    console.error("Controller: Error updating dispute:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 }
@@ -170,12 +177,10 @@ export async function requestDocumentsController(req: Request, res: Response) {
     const { bankId, comments, requestTo } = req.body;
 
     if (!bankId || !requestTo)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Bank ID and requestTo (buyer/seller) required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Bank ID and requestTo (buyer/seller) required",
+      });
 
     const { requestDocumentsFromBank } = await import(
       "../services/bank.service"

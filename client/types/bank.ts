@@ -142,7 +142,13 @@ export interface Dispute {
     createdAt: string;
     fileName: string;
   }[];
-  rulings: any[];
+  rulings: {
+    id: string;
+    ruling: string;
+    reviewedBy: string;
+    reviewedAt: string;
+    [key: string]: unknown;
+  }[];
 }
 
 /////////////////////////

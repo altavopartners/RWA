@@ -44,15 +44,31 @@ export const bankApi = {
   /** Update dispute status or add ruling */
   updateDispute: async (
     disputeId: string,
-    payload: { action: string; ruling?: any; reviewedBy: string }
+    payload: {
+      action: string;
+      ruling?: string | Record<string, unknown>;
+      reviewedBy: string;
+    }
   ): Promise<Dispute> => {
+    console.log("API: Updating dispute", disputeId, payload);
+    console.log("API: Backend URL:", BACKEND_URL);
+
     const res = await fetch(`${BACKEND_URL}/api/bank/disputes/${disputeId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to update dispute");
+
+    console.log("API: Response status:", res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("API: Error response:", errorText);
+      throw new Error(`Failed to update dispute (${res.status}): ${errorText}`);
+    }
+
     const data = await res.json();
+    console.log("API: Success response:", data);
     return data.data;
   },
 

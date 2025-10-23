@@ -75,10 +75,10 @@ export function IPFSConnectionTest() {
           error: "IPFS gateway not accessible. Try alternative gateway.",
         }));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setResults((prev) => ({
         ...prev,
-        error: err.message || "Test failed",
+        error: err instanceof Error ? err.message : "Test failed",
       }));
     } finally {
       setTesting(false);

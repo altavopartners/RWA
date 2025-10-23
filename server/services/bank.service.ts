@@ -1,5 +1,10 @@
 import { prisma } from "../utils/prisma";
 import { Decimal } from "@prisma/client/runtime";
+import {
+  approveBuyerBank,
+  approveSellerBank,
+  releaseFirstPayment,
+} from "./escrow-deploy.service";
 
 /** ---------- CLIENT / KYC ---------- */
 
@@ -95,13 +100,25 @@ export async function updateDispute(
   disputeId: string,
   data: { action: string; ruling?: any; reviewedBy: string }
 ) {
-  let orderStatus = "DISPUTED";
-  if (data.action === "resolve") orderStatus = "COMPLETED";
+  console.log("Service: Updating dispute", disputeId, data);
 
-  return prisma.order.update({
+  let orderStatus = "DISPUTED";
+  if (data.action === "resolve") {
+    orderStatus = "DELIVERED"; // Mark as delivered when dispute is resolved
+    console.log("Service: Resolving dispute, setting status to DELIVERED");
+  }
+
+  const updatedOrder = await prisma.order.update({
     where: { id: disputeId },
     data: { status: orderStatus as any, updatedAt: new Date() },
   });
+
+  console.log(
+    "Service: Order updated successfully",
+    updatedOrder.id,
+    updatedOrder.status
+  );
+  return updatedOrder;
 }
 
 /** ---------- DOCUMENTS ---------- */
@@ -209,6 +226,30 @@ export async function approveOrderByBankService(
     if (bankType === "buyer") updates.buyerBankApproved = true;
     if (bankType === "seller") updates.sellerBankApproved = true;
 
+    // Call smart contract to approve on blockchain
+    if (order.escrowAddress) {
+      console.log(
+        `Calling blockchain ${bankType} bank approval for escrow:`,
+        order.escrowAddress
+      );
+      try {
+        if (bankType === "buyer") {
+          await approveBuyerBank(order.escrowAddress);
+          console.log("Buyer bank approved on blockchain");
+        } else {
+          await approveSellerBank(order.escrowAddress);
+          console.log("Seller bank approved on blockchain");
+        }
+      } catch (err) {
+        console.error("Failed to approve on blockchain:", err);
+        throw new Error(
+          `Failed to approve ${bankType} bank on blockchain: ${err}`
+        );
+      }
+    } else {
+      console.warn("No escrow address found - skipping blockchain approval");
+    }
+
     // Determine future approval state
     const willBeBuyerApproved =
       bankType === "buyer" ? true : order.buyerBankApproved;
@@ -223,16 +264,45 @@ export async function approveOrderByBankService(
     ) {
       updates.status = "IN_TRANSIT";
 
-      // Create first 50% payment release
-      await tx.paymentRelease.create({
-        data: {
-          orderId,
-          type: "PARTIAL50",
-          amount: order.total.div(2), // use .div(2) if total is Decimal
-          released: true,
-          releasedAt: new Date(),
-        },
-      });
+      // Release first 50% payment on blockchain
+      if (order.escrowAddress) {
+        console.log(
+          "Both banks approved - releasing first payment on blockchain"
+        );
+        try {
+          const txResult = await releaseFirstPayment(order.escrowAddress);
+          console.log(
+            "First payment released on blockchain:",
+            txResult.transactionHash
+          );
+
+          // Create payment release record with transaction hash
+          await tx.paymentRelease.create({
+            data: {
+              orderId,
+              type: "PARTIAL50",
+              amount: order.total.div(2),
+              released: true,
+              releasedAt: new Date(),
+              transactionId: txResult.transactionHash,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to release first payment on blockchain:", err);
+          throw new Error(`Failed to release first payment: ${err}`);
+        }
+      } else {
+        // No escrow address - just create DB record
+        await tx.paymentRelease.create({
+          data: {
+            orderId,
+            type: "PARTIAL50",
+            amount: order.total.div(2),
+            released: true,
+            releasedAt: new Date(),
+          },
+        });
+      }
     }
 
     // Update order

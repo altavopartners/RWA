@@ -5,14 +5,17 @@ export type AddItemPayload = {
 };
 
 type AddItemResponse =
-  | { success: true; cart?: any; message?: string }
+  | {
+      success: true;
+      cart?: { id: string; [key: string]: unknown };
+      message?: string;
+    }
   | { success: false; message: string; code?: string };
 
 const API_BASE = "http://localhost:4000";
 
 export async function addItemToCart(
-  payload: AddItemPayload,
-  p0: { useCookieAuth: boolean }
+  payload: AddItemPayload
 ): Promise<AddItemResponse> {
   try {
     // Grab token from localStorage (client-side only)
@@ -49,10 +52,10 @@ export async function addItemToCart(
       cart: data?.cart ?? data,
       message: data?.message ?? "Item added to cart",
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      message: err?.message || "Network error",
+      message: err instanceof Error ? err.message : "Network error",
       code: "NETWORK_ERROR",
     };
   }
@@ -84,7 +87,11 @@ export async function getCartCount(): Promise<number> {
 }
 
 // Récupère tout le panier complet (si tu veux l'utiliser ailleurs)
-export async function getMyCart(): Promise<any | null> {
+export async function getMyCart(): Promise<{
+  id: string;
+  items?: unknown[];
+  [key: string]: unknown;
+} | null> {
   try {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;

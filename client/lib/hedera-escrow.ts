@@ -166,7 +166,9 @@ export class HederaEscrowService {
     message: string
   ): Promise<boolean> {
     const isValid = signature.length > 10;
-    console.log(`[v0] Signature verification for bank ${bankId}: ${isValid}`);
+    console.log(`[v0] Signature verification for bank ${bankId}: ${isValid}`, {
+      messageHash: message.substring(0, 20),
+    });
     return isValid;
   }
 
@@ -183,6 +185,7 @@ export class HederaEscrowService {
     };
     bothApproved: boolean;
   }> {
+    console.log(`[v0] Fetching bank approval status for order: ${orderId}`);
     const mockStatus = {
       buyerBank: {
         approved: true,
@@ -206,7 +209,11 @@ export class HederaEscrowService {
     documentTypes: string[]
   ): Promise<string> {
     const requestId = `doc-req-${orderId}-${Date.now()}`;
-    console.log(`[v0] Document verification request created: ${requestId}`);
+    console.log(
+      `[v0] Document verification request created: ${requestId} for bank ${bankId}, types: ${documentTypes.join(
+        ", "
+      )}`
+    );
     return requestId;
   }
 }
@@ -226,7 +233,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: string,
   marketplaceEndpoint: string,
-  additionalData?: any
+  additionalData?: Record<string, unknown>
 ): Promise<void> {
   console.log(`[v0] Updating order ${orderId} status to: ${status}`);
   if (additionalData) console.log(`[v0] Additional data:`, additionalData);
@@ -247,7 +254,7 @@ export async function createEscrowAuditLog(
   orderId: string,
   action: string,
   actor: string,
-  details: any
+  details: Record<string, unknown>
 ): Promise<void> {
   console.log(
     `[v0] Creating audit log for order ${orderId}: ${action} by ${actor}`,

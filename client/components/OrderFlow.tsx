@@ -9,7 +9,6 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  Package,
   Shield,
   AlertCircle,
   FileCheck,
@@ -60,8 +59,24 @@ export type BackendOrder = {
   total: number | string;
   createdAt: string;
   updatedAt: string;
-  items: any[];
-  documents: any[];
+  escrowAddress?: string | null;
+  items: Array<{
+    id?: string;
+    quantity?: number | string;
+    unitPrice?: number | string;
+    product?: { name?: string; [key: string]: unknown };
+    [key: string]: unknown;
+  }>;
+  documents: Array<{
+    id: string;
+    fileName: string;
+    url: string;
+    size?: number;
+    uploadedAt?: string;
+    categoryKey: string;
+    typeKey: string;
+    status?: "uploaded" | "verified" | "rejected" | "pending";
+  }>;
 };
 
 export type BackendOrderResponse = {
@@ -76,8 +91,23 @@ export type Order = {
   orderId: string;
   code?: string;
   productName: string;
-  items: any[];
-  documents: any[];
+  items: Array<{
+    id?: string;
+    quantity?: number | string;
+    unitPrice?: number | string;
+    product?: { name?: string; [key: string]: unknown };
+    [key: string]: unknown;
+  }>;
+  documents: Array<{
+    id: string;
+    fileName: string;
+    url: string;
+    size?: number;
+    uploadedAt?: string;
+    categoryKey: string;
+    typeKey: string;
+    status?: "uploaded" | "verified" | "rejected" | "pending";
+  }>;
   subtotal: number;
   shipping: number;
   totalAmount: number;
@@ -93,6 +123,7 @@ export type Order = {
   orderDate: string;
   estimatedDelivery: string | null;
   trackingNumber: string | null;
+  escrowAddress?: string | null; // Hedera escrow contract address (deployed per order)
 };
 
 // ---------------------- Helpers ----------------------
@@ -121,7 +152,7 @@ const labelFor = (s: string) => {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 };
 
-const toNumber = (n: any, d = 0) => {
+const toNumber = (n: string | number | null | undefined, d = 0) => {
   const v = typeof n === "string" ? Number.parseFloat(n) : Number(n);
   return Number.isFinite(v) ? v : d;
 };
@@ -159,7 +190,9 @@ export default function OrderFlow() {
       code: b.code ?? b.id,
       productName: firstItem?.product?.name ?? "Product",
       items: Array.isArray(b.items) ? b.items : [],
-      documents: Array.isArray(b.documents) ? b.documents : [],
+      documents: (Array.isArray(b.documents)
+        ? b.documents
+        : []) as Order["documents"],
       subtotal: toNumber(b.subtotal),
       shipping: toNumber(b.shipping),
       totalAmount: toNumber(b.total, qty * unitPrice),
@@ -169,15 +202,22 @@ export default function OrderFlow() {
       orderDate: b.createdAt,
       estimatedDelivery: null,
       trackingNumber: null,
+      escrowAddress: b.escrowAddress ?? null,
     };
   }, []);
 
   const normalizeList = useCallback(
-    (raw: BackendOrderResponse | BackendOrder[] | any): Order[] => {
+    (raw: BackendOrderResponse | BackendOrder[] | unknown): Order[] => {
       if (Array.isArray(raw)) return raw.map(normalizeOrderFromBackend);
-      if (Array.isArray(raw?.orders))
+      if (
+        raw &&
+        typeof raw === "object" &&
+        "orders" in raw &&
+        Array.isArray(raw.orders)
+      )
         return raw.orders.map(normalizeOrderFromBackend);
-      if (raw?.order) return [normalizeOrderFromBackend(raw.order)];
+      if (raw && typeof raw === "object" && "order" in raw && raw.order)
+        return [normalizeOrderFromBackend(raw.order as BackendOrder)];
       return [];
     },
     [normalizeOrderFromBackend]
@@ -199,7 +239,7 @@ export default function OrderFlow() {
       });
 
       const txt = await res.text();
-      let data: any = {};
+      let data: unknown = {};
       try {
         data = txt ? JSON.parse(txt) : {};
       } catch {
@@ -207,9 +247,19 @@ export default function OrderFlow() {
       }
 
       if (!res.ok) {
-        const message =
-          (typeof data?.message === "string" && data.message) ||
-          (typeof data?.error === "string" && data.error) ||
+        const message: string =
+          (data &&
+          typeof data === "object" &&
+          "message" in data &&
+          typeof data.message === "string"
+            ? data.message
+            : "") ||
+          (data &&
+          typeof data === "object" &&
+          "error" in data &&
+          typeof data.error === "string"
+            ? data.error
+            : "") ||
           txt ||
           "Failed to fetch orders";
         throw new Error(message);
@@ -220,11 +270,11 @@ export default function OrderFlow() {
       if (!selectedId && list.length) setSelectedId(list[0].id);
       setLastFetchedAt(Date.now());
       setVisibleCount(10);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       setOrders([]);
       setSelectedId(null);
-      setError(e?.message || "Something went wrong");
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -245,7 +295,7 @@ export default function OrderFlow() {
         });
 
         const txt = await res.text();
-        let data: any = {};
+        let data: unknown = {};
         try {
           data = txt ? JSON.parse(txt) : {};
         } catch {
@@ -253,9 +303,19 @@ export default function OrderFlow() {
         }
 
         if (!res.ok) {
-          const message =
-            (typeof data?.message === "string" && data.message) ||
-            (typeof data?.error === "string" && data.error) ||
+          const message: string =
+            (data &&
+            typeof data === "object" &&
+            "message" in data &&
+            typeof data.message === "string"
+              ? data.message
+              : "") ||
+            (data &&
+            typeof data === "object" &&
+            "error" in data &&
+            typeof data.error === "string"
+              ? data.error
+              : "") ||
             txt ||
             "Failed to fetch order detail";
           throw new Error(message);

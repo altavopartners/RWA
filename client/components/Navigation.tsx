@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,24 +76,38 @@ export default function Navigation() {
         cache: "no-store",
       });
 
-      let data: any = null;
+      let data: unknown = null;
       try {
         data = await res.json();
       } catch {
         const txt = await res.text();
         if (!res.ok) throw new Error(txt || "Failed to fetch cart count");
-        data = {};
+        data = null;
       }
 
       if (!res.ok) {
-        const message =
-          (typeof data?.message === "string" && data.message) ||
-          (typeof data?.error === "string" && data.error) ||
+        const message: string =
+          (data &&
+          typeof data === "object" &&
+          "message" in data &&
+          typeof data.message === "string"
+            ? data.message
+            : "") ||
+          (data &&
+          typeof data === "object" &&
+          "error" in data &&
+          typeof data.error === "string"
+            ? data.error
+            : "") ||
           "Failed to fetch cart count";
         throw new Error(message);
       }
 
-      const nextCount = Number(data?.cartcount ?? 0);
+      let nextCount = 0;
+      if (data && typeof data === "object" && "cartcount" in data) {
+        const cartcountValue = (data as Record<string, unknown>).cartcount;
+        nextCount = Number(cartcountValue);
+      }
       setCount(Number.isFinite(nextCount) ? nextCount : 0);
     } catch {
       setCount(0);
@@ -121,7 +136,14 @@ export default function Navigation() {
           {/* Logo */}
           <div className="flex items-center space-x-4">
             <Link href="/" className="text-2xl font-bold">
-              <img src="/assets/hexportLogo.png" alt="Logo" className="h-16" />
+              <Image
+                src="/assets/hexportLogo.png"
+                alt="Logo"
+                width={64}
+                height={64}
+                className="h-16 w-auto"
+                priority
+              />
             </Link>
             <Badge variant="outline" className="hidden md:flex">
               Hedera Network

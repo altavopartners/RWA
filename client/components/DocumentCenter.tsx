@@ -169,20 +169,35 @@ function authHeaderFrom(
 }
 
 // ===== Mapping util: API -> DocumentItem =====
-function normalizeDoc(row: any): DocumentItem {
+function normalizeDoc(row: Record<string, unknown>): DocumentItem {
   return {
-    id: row?.id ?? row?.pk ?? crypto.randomUUID(),
-    fileName: row?.fileName ?? row?.filename ?? row?.name ?? "document",
-    url: row?.url ?? row?.path ?? "",
-    size: row?.size ?? row?.bytes ?? undefined,
+    id: (row?.id as string) ?? (row?.pk as string) ?? crypto.randomUUID(),
+    fileName:
+      (row?.fileName as string) ??
+      (row?.filename as string) ??
+      (row?.name as string) ??
+      "document",
+    url: (row?.url as string) ?? (row?.path as string) ?? "",
+    size: (row?.size as number) ?? (row?.bytes as number) ?? undefined,
     uploadedAt:
-      row?.uploadedAt ??
-      row?.createdAt ??
-      row?.created_at ??
+      (row?.uploadedAt as string) ??
+      (row?.createdAt as string) ??
+      (row?.created_at as string) ??
       new Date().toISOString(),
-    categoryKey: row?.categoryKey ?? row?.category ?? row?.category_key ?? "",
-    typeKey: row?.typeKey ?? row?.documentType ?? row?.type_key ?? "",
-    status: row?.status ?? row?.review_status ?? "uploaded",
+    categoryKey:
+      (row?.categoryKey as string) ??
+      (row?.category as string) ??
+      (row?.category_key as string) ??
+      "",
+    typeKey:
+      (row?.typeKey as string) ??
+      (row?.documentType as string) ??
+      (row?.type_key as string) ??
+      "",
+    status:
+      (row?.status as DocumentItem["status"]) ??
+      (row?.review_status as DocumentItem["status"]) ??
+      "uploaded",
   };
 }
 
@@ -336,9 +351,11 @@ export default function DocumentCenter({
         const refreshed = await fetchDocumentsForOrder(orderId, token);
         setLocalDocs(refreshed);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || "Upload failed. Please try again.");
+      setError(
+        e instanceof Error ? e.message : "Upload failed. Please try again."
+      );
     } finally {
       setBusy(false);
     }

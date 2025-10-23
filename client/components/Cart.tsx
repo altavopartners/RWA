@@ -58,44 +58,69 @@ function CartContent() {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
-  const normalizeFromBackend = useCallback((raw: any): CartItem[] => {
-    const rows: any[] =
-      (Array.isArray(raw) && raw) ||
-      (Array.isArray(raw?.items) && raw.items) ||
-      (raw && typeof raw === "object" ? [raw] : []);
+  const normalizeFromBackend = useCallback((raw: unknown): CartItem[] => {
+    let rows: unknown[] = [];
 
-    return rows.map((row) => {
-      const product = row.product || {};
+    if (Array.isArray(raw)) {
+      rows = raw;
+    } else if (
+      raw &&
+      typeof raw === "object" &&
+      "items" in raw &&
+      Array.isArray(raw.items)
+    ) {
+      rows = raw.items;
+    } else if (raw && typeof raw === "object") {
+      rows = [raw];
+    }
+
+    return rows.map((row: unknown) => {
+      const rowObj =
+        row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+      const product =
+        "product" in rowObj && typeof rowObj.product === "object"
+          ? (rowObj.product as Record<string, unknown>)
+          : {};
+
       const id =
-        row.id ??
-        row._id ??
-        row.itemId ??
-        row.productId ??
-        product.id ??
-        product._id ??
+        (rowObj.id as string) ??
+        (rowObj._id as string) ??
+        (rowObj.itemId as string) ??
+        (rowObj.productId as string) ??
+        (product.id as string) ??
+        (product._id as string) ??
         Math.random().toString(36).slice(2);
 
       const name =
-        product.name ?? product.title ?? row.name ?? row.title ?? "Item";
+        (product.name as string) ??
+        (product.title as string) ??
+        (rowObj.name as string) ??
+        (rowObj.title as string) ??
+        "Item";
 
       const price =
         Number(
-          product.pricePerUnit ??
-            product.price ??
-            row.price ??
-            row.unitPrice ??
+          (product.pricePerUnit as number) ??
+            (product.price as number) ??
+            (rowObj.price as number) ??
+            (rowObj.unitPrice as number) ??
             0
         ) || 0;
 
-      const qty = Math.max(1, Number(row.quantity ?? row.qty ?? 1) || 1);
+      const qty = Math.max(
+        1,
+        Number((rowObj.quantity as number) ?? (rowObj.qty as number) ?? 1) || 1
+      );
 
+      const productImages = Array.isArray(product.images) ? product.images : [];
       const firstImagePath =
-        row.image ??
-        row.thumbnail ??
-        product.image ??
-        product.thumbnail ??
-        (Array.isArray(product.images) && product.images.length > 0
-          ? product.images[0]?.path || product.images[0]?.url
+        (rowObj.image as string) ??
+        (rowObj.thumbnail as string) ??
+        (product.image as string) ??
+        (product.thumbnail as string) ??
+        (productImages.length > 0
+          ? ((productImages[0] as Record<string, unknown>)?.path as string) ||
+            ((productImages[0] as Record<string, unknown>)?.url as string)
           : undefined);
 
       const image = joinUrl(API_BASE, firstImagePath);
@@ -123,17 +148,27 @@ function CartContent() {
       });
 
       const txt = await res.text();
-      let data: any = {};
+      let data: unknown = {};
       try {
         data = txt ? JSON.parse(txt) : {};
       } catch {
-        if (!res.ok) throw new Error(txt || "FFailed to pass order");
+        if (!res.ok) throw new Error(txt || "Failed to pass order");
       }
 
       if (!res.ok) {
-        const message =
-          (typeof data?.message === "string" && data.message) ||
-          (typeof data?.error === "string" && data.error) ||
+        const message: string =
+          (data &&
+          typeof data === "object" &&
+          "message" in data &&
+          typeof data.message === "string"
+            ? data.message
+            : "") ||
+          (data &&
+          typeof data === "object" &&
+          "error" in data &&
+          typeof data.error === "string"
+            ? data.error
+            : "") ||
           txt ||
           "Failed to pass order";
         throw new Error(message);
@@ -142,14 +177,14 @@ function CartContent() {
       setItems([]);
       window.dispatchEvent(new Event("cart:updated"));
       router.push("/order-flow");
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || "Something went wrong");
+      setError(e instanceof Error ? e.message : "Something went wrong");
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [isConnected, normalizeFromBackend]);
+  }, [isConnected, router]);
 
   const fetchCartItems = useCallback(async () => {
     if (!isConnected) return;
@@ -167,7 +202,7 @@ function CartContent() {
       });
 
       const txt = await res.text();
-      let data: any = {};
+      let data: unknown = {};
       try {
         data = txt ? JSON.parse(txt) : {};
       } catch {
@@ -175,9 +210,19 @@ function CartContent() {
       }
 
       if (!res.ok) {
-        const message =
-          (typeof data?.message === "string" && data.message) ||
-          (typeof data?.error === "string" && data.error) ||
+        const message: string =
+          (data &&
+          typeof data === "object" &&
+          "message" in data &&
+          typeof data.message === "string"
+            ? data.message
+            : "") ||
+          (data &&
+          typeof data === "object" &&
+          "error" in data &&
+          typeof data.error === "string"
+            ? data.error
+            : "") ||
           txt ||
           "Failed to fetch cart items";
         throw new Error(message);
@@ -187,61 +232,70 @@ function CartContent() {
       const normalized = normalizeFromBackend(data);
       setItems(normalized);
       setLastFetchedAt(Date.now());
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || "Something went wrong");
+      setError(e instanceof Error ? e.message : "Something went wrong");
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [isConnected, normalizeFromBackend]);
+  }, [isConnected, normalizeFromBackend, token]);
 
   useEffect(() => {
     if (isConnected) fetchCartItems();
   }, [isConnected, fetchCartItems]);
 
-  const inc = useCallback(async (id: CartItem["id"]) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, qty: it.qty + 1 } : it))
-    );
-    await fetch(`${API_BASE}/api/carts/incrementitemquantity`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ cartItemId: id }),
-    });
-  }, []);
+  const inc = useCallback(
+    async (id: CartItem["id"]) => {
+      setItems((prev) =>
+        prev.map((it) => (it.id === id ? { ...it, qty: it.qty + 1 } : it))
+      );
+      await fetch(`${API_BASE}/api/carts/incrementitemquantity`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ cartItemId: id }),
+      });
+    },
+    [token]
+  );
 
-  const dec = useCallback(async (id: CartItem["id"]) => {
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === id ? { ...it, qty: Math.max(1, it.qty - 1) } : it
-      )
-    );
-    await fetch(`${API_BASE}/api/carts/decrementitemquantity`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ cartItemId: id }),
-    });
-  }, []);
+  const dec = useCallback(
+    async (id: CartItem["id"]) => {
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === id ? { ...it, qty: Math.max(1, it.qty - 1) } : it
+        )
+      );
+      await fetch(`${API_BASE}/api/carts/decrementitemquantity`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ cartItemId: id }),
+      });
+    },
+    [token]
+  );
 
-  const removeItem = useCallback(async (id: CartItem["id"]) => {
-    setItems((prev) => prev.filter((it) => it.id !== id));
-    await fetch(`${API_BASE}/api/carts/removeitemfromcart`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ cartItemId: id }),
-    });
-    window.dispatchEvent(new Event("cart:updated"));
-  }, []);
+  const removeItem = useCallback(
+    async (id: CartItem["id"]) => {
+      setItems((prev) => prev.filter((it) => it.id !== id));
+      await fetch(`${API_BASE}/api/carts/removeitemfromcart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ cartItemId: id }),
+      });
+      window.dispatchEvent(new Event("cart:updated"));
+    },
+    [token]
+  );
 
   const { subtotal, shipping, fees, total } = useMemo(() => {
     const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);

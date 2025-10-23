@@ -55,9 +55,9 @@ export function useBankData<T extends Resource>(resource: T) {
       }
 
       setData(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error fetching ${resource}:`, err);
-      setError(err?.message || "Unknown error");
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
