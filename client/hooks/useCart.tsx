@@ -53,7 +53,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const addItem = useCallback(
     async (payload: AddItemPayload) => {
-      const res = await addItemToCart(payload, { useCookieAuth: true });
+      const res = await addItemToCart(payload);
       if (res.success) {
         await refresh();
         return { ok: true, message: res.message };
