@@ -39,7 +39,7 @@ export async function passOrderService({
   userId,
   shipping = 5.0,
 }: PassOrderOptions) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const cartItems = await tx.cartItem.findMany({
       where: { userId },
       include: { product: true },
@@ -78,8 +78,8 @@ export async function passOrderService({
     const producerWalletIds = [
       ...new Set(
         cartItems
-          .map((ci) => ci.product.producerWalletId)
-          .filter((id): id is string => !!id)
+          .map((ci: any) => ci.product.producerWalletId)
+          .filter((id: any): id is string => !!id)
       ),
     ];
 
@@ -127,7 +127,8 @@ export async function passOrderService({
 
     const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
     const subtotal = cartItems.reduce(
-      (acc, ci) => acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)),
+      (acc: Prisma.Decimal, ci: any) =>
+        acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)),
       toDecimal(0)
     );
     const shippingD = toDecimal(shipping ?? 0);
@@ -150,7 +151,7 @@ export async function passOrderService({
             buyerBankId: buyerBankIdToUse, // Ensure buyer's bank exists
             sellerBankId: sellerBankIdToUse, // Ensure seller's bank exists
             items: {
-              create: cartItems.map((ci) => ({
+              create: cartItems.map((ci: any) => ({
                 productId: ci.productId,
                 quantity: ci.quantity,
                 unitPrice: toDecimal(ci.product.pricePerUnit),
@@ -218,7 +219,7 @@ export async function passOrderService({
         console.log(`🚀 Deploying escrow for order ${order.id}...`);
         const escrowResult = await deployEscrowContract({
           buyerAddress: buyerUser.walletAddress,
-          sellerAddress: sellerWalletAddress,
+          sellerAddress: sellerWalletAddress as string,
           totalAmount: total.toString(), // HBAR amount as string
         });
 

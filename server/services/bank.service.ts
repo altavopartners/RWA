@@ -71,7 +71,7 @@ export async function getDisputes() {
     orderBy: { createdAt: "desc" },
   });
 
-  return orders.map((order) => ({
+  return orders.map((order: any) => ({
     id: order.id,
     orderId: order.code || order.id,
     initiatedBy: "Buyer",
@@ -83,7 +83,7 @@ export async function getDisputes() {
     createdAt: order.createdAt.toISOString(),
     producer: { name: "Producer Name", type: "Producer" },
     buyer: { name: order.user.fullName || "Unknown", type: "Buyer" },
-    evidence: order.documents.map((doc) => ({
+    evidence: order.documents.map((doc: any) => ({
       id: doc.id,
       submittedBy: doc.user.userType === "PRODUCER" ? "Producer" : "Buyer",
       documentCid: doc.cid,
@@ -203,7 +203,7 @@ export async function approveOrderByBankService(
   bankType: "buyer" | "seller",
   comments?: string
 ) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     // Fetch order first
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) throw new Error("Order not found");
@@ -337,7 +337,7 @@ export async function updateOrderApproval(
     notes?: string;
   }
 ) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const updates: any = { updatedAt: new Date() };
 
     if (data.action === "approve_buyer" && data.bankType === "buyer")
@@ -402,7 +402,7 @@ export async function getOrdersWithWorkflow() {
   });
 
   // Format so frontend has buyerBankId / sellerBankId
-  const formattedOrders = orders.map((o) => ({
+  const formattedOrders = orders.map((o: any) => ({
     ...o,
     buyerBankId: o.buyerBank?.id,
     sellerBankId: o.sellerBank?.id,

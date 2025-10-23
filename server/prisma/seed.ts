@@ -36,36 +36,36 @@ async function main() {
   console.log("🏦 Creating banks...");
   const usBuyerBank = await prisma.bank.create({
     data: {
+      code: "AMTBUS33",
       name: "American Trade Bank",
-      swiftCode: "AMTBUS33",
       country: "USA",
     },
   });
   const usSellerBank = await prisma.bank.create({
     data: {
+      code: "PACBUS44",
       name: "Pacific Commerce Bank",
-      swiftCode: "PACBUS44",
       country: "USA",
     },
   });
   const germanyBank = await prisma.bank.create({
     data: {
+      code: "DEHADE5M",
       name: "Deutsche Handelsbank",
-      swiftCode: "DEHADE5M",
       country: "Germany",
     },
   });
   const franceBank = await prisma.bank.create({
     data: {
+      code: "BNPAFRPP",
       name: "Banque Commerciale",
-      swiftCode: "BNPAFRPP",
       country: "France",
     },
   });
   const japanBank = await prisma.bank.create({
     data: {
+      code: "TOTRJPJT",
       name: "Tokyo Trading Bank",
-      swiftCode: "TOTRJPJT",
       country: "Japan",
     },
   });
@@ -82,7 +82,6 @@ async function main() {
       email: "sales@greenvalley.com",
       userType: UserType.PRODUCER,
       isVerified: true,
-      bankId: usSellerBank.id,
       kycStatus: KycStatus.VERIFIED,
     },
   });
@@ -95,7 +94,6 @@ async function main() {
       email: "export@bavariameat.de",
       userType: UserType.PRODUCER,
       isVerified: true,
-      bankId: germanyBank.id,
       kycStatus: KycStatus.VERIFIED,
     },
   });
@@ -108,7 +106,6 @@ async function main() {
       email: "trade@tokyotech.jp",
       userType: UserType.PRODUCER,
       isVerified: true,
-      bankId: japanBank.id,
       kycStatus: KycStatus.VERIFIED,
     },
   });
@@ -121,7 +118,6 @@ async function main() {
       email: "procurement@legourmet.fr",
       userType: UserType.BUYER,
       isVerified: true,
-      bankId: franceBank.id,
       kycStatus: KycStatus.VERIFIED,
     },
   });
@@ -134,7 +130,6 @@ async function main() {
       email: "purchasing@techmart.com",
       userType: UserType.BUYER,
       isVerified: true,
-      bankId: usBuyerBank.id,
       kycStatus: KycStatus.VERIFIED,
     },
   });
@@ -147,7 +142,6 @@ async function main() {
       email: "contact@newtrade.com",
       userType: UserType.BUYER,
       isVerified: false,
-      bankId: germanyBank.id,
       kycStatus: KycStatus.PENDING,
     },
   });

@@ -137,7 +137,7 @@ export async function getEscrowsController(req: Request, res: Response) {
   try {
     const orders = await getOrders();
     const escrows = orders.filter(
-      (o) => o.paymentReleases && o.paymentReleases.length > 0
+      (o: any) => o.paymentReleases && o.paymentReleases.length > 0
     );
     res.json({ success: true, data: escrows });
   } catch (err: any) {
