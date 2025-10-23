@@ -12,7 +12,9 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 export const bankApi = {
   /** Fetch all clients */
   getClients: async (): Promise<Client[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/clients`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/clients`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch clients");
     const data = await res.json();
     return data.data;
@@ -27,6 +29,7 @@ export const bankApi = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to update KYC");
     const data = await res.json();
@@ -35,7 +38,9 @@ export const bankApi = {
 
   /** Fetch all disputes */
   getDisputes: async (): Promise<Dispute[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/disputes`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/disputes`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch disputes");
     const data = await res.json();
     return data.data;
@@ -57,6 +62,7 @@ export const bankApi = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
 
     console.log("API: Response status:", res.status);
@@ -74,7 +80,9 @@ export const bankApi = {
 
   /** Fetch all documents */
   getDocuments: async (): Promise<Document[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/documents`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/documents`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch documents");
     const data = await res.json();
     return data.data;
@@ -89,6 +97,7 @@ export const bankApi = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to update document");
     const data = await res.json();
@@ -97,7 +106,9 @@ export const bankApi = {
 
   /** Fetch all escrows */
   getEscrows: async (): Promise<Escrow[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/escrows`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/escrows`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch escrows");
     const data = await res.json();
     return data.data;
@@ -112,6 +123,7 @@ export const bankApi = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to update escrow");
     const data = await res.json();
@@ -120,7 +132,9 @@ export const bankApi = {
 
   /** Fetch all orders */
   getOrders: async (): Promise<BankOrder[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/orders`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/orders`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch orders");
     const data = await res.json();
     return data.data;
@@ -142,6 +156,7 @@ export const bankApi = {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Failed to update order approval");
@@ -151,7 +166,9 @@ export const bankApi = {
 
   /** Fetch orders with complete workflow status */
   getOrdersWithWorkflow: async (): Promise<BankOrder[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/bank/orders/workflow`);
+    const res = await fetch(`${BACKEND_URL}/api/bank/orders/workflow`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch orders with workflow");
     const data = await res.json();
     return data.data;
@@ -168,6 +185,7 @@ export const bankApi = {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Failed to confirm shipment");
@@ -186,6 +204,7 @@ export const bankApi = {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Failed to confirm delivery");
@@ -208,6 +227,7 @@ export const bankApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Failed to request documents");
@@ -242,6 +262,7 @@ export const documentApi = {
       method: "POST",
       headers,
       body: formData,
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -254,7 +275,9 @@ export const documentApi = {
 
   /** Download a document by CID */
   download: async (cid: string): Promise<Blob> => {
-    const res = await fetch(`${BACKEND_URL}/api/documents/${cid}/download`);
+    const res = await fetch(`${BACKEND_URL}/api/documents/${cid}/download`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Download failed");
     return await res.blob();
   },
