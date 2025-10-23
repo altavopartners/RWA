@@ -8,7 +8,10 @@ const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvdmFibGUtc2FuZGJveC13ZWItc2FuZGJveCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzM2MDU0NDM1LCJleHAiOjIwNTE2MzA0MzV9.UYqJFV_8PpJtUuGZfRi0zOCZ4TfkYHQCOYF4E1SQJ3E";
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+if (
+  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+) {
   // eslint-disable-next-line no-console
   console.warn(
     "Supabase env vars not set (NEXT_PUBLIC_SUPABASE_URL/ANON_KEY). Using fallback defaults; set proper env vars in production."

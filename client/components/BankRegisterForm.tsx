@@ -41,18 +41,22 @@ export default function BankRegisterForm() {
     if (!name.trim()) return setError("Please enter your full name.");
     if (!isValidEmail(email)) return setError("Please enter a valid email.");
     if (!isPasswordValid)
-      return setError("Password must be at least 8 characters and include 1 uppercase letter and 1 digit.");
-    if (!isConfirmValid) return setError("Password confirmation does not match.");
+      return setError(
+        "Password must be at least 8 characters and include 1 uppercase letter and 1 digit."
+      );
+    if (!isConfirmValid)
+      return setError("Password confirmation does not match.");
 
     setSubmitting(true);
     try {
       await bankRegister({ email, password, name, phone, bankId });
-      router.replace("/bank-dashboard");
+      router.replace("/bank");
     } catch (err: any) {
       // Try to extract clean error message
       let message = "Registration failed.";
       if (err?.response?.data?.message) message = err.response.data.message;
-      else if (err?.message?.includes("Email already exists")) message = "Email already exists.";
+      else if (err?.message?.includes("Email already exists"))
+        message = "Email already exists.";
       else if (err?.message) message = err.message.split("—")[0].trim(); // remove URL or backend trace
       setError(message);
     } finally {
@@ -60,8 +64,18 @@ export default function BankRegisterForm() {
     }
   }
 
-  const Rule = ({ ok, children }: { ok: boolean; children: React.ReactNode }) => (
-    <li className={`${ok ? "text-green-600" : "text-slate-500"} flex items-center gap-2`}>
+  const Rule = ({
+    ok,
+    children,
+  }: {
+    ok: boolean;
+    children: React.ReactNode;
+  }) => (
+    <li
+      className={`${
+        ok ? "text-green-600" : "text-slate-500"
+      } flex items-center gap-2`}
+    >
       <span className="text-base leading-none">{ok ? "✓" : "•"}</span>
       <span className="text-xs">{children}</span>
     </li>
@@ -70,13 +84,15 @@ export default function BankRegisterForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
-        <label className="block text-sm mb-1" htmlFor="name">Full name</label>
+        <label className="block text-sm mb-1" htmlFor="name">
+          Full name
+        </label>
         <input
           id="name"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="text"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           placeholder="Jane Doe"
           autoComplete="name"
           required
@@ -84,13 +100,15 @@ export default function BankRegisterForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1" htmlFor="email">Email</label>
+        <label className="block text-sm mb-1" htmlFor="email">
+          Email
+        </label>
         <input
           id="email"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="email@bank.com"
           autoComplete="username"
           required
@@ -98,26 +116,30 @@ export default function BankRegisterForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1" htmlFor="phone">Phone (optional)</label>
+        <label className="block text-sm mb-1" htmlFor="phone">
+          Phone (optional)
+        </label>
         <input
           id="phone"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="tel"
           value={phone}
-          onChange={e => setPhone(e.target.value)}
+          onChange={(e) => setPhone(e.target.value)}
           placeholder="+21612345678"
           autoComplete="tel"
         />
       </div>
 
       <div>
-        <label className="block text-sm mb-1" htmlFor="password">Password</label>
+        <label className="block text-sm mb-1" htmlFor="password">
+          Password
+        </label>
         <input
           id="password"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           autoComplete="new-password"
           required
@@ -150,13 +172,15 @@ export default function BankRegisterForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1" htmlFor="confirm">Confirm password</label>
+        <label className="block text-sm mb-1" htmlFor="confirm">
+          Confirm password
+        </label>
         <input
           id="confirm"
           className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5"
           type="password"
           value={confirm}
-          onChange={e => setConfirm(e.target.value)}
+          onChange={(e) => setConfirm(e.target.value)}
           placeholder="••••••••"
           autoComplete="new-password"
           required
@@ -181,7 +205,11 @@ export default function BankRegisterForm() {
       </div>
       */}
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
@@ -193,7 +221,9 @@ export default function BankRegisterForm() {
 
       <p className="text-sm text-center mt-2 text-slate-700 dark:text-slate-200">
         Already have an account?{" "}
-        <a className="underline" href="/bank-auth/login">Sign in</a>
+        <a className="underline" href="/bank-auth/login">
+          Sign in
+        </a>
       </p>
     </form>
   );
