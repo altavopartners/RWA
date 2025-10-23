@@ -9,6 +9,7 @@ import profileRoutes from "./profile.routes";
 import sessionRoutes from "./session.routes";
 import web3nftRoutes from "./web3nft.routes";
 import bankRoutes from "./bank.routes"; // ← added
+import bankAuthRoutes from "./bank-auth.routes";
 
 const router = Router();
 
@@ -41,5 +42,8 @@ router.use("/", sessionRoutes); // session routes are under /auth/refresh, /auth
 
 // Bank routes
 router.use("/bank", bankRoutes); // ← added
+
+// Bank auth routes
+router.use("/bank-auth", bankAuthRoutes);
 
 export default router;

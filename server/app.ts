@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { corsOptions } from "./config/cors";
 import { ensureUploadDirs, rootUpload } from "./config/uploads";
@@ -10,6 +11,9 @@ const app = express();
 // JSON parsing (allow large payloads)
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Cookie parser for bank auth sessions
+app.use(cookieParser());
 
 // CORS
 app.use(cors(corsOptions));

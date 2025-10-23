@@ -14,6 +14,7 @@ const profile_routes_1 = __importDefault(require("./profile.routes"));
 const session_routes_1 = __importDefault(require("./session.routes"));
 const web3nft_routes_1 = __importDefault(require("./web3nft.routes"));
 const bank_routes_1 = __importDefault(require("./bank.routes")); // ← added
+const bank_auth_routes_1 = __importDefault(require("./bank-auth.routes"));
 const router = (0, express_1.Router)();
 // Web3 NFT routes
 router.use("/web3nft", web3nft_routes_1.default);
@@ -35,5 +36,7 @@ router.use("/profile", profile_routes_1.default);
 router.use("/", session_routes_1.default); // session routes are under /auth/refresh, /auth/logout, etc.
 // Bank routes
 router.use("/bank", bank_routes_1.default); // ← added
+// Bank auth routes
+router.use("/bank-auth", bank_auth_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map
