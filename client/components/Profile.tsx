@@ -109,14 +109,6 @@ function ProfileContent() {
     reader.readAsDataURL(file);
   };
 
-  // Mock stats - replace with real data from your backend
-  const stats = [
-    { icon: Package, label: "Products Listed", value: "12", color: "from-blue-500 to-blue-600" },
-    { icon: ShoppingCart, label: "Orders Placed", value: "8", color: "from-green-500 to-green-600" },
-    { icon: TrendingUp, label: "Total Sales", value: "2.5K HBAR", color: "from-purple-500 to-purple-600" },
-    { icon: Shield, label: "Account Status", value: "Verified", color: "from-[#88CEDC] to-[#5BA8B8]" },
-  ];
-
   return (
     <div className="pt-32 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 [&_::selection]:bg-[#88CEDC]/30 [&_::selection]:text-gray-900 dark:[&_::selection]:bg-[#88CEDC]/50 dark:[&_::selection]:text-white">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
@@ -209,29 +201,6 @@ function ProfileContent() {
           </div>
         </Card>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <Card
-              key={index}
-              className="p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    {stat.label}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <stat.icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information Card */}
