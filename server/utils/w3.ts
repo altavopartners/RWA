@@ -7,12 +7,14 @@ const nativeImport = (s: string) =>
 let _client: any | null = null;
 
 // ---- CONFIG (no .env) ----
-const STORACHA_SEED_HEX =
-  "f6f147f53afefa05cfc6be2ec5cc9bdd31736357dfb60087cf788c3cc11b2d9b";
+// Base64 principal string from `w3 key create --json` -> "key"
+const STORACHA_PRINCIPAL_B64 =
+  "MgCa92wIAJEDt7s2uxFmq1OReriMi++9/K10IN6JDWaqG/e0BcH8msh9LJBirhSVOEUbdOy1EhbxQX+7th5xFZiLbQY8=";
+// DID from the same output -> "did"
 const EXPECTED_AGENT_DID =
-  "did:key:z6Mkvo1JewWRDxx3byA2VJMc5PHpW4YZAebudSP5bKqFJHNx";
-// ⬇️ Replace by your real UCAN proof (base64) minted for EXPECTED_AGENT_DID
-const PROOF_B64 = "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2TWt1OVVtaDFNaHVFMlFYck5VSnNZQUUxM0ZaRDVoOUxpUVJXdWRydkJMQ2FoWaJjY2FuamZpbGVjb2luLypkd2l0aHg4ZGlkOmtleTp6Nk1rdTlVbWgxTWh1RTJRWHJOVUpzWUFFMTNGWkQ1aDlMaVFSV3VkcnZCTENhaFljYXVkWCLtAccmybybyMYi80UysK6kqBjZk5Fe7fAnvip81lXwj7usY2V4cPZjZmN0gaFlc3BhY2WiZG5hbWVoSGV4LXBvcnRmYWNjZXNzoWR0eXBlZnB1YmxpY2Npc3NYIu0BxybJvJvIxiLzRTKwrqSoGNmTkV7t8Ce+KnzWVfCPu6xjcHJmgtgqWCUAAXESIG3BIdrUENegMDogyTsgGISviMfbafJADKkebqrxvBHz2CpYJQABcRIgPVx35yNy/gqjR8bR/rubjEs5JT6Xj6PMS/WYUz/BOeC1AgFxEiCQw86xRt8xn4LiAFOlBw3fhGo/O/c2oYxnFr5DAbq7uahhc1hE7aEDQCgFI0aekma4qedVSxatcmF9EDaRo1pVoMcmg459eKm2IUj1CkTA+L1kkmlmkh+ctKR1sw46y0QmSL0K5X+bSwthdmUwLjkuMWNhdHSBomNjYW5hKmR3aXRoeDhkaWQ6a2V5Ono2TWtpY2t3d0xMdFNoR1lmV3N5N0E2cmVzWUtxdW94dzNQZVhOb3o1d0NLS3ZVMWNhdWRYIp0abWFpbHRvOmFsdGF2by5mcjptb2hhbWVkLmVsbG91bWljZXhw9mNmY3SBoWVzcGFjZaFkbmFtZWhIZXgtcG9ydGNpc3NYIu0BPd2nuX68hT5Ej3kNhfypfcK/PZ8iP7MJd9RKI2v1AuJjcHJmgMkCAXESIBk6JEre2rGBZTA4HtqiYXp0eP9B8nlfBjWqo4ZOUSBGqGFzWETtoQNAJuyCChl/O/EDwig3PiMrvHwoEXV9fK3DI+skVBX0pJVwCb7ovn+7j/W//Q3JdyGIwfcOPGBNpWv/PyHM9Y86DmF2ZTAuOS4xY2F0dIGiY2NhbmEqZHdpdGh4OGRpZDprZXk6ejZNa3U5VW1oMU1odUUyUVhyTlVKc1lBRTEzRlpENWg5TGlRUld1ZHJ2QkxDYWhZY2F1ZFginRptYWlsdG86YWx0YXZvLmZyOm1vaGFtZWQuZWxsb3VtaWNleHD2Y2ZjdIG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";
+  "did:key:z6Mkn2QAH2vRn9kQmgJ6W92A315U5uZ3hN4aBcq9e3A5isKk";
+// UCAN proof (base64) minted *for the agent DID* above
+const PROOF_B64 = "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";
 
 // -------- helpers (tolerate SDK shape differences) --------
 function extractDidFromClient(c: any): string | undefined {
@@ -27,7 +29,7 @@ function extractDidFromAud(aud: any): string | undefined {
   try {
     if (!aud) return undefined;
     if (typeof aud === "string") return aud;
-    if (aud.did) return typeof aud.did === "function" ? aud.did() : aud.did;
+    if (aud?.did) return typeof aud.did === "function" ? aud.did() : aud.did;
   } catch {}
   return undefined;
 }
@@ -52,45 +54,119 @@ export async function getW3Client() {
 
   await polyfillStreamsAndFile();
 
-  const Client = await nativeImport("@storacha/client");
-  const Proof = await nativeImport("@storacha/client/proof");
+  // Robust dynamic imports
+  const ClientMod = await nativeImport("@storacha/client");
+  const createClient =
+    ClientMod?.create ?? ClientMod?.default?.create ?? ClientMod?.default;
+  if (typeof createClient !== "function") {
+    throw new Error("Unable to resolve @storacha/client.create()");
+  }
 
-  // Create deterministic client from fixed seed
-  const seed = Buffer.from(STORACHA_SEED_HEX, "hex");
-  _client = await Client.create({ seed } as any);
+  const ProofMod = await nativeImport("@storacha/client/proof");
+  const parseProof =
+    ProofMod?.parse ?? ProofMod?.default?.parse ?? ProofMod?.default;
+  if (typeof parseProof !== "function") {
+    throw new Error("Unable to resolve @storacha/client/proof.parse()");
+  }
+
+  const EdSigner = await nativeImport("@ucanto/principal/ed25519");
+
+  if (!STORACHA_PRINCIPAL_B64) {
+    throw new Error(
+      "Missing STORACHA_PRINCIPAL_B64. Generate one with `w3 key create --json` and paste the `key` value."
+    );
+  }
+
+  // Create principal and verify DID
+  const principal = EdSigner.Signer.parse(STORACHA_PRINCIPAL_B64);
+  const principalDid =
+    typeof principal.did === "function" ? principal.did() : principal.did;
+  console.log("principal DID (from STORACHA_PRINCIPAL_B64):", principalDid);
+
+  if (EXPECTED_AGENT_DID && principalDid !== EXPECTED_AGENT_DID) {
+    throw new Error(
+      `Configured principal DID != EXPECTED_AGENT_DID\n` +
+        `principal=${principalDid}\nexpected=${EXPECTED_AGENT_DID}\n` +
+        `Either update EXPECTED_AGENT_DID & PROOF_B64, or paste the matching principal into STORACHA_PRINCIPAL_B64.`
+    );
+  }
+
+  // ---- Choose a store: try MemoryStore subpath; if missing, fall back to new FS store in temp dir
+  let store: any | null = null;
+
+  try {
+    const MemStoreMod = await nativeImport("@web3-storage/w3up-client/stores/memory");
+    const MemoryStore =
+      MemStoreMod?.MemoryStore ?? MemStoreMod?.StoreMemory ?? MemStoreMod?.default ?? null;
+    if (typeof MemoryStore === "function") {
+      store = new MemoryStore(); // ✅ clean, in-memory (no persisted identity)
+      console.log("[w3] Using MemoryStore (in-memory)");
+    } else {
+      console.warn("[w3] MemoryStore symbol not found, will fall back to FS store.");
+    }
+  } catch (e) {
+    console.warn("[w3] MemoryStore module not available, will fall back to FS store.");
+  }
+
+  if (!store) {
+    // FS fallback in a unique temp dir to avoid colliding with any old identity
+    const os = await nativeImport("node:os");
+    const path = await nativeImport("node:path");
+    const { randomUUID } = await nativeImport("node:crypto");
+    const FSMod = await nativeImport("@web3-storage/w3up-client/stores/fs");
+    const FSStore = FSMod?.FSStore ?? FSMod?.default ?? FSMod;
+    if (typeof FSStore !== "function") {
+      throw new Error(
+        "Could not resolve FSStore from @web3-storage/w3up-client/stores/fs"
+      );
+    }
+    const root = path.join(os.tmpdir(), `w3up-store-${randomUUID()}`);
+    store = new FSStore({ root });
+    console.log("[w3] Using FS store at temp path:", root);
+  }
+
+  console.log("Creating Storacha client...");
+  _client = await createClient({ principal, store } as any);
+  console.log("Finished creating Storacha client.");
 
   // Read agent DID (robust to SDK differences)
   const agentDid = extractDidFromClient(_client);
   if (!agentDid) {
-    // Show structure to help debugging locally
     console.error("Storacha client shape:", Object.keys(_client || {}));
     throw new Error("Unable to read agent DID from client (agent/did undefined).");
   }
-  console.log("agent DID (derived from seed):", agentDid);
+  console.log("agent DID (from principal):", agentDid);
 
   if (EXPECTED_AGENT_DID && agentDid !== EXPECTED_AGENT_DID) {
     console.warn(
-      `⚠️ Agent DID derived from seed != EXPECTED_AGENT_DID\n` +
-      `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
+      `⚠️ Agent DID from principal != EXPECTED_AGENT_DID\n` +
+        `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
     );
   }
 
-  // Add/select space from proof
-  const parsed = await Proof.parse(PROOF_B64);
-  const space = await _client.addSpace(parsed);
-  // space.did can be func or string
-  const spaceDid = typeof space?.did === "function" ? space.did() : space?.did;
-  if (!spaceDid) {
-    console.warn("Space object has no .did(); space keys:", Object.keys(space || {}));
-  }
-  await _client.setCurrentSpace(spaceDid ?? space);
+  // Add/select space from proof (only if provided)
+  if (PROOF_B64) {
+    const parsed = await parseProof(PROOF_B64).catch((e: any) => {
+      throw new Error(`Failed to parse PROOF_B64: ${e?.message ?? e}`);
+    });
+    const space = await _client.addSpace(parsed);
+    const spaceDid = typeof space?.did === "function" ? space.did() : space?.did;
+    if (!spaceDid) {
+      console.warn("Space object has no .did(); space keys:", Object.keys(space || {}));
+    }
+    await _client.setCurrentSpace(spaceDid ?? space);
 
-  // Validate proof audience matches agent
-  const audDid = extractDidFromAud(parsed?.aud);
-  if (!audDid) {
-    console.warn("Proof 'aud' has unexpected shape; parsed keys:", Object.keys(parsed || {}));
-  } else if (audDid !== agentDid) {
-    throw new Error(`UCAN audience DID mismatch: proof.aud=${audDid} vs agent=${agentDid}`);
+    // Validate proof audience matches agent
+    const audDid = extractDidFromAud(parsed?.aud);
+    if (!audDid) {
+      console.warn("Proof 'aud' has unexpected shape; parsed keys:", Object.keys(parsed || {}));
+    } else if (audDid !== agentDid) {
+      throw new Error(`UCAN audience DID mismatch: proof.aud=${audDid} vs agent=${agentDid}`);
+    }
+  } else {
+    console.warn(
+      "No PROOF_B64 provided — client created without selecting a space. Uploads may fail until a valid proof is added."
+    );
   }
 
   return _client;
