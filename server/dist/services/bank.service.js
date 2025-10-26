@@ -186,27 +186,10 @@ async function approveOrderByBankService(orderId, bankId, bankType, comments) {
             updates.buyerBankApproved = true;
         if (bankType === "seller")
             updates.sellerBankApproved = true;
-        // Call smart contract to approve on blockchain
-        if (order.escrowAddress) {
-            console.log(`Calling blockchain ${bankType} bank approval for escrow:`, order.escrowAddress);
-            try {
-                if (bankType === "buyer") {
-                    await (0, escrow_deploy_service_1.approveBuyerBank)(order.escrowAddress);
-                    console.log("Buyer bank approved on blockchain");
-                }
-                else {
-                    await (0, escrow_deploy_service_1.approveSellerBank)(order.escrowAddress);
-                    console.log("Seller bank approved on blockchain");
-                }
-            }
-            catch (err) {
-                console.error("Failed to approve on blockchain:", err);
-                throw new Error(`Failed to approve ${bankType} bank on blockchain: ${err}`);
-            }
-        }
-        else {
-            console.warn("No escrow address found - skipping blockchain approval");
-        }
+        // NOTE: Buyer and seller approvals are handled by the frontend/wallet
+        // The bank is just recording their approval for the transaction
+        console.log(`✅ Bank approval recorded for ${bankType} on order ${orderId}`);
+        console.log("📝 Note: Actual blockchain approvals must be signed by buyer/seller wallets");
         // Determine future approval state
         const willBeBuyerApproved = bankType === "buyer" ? true : order.buyerBankApproved;
         const willBeSellerApproved = bankType === "seller" ? true : order.sellerBankApproved;

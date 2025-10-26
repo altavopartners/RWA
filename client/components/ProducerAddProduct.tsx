@@ -284,10 +284,15 @@ const ProducerAddProductPageContent = () => {
       fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
     (form.images || []).forEach((file) => fd.append("images", file));
     (form.documents || []).forEach((file) => fd.append("documents", file));
-    fd.append(
-      "producerWalletId",
-      String(localStorage.getItem("walletAddress"))
-    );
+    // Only append producerWalletId when the wallet is available in localStorage.
+    // Avoid String(null) -> "null" being saved into DB.
+    const wallet =
+      typeof window !== "undefined"
+        ? localStorage.getItem("walletAddress")
+        : null;
+    if (wallet && wallet !== "null") {
+      fd.append("producerWalletId", String(wallet));
+    }
 
     try {
       setSubmitting(true);

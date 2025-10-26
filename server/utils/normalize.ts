@@ -1,32 +1,35 @@
 // utils/normalize.ts
 
 export function toNumOrNull(v: unknown): number | null {
-  if (v === undefined || v === null || v === '') return null;
+  if (v === undefined || v === null || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
 
 export function trimOrNull(v: unknown): string | null {
-  if (typeof v !== 'string') return null;
+  if (typeof v !== "string") return null;
   const t = v.trim();
-  return t === '' ? null : t;
+  // Treat empty and literal 'null'/'undefined' strings as null (defensive)
+  if (t === "" || t.toLowerCase() === "null" || t.toLowerCase() === "undefined")
+    return null;
+  return t;
 }
 
 export function trimOrUndefined(v: unknown): string | undefined {
-  return typeof v === 'string' ? v.trim() : undefined;
+  return typeof v === "string" ? v.trim() : undefined;
 }
 
 export function parseBool(v: unknown): boolean | undefined {
   if (v === undefined) return undefined;
-  if (typeof v === 'boolean') return v;
+  if (typeof v === "boolean") return v;
   const s = String(v).toLowerCase().trim();
-  if (['1', 'true', 'yes', 'y'].includes(s)) return true;
-  if (['0', 'false', 'no', 'n'].includes(s)) return false;
+  if (["1", "true", "yes", "y"].includes(s)) return true;
+  if (["0", "false", "no", "n"].includes(s)) return false;
   return undefined;
 }
 
 export function toInt(v: unknown, def: number): number {
-  if (v === undefined || v === null || v === '') return def;
+  if (v === undefined || v === null || v === "") return def;
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
 }
@@ -34,7 +37,7 @@ export function toInt(v: unknown, def: number): number {
 export type ProductBody = {
   name: string;
   quantity: number;
-  unit: string;          // requis
+  unit: string; // requis
   pricePerUnit: number;
 
   countryOfOrigin: string | null;
@@ -59,13 +62,15 @@ export function buildProductBody(raw: unknown): ProductBody {
   const pricePerUnit = Number(r?.pricePerUnit);
 
   const missing: string[] = [];
-  if (!nameMaybe) missing.push('name');
-  if (!unitMaybe) missing.push('unit');
-  if (Number.isNaN(quantity)) missing.push('quantity');
-  if (Number.isNaN(pricePerUnit)) missing.push('pricePerUnit');
+  if (!nameMaybe) missing.push("name");
+  if (!unitMaybe) missing.push("unit");
+  if (Number.isNaN(quantity)) missing.push("quantity");
+  if (Number.isNaN(pricePerUnit)) missing.push("pricePerUnit");
 
   if (missing.length) {
-    const err: any = new Error(`Invalid or missing fields: ${missing.join(', ')}`);
+    const err: any = new Error(
+      `Invalid or missing fields: ${missing.join(", ")}`
+    );
     err.status = 400;
     throw err;
   }

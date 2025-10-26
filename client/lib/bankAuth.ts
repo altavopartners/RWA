@@ -9,38 +9,58 @@ async function safeFetch<T>(
   try {
     const res = await fetch(url, {
       ...options,
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
       credentials: "include",
       mode: "cors",
     });
 
     const text = await res.text();
-    let data: any = null;
-    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    let data: unknown = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
 
     if (!res.ok) {
       const msg =
-        (data && typeof data === "object" && data.message) ||
-        `HTTP ${res.status} ${res.statusText}`;
-      console.log("❌ [bankAuth] Request failed", { url, status: res.status, body: data });
+        (data &&
+        typeof data === "object" &&
+        "message" in data &&
+        typeof data.message === "string"
+          ? data.message
+          : null) || `HTTP ${res.status} ${res.statusText}`;
+      console.log("❌ [bankAuth] Request failed", {
+        url,
+        status: res.status,
+        body: data,
+      });
       throw new Error(`${msg} — ${url}`);
     }
 
     console.info("✅ [bankAuth] Success", { url, status: res.status });
     return (data as T) ?? ({} as T);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // This is where connection refused, DNS, or CORS shows up
+    const error = err as Error;
     const hint =
-      err?.message?.includes("Failed to fetch") || err?.name === "TypeError"
+      error?.message?.includes("Failed to fetch") || error?.name === "TypeError"
         ? "Connection refused or CORS blocked"
         : "Network error";
     console.log("💥 [bankAuth] Network error", { url, error: err, hint });
-    throw new Error(`${hint}: ${url} — ${err?.message || "unknown error"}`);
+    throw new Error(`${hint}: ${url} — ${error?.message || "unknown error"}`);
   }
 }
 
 export async function bankRegister(payload: {
-  email: string; password: string; name?: string; phone?: string; bankId?: string;
+  email: string;
+  password: string;
+  name?: string;
+  phone?: string;
+  bankId?: string;
 }) {
   return safeFetch("/api/bank-auth/register", {
     method: "POST",

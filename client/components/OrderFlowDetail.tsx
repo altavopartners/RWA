@@ -221,7 +221,7 @@ export default function OrderFlowDetail({
       const contractAddress = order.escrowAddress;
       if (!contractAddress) {
         throw new Error(
-          "Escrow contract not deployed for this order yet. Please contact support."
+          "Escrow contract not deployed for this order yet. The system is being configured for payments. Please contact support."
         );
       }
 

@@ -8,34 +8,37 @@ exports.parseBool = parseBool;
 exports.toInt = toInt;
 exports.buildProductBody = buildProductBody;
 function toNumOrNull(v) {
-    if (v === undefined || v === null || v === '')
+    if (v === undefined || v === null || v === "")
         return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
 }
 function trimOrNull(v) {
-    if (typeof v !== 'string')
+    if (typeof v !== "string")
         return null;
     const t = v.trim();
-    return t === '' ? null : t;
+    // Treat empty and literal 'null'/'undefined' strings as null (defensive)
+    if (t === "" || t.toLowerCase() === "null" || t.toLowerCase() === "undefined")
+        return null;
+    return t;
 }
 function trimOrUndefined(v) {
-    return typeof v === 'string' ? v.trim() : undefined;
+    return typeof v === "string" ? v.trim() : undefined;
 }
 function parseBool(v) {
     if (v === undefined)
         return undefined;
-    if (typeof v === 'boolean')
+    if (typeof v === "boolean")
         return v;
     const s = String(v).toLowerCase().trim();
-    if (['1', 'true', 'yes', 'y'].includes(s))
+    if (["1", "true", "yes", "y"].includes(s))
         return true;
-    if (['0', 'false', 'no', 'n'].includes(s))
+    if (["0", "false", "no", "n"].includes(s))
         return false;
     return undefined;
 }
 function toInt(v, def) {
-    if (v === undefined || v === null || v === '')
+    if (v === undefined || v === null || v === "")
         return def;
     const n = Number(v);
     return Number.isFinite(n) ? n : def;
@@ -48,15 +51,15 @@ function buildProductBody(raw) {
     const pricePerUnit = Number(r?.pricePerUnit);
     const missing = [];
     if (!nameMaybe)
-        missing.push('name');
+        missing.push("name");
     if (!unitMaybe)
-        missing.push('unit');
+        missing.push("unit");
     if (Number.isNaN(quantity))
-        missing.push('quantity');
+        missing.push("quantity");
     if (Number.isNaN(pricePerUnit))
-        missing.push('pricePerUnit');
+        missing.push("pricePerUnit");
     if (missing.length) {
-        const err = new Error(`Invalid or missing fields: ${missing.join(', ')}`);
+        const err = new Error(`Invalid or missing fields: ${missing.join(", ")}`);
         err.status = 400;
         throw err;
     }

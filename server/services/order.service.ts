@@ -39,214 +39,279 @@ export async function passOrderService({
   userId,
   shipping = 5.0,
 }: PassOrderOptions) {
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const cartItems = await tx.cartItem.findMany({
-      where: { userId },
-      include: { product: true },
-    });
+  return prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      const cartItems = await tx.cartItem.findMany({
+        where: { userId },
+        include: { product: true },
+      });
 
-    if (cartItems.length === 0) {
-      throw new CheckoutError("Your cart is empty.", 400);
-    }
+      if (cartItems.length === 0) {
+        throw new CheckoutError("Your cart is empty.", 400);
+      }
 
-    for (const ci of cartItems) {
-      if (ci.quantity <= 0) {
+      for (const ci of cartItems) {
+        if (ci.quantity <= 0) {
+          throw new CheckoutError(
+            `Invalid quantity for product ${ci.productId}.`,
+            400
+          );
+        }
+        if (ci.product.quantity < ci.quantity) {
+          throw new CheckoutError(
+            `Insufficient stock for "${ci.product.name}".`,
+            409
+          );
+        }
+      }
+
+      // Ensure buyer exists
+      const buyerExists = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+
+      if (!buyerExists) {
+        throw new CheckoutError("Buyer not found.", 404);
+      }
+
+      // Extract unique producer wallet IDs from cart items
+      const producerWalletIds = [
+        ...new Set(
+          cartItems
+            .map((ci: any) => ci.product.producerWalletId)
+            .filter((id: any): id is string => !!id)
+        ),
+      ];
+
+      if (producerWalletIds.length === 0) {
         throw new CheckoutError(
-          `Invalid quantity for product ${ci.productId}.`,
+          "Products missing producer information. Cannot process order.",
           400
         );
       }
-      if (ci.product.quantity < ci.quantity) {
+
+      // For now, support single-seller orders only
+      if (producerWalletIds.length > 1) {
         throw new CheckoutError(
-          `Insufficient stock for "${ci.product.name}".`,
-          409
+          "Multi-seller orders not supported yet. Please order from one producer at a time.",
+          400
         );
       }
-    }
 
-    // Ensure buyer exists
-    const buyerExists = await tx.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
+      // Ensure the seller (producer) exists. If the DB doesn't have a user
+      // marked as PRODUCER for this wallet, fall back to any user with the
+      // walletAddress. If no user exists, create a minimal producer user.
+      const requestedWallet = producerWalletIds[0] as string;
 
-    if (!buyerExists) {
-      throw new CheckoutError("Buyer not found.", 404);
-    }
+      let sellerRecord = await tx.user.findFirst({
+        where: {
+          walletAddress: requestedWallet,
+          userType: "PRODUCER",
+        },
+        select: { id: true, walletAddress: true, userType: true },
+      });
 
-    // Extract unique producer wallet IDs from cart items
-    const producerWalletIds = [
-      ...new Set(
-        cartItems
-          .map((ci: any) => ci.product.producerWalletId)
-          .filter((id: any): id is string => !!id)
-      ),
-    ];
+      let sellerId: string | null = null;
 
-    if (producerWalletIds.length === 0) {
-      throw new CheckoutError(
-        "Products missing producer information. Cannot process order.",
-        400
-      );
-    }
-
-    // For now, support single-seller orders only
-    if (producerWalletIds.length > 1) {
-      throw new CheckoutError(
-        "Multi-seller orders not supported yet. Please order from one producer at a time.",
-        400
-      );
-    }
-
-    // Ensure the seller (producer) exists
-    const sellerExists = await tx.user.findFirst({
-      where: {
-        walletAddress: producerWalletIds[0],
-        userType: "PRODUCER",
-      },
-      select: { id: true },
-    });
-
-    if (!sellerExists) {
-      throw new CheckoutError(
-        "Producer not found for this order. Contact support.",
-        404
-      );
-    }
-
-    // Assign banks: use any configured bank (demo-friendly fallback)
-    const anyBank = await tx.bank.findFirst();
-    if (!anyBank) {
-      throw new CheckoutError(
-        "No banks configured. Please seed or create at least one bank.",
-        500
-      );
-    }
-    const buyerBankIdToUse = anyBank.id;
-    const sellerBankIdToUse = anyBank.id;
-
-    const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
-    const subtotal = cartItems.reduce(
-      (acc: Prisma.Decimal, ci: any) =>
-        acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)),
-      toDecimal(0)
-    );
-    const shippingD = toDecimal(shipping ?? 0);
-    const total = subtotal.add(shippingD);
-
-    let order: Awaited<ReturnType<typeof tx.order.create>> | null = null;
-    const MAX_RETRIES = 2;
-
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const code = await generateOrderCode(tx);
-      try {
-        order = await tx.order.create({
-          data: {
-            code,
-            userId,
-            status: OrderStatus.AWAITING_PAYMENT, // Start awaiting payment; move to BANK_REVIEW after on-chain payment
-            subtotal,
-            shipping: shippingD,
-            total,
-            buyerBankId: buyerBankIdToUse, // Ensure buyer's bank exists
-            sellerBankId: sellerBankIdToUse, // Ensure seller's bank exists
-            items: {
-              create: cartItems.map((ci: any) => ({
-                productId: ci.productId,
-                quantity: ci.quantity,
-                unitPrice: toDecimal(ci.product.pricePerUnit),
-                lineTotal: toDecimal(ci.product.pricePerUnit).mul(ci.quantity),
-              })),
-            },
-          },
-          include: { items: true },
+      if (!sellerRecord) {
+        // Try any user with the walletAddress (maybe user exists but not labeled PRODUCER)
+        const anyUser = await tx.user.findUnique({
+          where: { walletAddress: requestedWallet },
+          select: { id: true, userType: true },
         });
-        break;
-      } catch (err: any) {
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === "P2002" &&
-          Array.isArray((err.meta as any)?.target) &&
-          (err.meta as any).target.includes("code")
-        ) {
-          if (attempt === MAX_RETRIES) {
-            throw new CheckoutError(
-              "Could not generate unique order code.",
-              500
+
+        if (anyUser) {
+          console.warn(
+            `⚠️  Order: wallet ${requestedWallet} found but not marked PRODUCER; using existing user ${anyUser.id} as producer.`
+          );
+          sellerId = anyUser.id;
+        } else {
+          // No user at all — create a minimal producer user so orders can proceed.
+          // This keeps the system working while allowing the admin or producer to
+          // update profile details later. Wallet address is unique so this should be safe.
+          const created = await tx.user.create({
+            data: {
+              walletAddress: requestedWallet,
+              userType: "PRODUCER",
+            },
+            select: { id: true },
+          });
+          console.warn(
+            `⚠️  Auto-created producer user ${created.id} for wallet ${requestedWallet}`
+          );
+          sellerId = created.id;
+        }
+      } else {
+        sellerId = sellerRecord.id;
+      }
+
+      if (!sellerId) {
+        throw new CheckoutError(
+          "Producer not found for this order. Contact support.",
+          404
+        );
+      }
+
+      // Assign banks: use any configured bank (demo-friendly fallback)
+      const anyBank = await tx.bank.findFirst();
+      if (!anyBank) {
+        throw new CheckoutError(
+          "No banks configured. Please seed or create at least one bank.",
+          500
+        );
+      }
+      const buyerBankIdToUse = anyBank.id;
+      const sellerBankIdToUse = anyBank.id;
+
+      const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
+      const subtotal = cartItems.reduce(
+        (acc: Prisma.Decimal, ci: any) =>
+          acc.add(toDecimal(ci.product.pricePerUnit).mul(ci.quantity)),
+        toDecimal(0)
+      );
+      const shippingD = toDecimal(shipping ?? 0);
+      const total = subtotal.add(shippingD);
+
+      let order: Awaited<ReturnType<typeof tx.order.create>> | null = null;
+      const MAX_RETRIES = 2;
+
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const code = await generateOrderCode(tx);
+        try {
+          order = await tx.order.create({
+            data: {
+              code,
+              userId,
+              status: OrderStatus.AWAITING_PAYMENT, // Start awaiting payment; move to BANK_REVIEW after on-chain payment
+              subtotal,
+              shipping: shippingD,
+              total,
+              buyerBankId: buyerBankIdToUse, // Ensure buyer's bank exists
+              sellerBankId: sellerBankIdToUse, // Ensure seller's bank exists
+              items: {
+                create: cartItems.map((ci: any) => ({
+                  productId: ci.productId,
+                  quantity: ci.quantity,
+                  unitPrice: toDecimal(ci.product.pricePerUnit),
+                  lineTotal: toDecimal(ci.product.pricePerUnit).mul(
+                    ci.quantity
+                  ),
+                })),
+              },
+            },
+            include: { items: true },
+          });
+          break;
+        } catch (err: any) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === "P2002" &&
+            Array.isArray((err.meta as any)?.target) &&
+            (err.meta as any).target.includes("code")
+          ) {
+            if (attempt === MAX_RETRIES) {
+              throw new CheckoutError(
+                "Could not generate unique order code.",
+                500
+              );
+            }
+          } else throw err;
+        }
+      }
+
+      if (!order)
+        throw new CheckoutError("Unknown error during order creation.", 500);
+
+      // Decrement stock
+      for (const ci of cartItems) {
+        const updated = await tx.product.updateMany({
+          where: { id: ci.productId, quantity: { gte: ci.quantity } },
+          data: { quantity: { decrement: ci.quantity } },
+        });
+        if (updated.count !== 1) {
+          throw new CheckoutError(
+            `Stock changed while checking out for "${ci.product.name}". Please retry.`,
+            409
+          );
+        }
+      }
+
+      await tx.cartItem.deleteMany({ where: { userId } });
+
+      // Deploy escrow contract for this order
+      // (If HEDERA_PRIVATE_KEY is not set or escrow artifact is missing, skip)
+      const escrowEnabled = !!process.env.HEDERA_PRIVATE_KEY;
+
+      console.log(
+        `📋 Escrow deployment check for order ${order.id}: enabled=${escrowEnabled}`
+      );
+
+      if (escrowEnabled) {
+        try {
+          const buyerUser = await tx.user.findUnique({
+            where: { id: userId },
+            select: { walletAddress: true },
+          });
+
+          const sellerWalletAddress = producerWalletIds[0];
+
+          console.log(`   Buyer wallet: ${buyerUser?.walletAddress}`);
+          console.log(`   Seller wallet: ${sellerWalletAddress}`);
+
+          if (!buyerUser?.walletAddress) {
+            console.warn(
+              `⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`
+            );
+          } else if (!sellerWalletAddress) {
+            console.warn(
+              `⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`
+            );
+          } else {
+            console.log(`🚀 Deploying escrow for order ${order.id}...`);
+            console.log(`   Total amount: ${total.toString()}`);
+
+            const escrowResult = await deployEscrowContract({
+              buyerAddress: buyerUser.walletAddress,
+              sellerAddress: sellerWalletAddress as string,
+              totalAmount: total.toString(),
+            });
+
+            console.log(`✅ Escrow result:`, escrowResult);
+
+            // Save escrow address to order
+            await tx.order.update({
+              where: { id: order.id },
+              data: {
+                escrowAddress: escrowResult.contractAddress,
+                hederaTransactionId: escrowResult.transactionHash,
+              },
+            });
+
+            console.log(
+              `✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`
             );
           }
-        } else throw err;
-      }
-    }
-
-    if (!order)
-      throw new CheckoutError("Unknown error during order creation.", 500);
-
-    // Decrement stock
-    for (const ci of cartItems) {
-      const updated = await tx.product.updateMany({
-        where: { id: ci.productId, quantity: { gte: ci.quantity } },
-        data: { quantity: { decrement: ci.quantity } },
-      });
-      if (updated.count !== 1) {
-        throw new CheckoutError(
-          `Stock changed while checking out for "${ci.product.name}". Please retry.`,
-          409
-        );
-      }
-    }
-
-    await tx.cartItem.deleteMany({ where: { userId } });
-
-    // Deploy escrow contract for this order
-    try {
-      const buyerUser = await tx.user.findUnique({
-        where: { id: userId },
-        select: { walletAddress: true },
-      });
-
-      const sellerWalletAddress = producerWalletIds[0];
-
-      if (!buyerUser?.walletAddress) {
-        console.warn(
-          `⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`
-        );
-      } else if (!sellerWalletAddress) {
-        console.warn(
-          `⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`
-        );
+        } catch (escrowError: any) {
+          // Log error but don't fail order creation
+          console.error(
+            `❌ Failed to deploy escrow for order ${order.id}:`,
+            escrowError
+          );
+          // Order is still created, escrow can be deployed manually later
+        }
       } else {
-        console.log(`🚀 Deploying escrow for order ${order.id}...`);
-        const escrowResult = await deployEscrowContract({
-          buyerAddress: buyerUser.walletAddress,
-          sellerAddress: sellerWalletAddress as string,
-          totalAmount: total.toString(), // HBAR amount as string
-        });
-
-        // Save escrow address to order
-        await tx.order.update({
-          where: { id: order.id },
-          data: {
-            escrowAddress: escrowResult.contractAddress,
-            hederaTransactionId: escrowResult.transactionHash,
-          },
-        });
-
-        console.log(
-          `✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`
+        console.warn(
+          `ℹ️  Order ${order.id}: Escrow deployment skipped (HEDERA_PRIVATE_KEY not configured)`
         );
       }
-    } catch (escrowError: any) {
-      // Log error but don't fail order creation
-      console.error(
-        `❌ Failed to deploy escrow for order ${order.id}:`,
-        escrowError.message
-      );
-      // Order is still created, escrow can be deployed manually later
-    }
 
-    return order;
-  });
+      return order;
+    },
+    {
+      timeout: 60000, // 60 seconds for escrow deployment
+    }
+  );
 }
 
 // ---------- Get All My Orders ----------

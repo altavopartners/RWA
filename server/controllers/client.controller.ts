@@ -9,7 +9,7 @@ export const getClientsController = async (_req: Request, res: Response) => {
     const clients = await clientService.getClients();
 
     // Map data to a cleaner response for frontend
-    const response = clients.map((c) => ({
+    const response = clients.map((c: any) => ({
       id: c.id,
       name: c.fullName || c.businessName,
       email: c.email,
@@ -18,7 +18,10 @@ export const getClientsController = async (_req: Request, res: Response) => {
       kycStatus: c.kycStatus.charAt(0) + c.kycStatus.slice(1).toLowerCase(), // e.g., "Pending"
       kycExpiry: c.kycExpiry,
       orderCount: c.orders.length,
-      totalVolume: c.orders.reduce((sum, o) => sum + Number(o.total), 0),
+      totalVolume: c.orders.reduce(
+        (sum: number, o: any) => sum + Number(o.total),
+        0
+      ),
       lastActivity: c.updatedAt,
     }));
 

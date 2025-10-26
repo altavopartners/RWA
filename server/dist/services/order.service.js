@@ -71,15 +71,47 @@ async function passOrderService({ userId, shipping = 5.0, }) {
         if (producerWalletIds.length > 1) {
             throw new CheckoutError("Multi-seller orders not supported yet. Please order from one producer at a time.", 400);
         }
-        // Ensure the seller (producer) exists
-        const sellerExists = await tx.user.findFirst({
+        // Ensure the seller (producer) exists. If the DB doesn't have a user
+        // marked as PRODUCER for this wallet, fall back to any user with the
+        // walletAddress. If no user exists, create a minimal producer user.
+        const requestedWallet = producerWalletIds[0];
+        let sellerRecord = await tx.user.findFirst({
             where: {
-                walletAddress: producerWalletIds[0],
+                walletAddress: requestedWallet,
                 userType: "PRODUCER",
             },
-            select: { id: true },
+            select: { id: true, walletAddress: true, userType: true },
         });
-        if (!sellerExists) {
+        let sellerId = null;
+        if (!sellerRecord) {
+            // Try any user with the walletAddress (maybe user exists but not labeled PRODUCER)
+            const anyUser = await tx.user.findUnique({
+                where: { walletAddress: requestedWallet },
+                select: { id: true, userType: true },
+            });
+            if (anyUser) {
+                console.warn(`⚠️  Order: wallet ${requestedWallet} found but not marked PRODUCER; using existing user ${anyUser.id} as producer.`);
+                sellerId = anyUser.id;
+            }
+            else {
+                // No user at all — create a minimal producer user so orders can proceed.
+                // This keeps the system working while allowing the admin or producer to
+                // update profile details later. Wallet address is unique so this should be safe.
+                const created = await tx.user.create({
+                    data: {
+                        walletAddress: requestedWallet,
+                        userType: "PRODUCER",
+                    },
+                    select: { id: true },
+                });
+                console.warn(`⚠️  Auto-created producer user ${created.id} for wallet ${requestedWallet}`);
+                sellerId = created.id;
+            }
+        }
+        else {
+            sellerId = sellerRecord.id;
+        }
+        if (!sellerId) {
             throw new CheckoutError("Producer not found for this order. Contact support.", 404);
         }
         // Assign banks: use any configured bank (demo-friendly fallback)
@@ -148,42 +180,56 @@ async function passOrderService({ userId, shipping = 5.0, }) {
         }
         await tx.cartItem.deleteMany({ where: { userId } });
         // Deploy escrow contract for this order
-        try {
-            const buyerUser = await tx.user.findUnique({
-                where: { id: userId },
-                select: { walletAddress: true },
-            });
-            const sellerWalletAddress = producerWalletIds[0];
-            if (!buyerUser?.walletAddress) {
-                console.warn(`⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`);
-            }
-            else if (!sellerWalletAddress) {
-                console.warn(`⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`);
-            }
-            else {
-                console.log(`🚀 Deploying escrow for order ${order.id}...`);
-                const escrowResult = await (0, escrow_deploy_service_1.deployEscrowContract)({
-                    buyerAddress: buyerUser.walletAddress,
-                    sellerAddress: sellerWalletAddress,
-                    totalAmount: total.toString(), // HBAR amount as string
+        // (If HEDERA_PRIVATE_KEY is not set or escrow artifact is missing, skip)
+        const escrowEnabled = !!process.env.HEDERA_PRIVATE_KEY;
+        console.log(`📋 Escrow deployment check for order ${order.id}: enabled=${escrowEnabled}`);
+        if (escrowEnabled) {
+            try {
+                const buyerUser = await tx.user.findUnique({
+                    where: { id: userId },
+                    select: { walletAddress: true },
                 });
-                // Save escrow address to order
-                await tx.order.update({
-                    where: { id: order.id },
-                    data: {
-                        escrowAddress: escrowResult.contractAddress,
-                        hederaTransactionId: escrowResult.transactionHash,
-                    },
-                });
-                console.log(`✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`);
+                const sellerWalletAddress = producerWalletIds[0];
+                console.log(`   Buyer wallet: ${buyerUser?.walletAddress}`);
+                console.log(`   Seller wallet: ${sellerWalletAddress}`);
+                if (!buyerUser?.walletAddress) {
+                    console.warn(`⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`);
+                }
+                else if (!sellerWalletAddress) {
+                    console.warn(`⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`);
+                }
+                else {
+                    console.log(`🚀 Deploying escrow for order ${order.id}...`);
+                    console.log(`   Total amount: ${total.toString()}`);
+                    const escrowResult = await (0, escrow_deploy_service_1.deployEscrowContract)({
+                        buyerAddress: buyerUser.walletAddress,
+                        sellerAddress: sellerWalletAddress,
+                        totalAmount: total.toString(),
+                    });
+                    console.log(`✅ Escrow result:`, escrowResult);
+                    // Save escrow address to order
+                    await tx.order.update({
+                        where: { id: order.id },
+                        data: {
+                            escrowAddress: escrowResult.contractAddress,
+                            hederaTransactionId: escrowResult.transactionHash,
+                        },
+                    });
+                    console.log(`✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`);
+                }
+            }
+            catch (escrowError) {
+                // Log error but don't fail order creation
+                console.error(`❌ Failed to deploy escrow for order ${order.id}:`, escrowError);
+                // Order is still created, escrow can be deployed manually later
             }
         }
-        catch (escrowError) {
-            // Log error but don't fail order creation
-            console.error(`❌ Failed to deploy escrow for order ${order.id}:`, escrowError.message);
-            // Order is still created, escrow can be deployed manually later
+        else {
+            console.warn(`ℹ️  Order ${order.id}: Escrow deployment skipped (HEDERA_PRIVATE_KEY not configured)`);
         }
         return order;
+    }, {
+        timeout: 60000, // 60 seconds for escrow deployment
     });
 }
 async function getAllMyOrdersService({ userId, page = 1, pageSize = 20, status, }) {

@@ -22,6 +22,9 @@ function generateMockCID(): string {
 async function main() {
   console.log("🌱 Starting database seed...\n");
 
+  // Use your real wallet address for all users (buyer and producer/seller)
+  const REAL_WALLET = "0xdbdaeF88839e18feF4E9C148b865bcC89dD44482";
+
   // Clean existing data
   console.log("🗑️  Cleaning existing data...");
   await prisma.document.deleteMany();
@@ -29,41 +32,45 @@ async function main() {
   await prisma.orderedItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.cartItem.deleteMany();
+  await prisma.authSession.deleteMany();
+  await prisma.bankAuthSession.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.userBank.deleteMany();
   await prisma.bank.deleteMany();
   console.log("✅ Database cleaned\n");
 
   // ----- Banks -----
   console.log("🏦 Creating banks...");
-  const usBuyerBank = await prisma.bank.create({
+  const bank1 = await prisma.bank.create({
     data: {
       code: "AMTBUS33",
       name: "American Trade Bank",
       country: "USA",
     },
   });
-  const usSellerBank = await prisma.bank.create({
+  const bank2 = await prisma.bank.create({
     data: {
       code: "PACBUS44",
       name: "Pacific Commerce Bank",
       country: "USA",
     },
   });
-  const germanyBank = await prisma.bank.create({
+  const bank3 = await prisma.bank.create({
     data: {
       code: "DEHADE5M",
       name: "Deutsche Handelsbank",
       country: "Germany",
     },
   });
-  const franceBank = await prisma.bank.create({
+  const bank4 = await prisma.bank.create({
     data: {
       code: "BNPAFRPP",
       name: "Banque Commerciale",
       country: "France",
     },
   });
-  const japanBank = await prisma.bank.create({
+  const bank5 = await prisma.bank.create({
     data: {
       code: "TOTRJPJT",
       name: "Tokyo Trading Bank",
@@ -75,84 +82,47 @@ async function main() {
   // ----- Users (Producers & Buyers) -----
   console.log("👥 Creating users...");
 
-  // US Fruit Producer
-  const fruitProducer = await prisma.user.create({
+  // Single user with your real wallet (acts as both producer and buyer for testing)
+  const testUser = await prisma.user.create({
     data: {
-      walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
-      fullName: "Green Valley Farms LLC",
-      email: "sales@greenvalley.com",
+      walletAddress: REAL_WALLET,
+      fullName: "Test Merchant",
+      email: "test@example.com",
       userType: UserType.PRODUCER,
       isVerified: true,
       kycStatus: KycStatus.VERIFIED,
     },
   });
 
-  // German Meat Producer
-  const meatProducer = await prisma.user.create({
+  // Create 2 more users with different wallets for producer/buyer simulation
+  const buyer2 = await prisma.user.create({
     data: {
-      walletAddress: "0x2345678901bcdef2345678901bcdef234567890",
-      fullName: "Bavaria Meat GmbH",
-      email: "export@bavariameat.de",
+      walletAddress: "0x1111111111111111111111111111111111111111",
+      fullName: "Test Buyer 2",
+      email: "buyer2@example.com",
+      userType: UserType.BUYER,
+      isVerified: true,
+      kycStatus: KycStatus.VERIFIED,
+    },
+  });
+
+  const producer2 = await prisma.user.create({
+    data: {
+      walletAddress: "0x2222222222222222222222222222222222222222",
+      fullName: "Test Producer 2",
+      email: "producer2@example.com",
       userType: UserType.PRODUCER,
       isVerified: true,
       kycStatus: KycStatus.VERIFIED,
     },
   });
 
-  // Japanese Electronics Producer
-  const electronicsProducer = await prisma.user.create({
-    data: {
-      walletAddress: "0x3456789012cdef3456789012cdef345678901234",
-      fullName: "Tokyo Tech Industries",
-      email: "trade@tokyotech.jp",
-      userType: UserType.PRODUCER,
-      isVerified: true,
-      kycStatus: KycStatus.VERIFIED,
-    },
-  });
-
-  // French Buyer (Restaurant Chain)
-  const restaurantBuyer = await prisma.user.create({
-    data: {
-      walletAddress: "0x4567890123def4567890123def456789012345",
-      fullName: "Le Gourmet Restaurants SA",
-      email: "procurement@legourmet.fr",
-      userType: UserType.BUYER,
-      isVerified: true,
-      kycStatus: KycStatus.VERIFIED,
-    },
-  });
-
-  // US Buyer (Electronics Retailer)
-  const retailBuyer = await prisma.user.create({
-    data: {
-      walletAddress: "0x5678901234ef5678901234ef567890123456",
-      fullName: "TechMart Retail Inc",
-      email: "purchasing@techmart.com",
-      userType: UserType.BUYER,
-      isVerified: true,
-      kycStatus: KycStatus.VERIFIED,
-    },
-  });
-
-  // Buyer with pending KYC
-  const pendingBuyer = await prisma.user.create({
-    data: {
-      walletAddress: "0x6789012345f6789012345f6789012345678",
-      fullName: "New Trading Company",
-      email: "contact@newtrade.com",
-      userType: UserType.BUYER,
-      isVerified: false,
-      kycStatus: KycStatus.PENDING,
-    },
-  });
-
-  console.log("✅ Created 6 users (3 producers, 3 buyers)\n");
+  console.log("✅ Created 3 users\n");
 
   // ----- Products -----
   console.log("📦 Creating products...");
 
-  // Fruit Products
+  // All products produced by testUser (your wallet)
   const apples = await prisma.product.create({
     data: {
       name: "Organic Washington Apples",
@@ -162,7 +132,7 @@ async function main() {
       countryOfOrigin: "USA",
       category: "Fruits",
       description: "Premium organic apples from Washington State orchards",
-      producerWalletId: fruitProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
@@ -175,11 +145,11 @@ async function main() {
       countryOfOrigin: "USA",
       category: "Fruits",
       description: "Fresh Valencia oranges, perfect for juice",
-      producerWalletId: fruitProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
-  // Meat Products
+  // Meat Products (also produced by testUser)
   const beef = await prisma.product.create({
     data: {
       name: "Certified Halal Beef",
@@ -189,7 +159,7 @@ async function main() {
       countryOfOrigin: "Germany",
       category: "Meat",
       description: "Premium Halal-certified beef cuts from Bavaria",
-      producerWalletId: meatProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
@@ -202,11 +172,11 @@ async function main() {
       countryOfOrigin: "Germany",
       category: "Meat",
       description: "Free-range organic lamb from German farms",
-      producerWalletId: meatProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
-  // Electronics Products
+  // Electronics Products (also produced by testUser)
   const laptops = await prisma.product.create({
     data: {
       name: "Professional Laptops X1",
@@ -216,7 +186,7 @@ async function main() {
       countryOfOrigin: "Japan",
       category: "Electronics",
       description: "High-performance business laptops",
-      producerWalletId: electronicsProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
@@ -229,7 +199,7 @@ async function main() {
       countryOfOrigin: "Japan",
       category: "Electronics",
       description: "10-inch HD tablets with stylus support",
-      producerWalletId: electronicsProducer.walletAddress,
+      producerWalletId: testUser.walletAddress,
     },
   });
 
@@ -245,13 +215,13 @@ async function main() {
   const order1 = await prisma.order.create({
     data: {
       code: "ORD-2025-000001",
-      userId: restaurantBuyer.id,
+      userId: testUser.id,
       status: OrderStatus.AWAITING_PAYMENT,
       subtotal: 17500,
       shipping: 500,
       total: 18000,
-      buyerBankId: franceBank.id,
-      sellerBankId: usSellerBank.id,
+      buyerBankId: bank1.id,
+      sellerBankId: bank2.id,
       items: {
         create: [
           {
@@ -270,13 +240,13 @@ async function main() {
   const order2 = await prisma.order.create({
     data: {
       code: "ORD-2025-000002",
-      userId: restaurantBuyer.id,
+      userId: testUser.id,
       status: OrderStatus.BANK_REVIEW,
       subtotal: 30000,
       shipping: 800,
       total: 30800,
-      buyerBankId: franceBank.id,
-      sellerBankId: germanyBank.id,
+      buyerBankId: bank1.id,
+      sellerBankId: bank3.id,
       items: {
         create: [
           {
@@ -311,7 +281,7 @@ async function main() {
     const cid = generateMockCID();
     await prisma.document.create({
       data: {
-        userId: meatProducer.id,
+        userId: producer2.id,
         orderId: order2.id,
         filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
           order2.code
@@ -330,13 +300,13 @@ async function main() {
   const order3 = await prisma.order.create({
     data: {
       code: "ORD-2025-000003",
-      userId: retailBuyer.id,
+      userId: buyer2.id,
       status: OrderStatus.IN_TRANSIT,
       subtotal: 600000,
       shipping: 5000,
       total: 605000,
-      buyerBankId: usBuyerBank.id,
-      sellerBankId: japanBank.id,
+      buyerBankId: bank1.id,
+      sellerBankId: bank4.id,
       items: {
         create: [
           {
@@ -355,7 +325,7 @@ async function main() {
     const cid = generateMockCID();
     await prisma.document.create({
       data: {
-        userId: electronicsProducer.id,
+        userId: producer2.id,
         orderId: order3.id,
         filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
           order3.code
@@ -375,13 +345,13 @@ async function main() {
     data: [
       {
         orderId: order3.id,
-        bankId: usBuyerBank.id,
+        bankId: bank1.id,
         action: "approve",
         comments: "All documents verified",
       },
       {
         orderId: order3.id,
-        bankId: japanBank.id,
+        bankId: bank4.id,
         action: "approve",
         comments: "Shipment authorized",
       },
@@ -393,13 +363,13 @@ async function main() {
   const order4 = await prisma.order.create({
     data: {
       code: "ORD-2025-000004",
-      userId: restaurantBuyer.id,
+      userId: testUser.id,
       status: OrderStatus.DELIVERED,
       subtotal: 8250,
       shipping: 250,
       total: 8500,
-      buyerBankId: franceBank.id,
-      sellerBankId: usSellerBank.id,
+      buyerBankId: bank1.id,
+      sellerBankId: bank2.id,
       items: {
         create: [
           {
@@ -417,7 +387,7 @@ async function main() {
     const cid = generateMockCID();
     await prisma.document.create({
       data: {
-        userId: fruitProducer.id,
+        userId: testUser.id,
         orderId: order4.id,
         filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
           order4.code
@@ -437,13 +407,13 @@ async function main() {
     data: [
       {
         orderId: order4.id,
-        bankId: franceBank.id,
+        bankId: bank1.id,
         action: "approve",
         comments: "Payment released",
       },
       {
         orderId: order4.id,
-        bankId: usSellerBank.id,
+        bankId: bank2.id,
         action: "approve",
         comments: "Transaction completed",
       },
@@ -455,13 +425,13 @@ async function main() {
   const order5 = await prisma.order.create({
     data: {
       code: "ORD-2025-000005",
-      userId: retailBuyer.id,
+      userId: buyer2.id,
       status: OrderStatus.DISPUTED,
       subtotal: 450000,
       shipping: 3500,
       total: 453500,
-      buyerBankId: usBuyerBank.id,
-      sellerBankId: japanBank.id,
+      buyerBankId: bank1.id,
+      sellerBankId: bank4.id,
       items: {
         create: [
           {
@@ -504,7 +474,7 @@ async function main() {
     const cid = generateMockCID();
     await prisma.document.create({
       data: {
-        userId: electronicsProducer.id,
+        userId: producer2.id,
         orderId: order5.id,
         filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
           order5.code
@@ -530,13 +500,13 @@ async function main() {
   await prisma.order.create({
     data: {
       code: "ORD-2025-000006",
-      userId: pendingBuyer.id,
+      userId: buyer2.id,
       status: OrderStatus.CANCELLED,
       subtotal: 18500,
       shipping: 600,
       total: 19100,
-      buyerBankId: germanyBank.id,
-      sellerBankId: germanyBank.id,
+      buyerBankId: bank3.id,
+      sellerBankId: bank3.id,
       items: {
         create: [
           {
@@ -553,7 +523,7 @@ async function main() {
   console.log("\n✅ Created 6 orders with IPFS documents");
   console.log("\n📊 Summary:");
   console.log("  • 5 Banks");
-  console.log("  • 6 Users (3 producers, 3 buyers)");
+  console.log("  • 3 Users");
   console.log("  • 6 Products");
   console.log("  • 6 Orders (all statuses)");
   console.log("  • 20+ Documents with IPFS CIDs");

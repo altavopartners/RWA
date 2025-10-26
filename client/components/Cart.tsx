@@ -138,6 +138,8 @@ function CartContent() {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
+      console.log("🛒 Creating order and deploying escrow...");
+
       const res = await fetch(`${API_BASE}/api/orders/pass-order`, {
         method: "GET",
         headers: {
@@ -174,11 +176,55 @@ function CartContent() {
         throw new Error(message);
       }
 
+      // Verify escrow was deployed
+      const order = data && typeof data === "object" ? (data as any) : {};
+      const escrowAddress =
+        order.escrowAddress || (order.order && order.order.escrowAddress);
+
+      if (!escrowAddress) {
+        console.warn(
+          "⚠️  Order created but escrow contract not deployed yet. Waiting 2 seconds and retrying..."
+        );
+        // Wait a bit and retry once
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Fetch the order to check if escrow deployed
+        if (order.id || (order.order && order.order.id)) {
+          const orderId = order.id || order.order.id;
+          const checkRes = await fetch(
+            `${API_BASE}/api/orders/get-my-order/${orderId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              cache: "no-store",
+            }
+          );
+
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (
+              !checkData.escrowAddress &&
+              !(checkData.order && checkData.order.escrowAddress)
+            ) {
+              console.warn(
+                "⚠️  Escrow still not deployed. Proceeding anyway - you can pay once it deploys."
+              );
+            }
+          }
+        }
+      } else {
+        console.log("✅ Escrow contract deployed at:", escrowAddress);
+      }
+
       setItems([]);
       window.dispatchEvent(new Event("cart:updated"));
+      console.log("✅ Order confirmed! Redirecting to payment...");
       router.push("/order-flow");
     } catch (e: unknown) {
-      console.error(e);
+      console.error("❌ Order error:", e);
       setError(e instanceof Error ? e.message : "Something went wrong");
       setItems([]);
     } finally {

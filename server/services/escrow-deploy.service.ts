@@ -4,9 +4,13 @@ import path from "path";
 import fs from "fs";
 
 // Load compiled contract artifact
-const ESCROW_ARTIFACT_PATH = path.join(
+// From source: server/services/escrow-deploy.service.ts
+// When compiled: server/dist/services/escrow-deploy.service.js
+// __dirname will be: ...server/dist/services
+// So go up 3 levels and into hedera-escrow
+const ESCROW_ARTIFACT_PATH = path.resolve(
   __dirname,
-  "../../hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
+  "../../../hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
 );
 
 interface DeployEscrowParams {
@@ -34,6 +38,10 @@ export async function deployEscrowContract(
   if (!ethers.isAddress(buyerAddress) || !ethers.isAddress(sellerAddress)) {
     throw new Error("Invalid Ethereum address provided");
   }
+
+  console.log("📋 Escrow deployment config:");
+  console.log("  Artifact path:", ESCROW_ARTIFACT_PATH);
+  console.log("  Artifact exists:", fs.existsSync(ESCROW_ARTIFACT_PATH));
 
   // Load environment
   const HEDERA_RPC =
@@ -124,38 +132,57 @@ export async function getEscrowContract(contractAddress: string) {
 }
 
 /**
- * Platform marks buyer's bank as approved
+ * Buyer approves in escrow contract
+ * NOTE: This must be called by the buyer's wallet directly (frontend)
+ * Kept for reference/docs - not used in backend
  */
-export async function approveBuyerBank(escrowAddress: string) {
-  console.log(`📋 Approving buyer bank for escrow ${escrowAddress}`);
-  const escrow = await getEscrowContract(escrowAddress);
-  const tx = await escrow.approveBuyerBank();
-  const receipt = await tx.wait();
-  console.log("✅ Buyer bank approved, tx:", receipt.hash);
-  return { transactionHash: receipt.hash };
+export async function approveBuyerBank(
+  escrowAddress: string,
+  buyerWalletAddress: string
+) {
+  console.log(
+    `📋 Approving buyer in escrow ${escrowAddress} from ${buyerWalletAddress}`
+  );
+  // This should be called from the frontend with buyer's wallet
+  // Backend cannot call this without buyer's private key
+  throw new Error(
+    "Buyer approval must be initiated from the frontend with MetaMask signature"
+  );
 }
 
 /**
- * Platform marks seller's bank as approved
+ * Seller approves in escrow contract
+ * NOTE: This must be called by the seller's wallet directly (frontend)
+ * Kept for reference/docs - not used in backend
  */
-export async function approveSellerBank(escrowAddress: string) {
-  console.log(`📋 Approving seller bank for escrow ${escrowAddress}`);
-  const escrow = await getEscrowContract(escrowAddress);
-  const tx = await escrow.approveSellerBank();
-  const receipt = await tx.wait();
-  console.log("✅ Seller bank approved, tx:", receipt.hash);
-  return { transactionHash: receipt.hash };
+export async function approveSellerBank(
+  escrowAddress: string,
+  sellerWalletAddress: string
+) {
+  console.log(
+    `📋 Approving seller in escrow ${escrowAddress} from ${sellerWalletAddress}`
+  );
+  // This should be called from the frontend with seller's wallet
+  // Backend cannot call this without seller's private key
+  throw new Error(
+    "Seller approval must be initiated from the frontend with MetaMask signature"
+  );
 }
 
 /**
- * Release first 50% payment after both banks approve
+ * Arbiter confirms shipment and releases first 50% payment
  */
 export async function releaseFirstPayment(escrowAddress: string) {
-  console.log(`💰 Releasing first 50% payment for escrow ${escrowAddress}`);
+  console.log(
+    `💰 Confirming shipment and releasing first 50% for escrow ${escrowAddress}`
+  );
   const escrow = await getEscrowContract(escrowAddress);
-  const tx = await escrow.releaseFirstPayment();
+  const tx = await escrow.confirmShipment();
   const receipt = await tx.wait();
-  console.log("✅ First payment (50%) released to seller, tx:", receipt.hash);
+  console.log(
+    "✅ Shipment confirmed, first payment (50%) released to seller, tx:",
+    receipt.hash
+  );
   return { transactionHash: receipt.hash };
 }
 

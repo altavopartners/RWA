@@ -5,7 +5,13 @@ CREATE TYPE "UserType" AS ENUM ('PRODUCER', 'BUYER', 'ADMIN', 'USER');
 CREATE TYPE "KycStatus" AS ENUM ('PENDING', 'SUBMITTED', 'VERIFIED', 'REJECTED');
 
 -- CreateEnum
-CREATE TYPE "OrderStatus" AS ENUM ('PENDING_BANK_REVIEW', 'BUYER_DOCS_REQUESTED', 'BUYER_DOCS_VERIFIED', 'SELLER_DOCS_REQUESTED', 'SELLER_DOCS_VERIFIED', 'AWAITING_PAYMENT', 'BANKS_APPROVED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED', 'DISPUTED', 'CANCELLED');
+CREATE TYPE "OrderStatus" AS ENUM ('AWAITING_PAYMENT', 'BANK_REVIEW', 'IN_TRANSIT', 'DELIVERED', 'DISPUTED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "BankUserRole" AS ENUM ('BANK_ADMIN', 'BANK_USER');
+
+-- CreateEnum
+CREATE TYPE "PaymentAction" AS ENUM ('APPROVED', 'REJECTED', 'REQUESTED_INFO');
 
 -- CreateEnum
 CREATE TYPE "DocumentType" AS ENUM ('KYC_ID', 'BUSINESS_LICENSE', 'ORGANIC_CERT', 'HALAL_CERT', 'OTHER');
@@ -36,7 +42,6 @@ CREATE TABLE "User" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "lastLoginAt" TIMESTAMP(3),
     "nonceIssuedAt" TIMESTAMP(3),
-    "bankId" TEXT,
     "kycStatus" "KycStatus" NOT NULL DEFAULT 'PENDING',
     "kycExpiry" TIMESTAMP(3),
 
@@ -44,10 +49,61 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "BankAccount" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "bankCode" TEXT NOT NULL,
+    "bankId" TEXT,
+    "rib" TEXT NOT NULL,
+    "holderName" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "taxIdentificationNumber" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BankAccount_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserBank" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT,
+    "phone" TEXT,
+    "passwordHash" TEXT NOT NULL,
+    "role" "BankUserRole" NOT NULL DEFAULT 'BANK_USER',
+    "isBanned" BOOLEAN NOT NULL DEFAULT false,
+    "bankId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastLoginAt" TIMESTAMP(3),
+
+    CONSTRAINT "UserBank_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BankAuthSession" (
+    "id" TEXT NOT NULL,
+    "userBankId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "refreshToken" TEXT,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BankAuthSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Bank" (
     "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "swiftCode" TEXT,
+    "logo" TEXT,
     "country" TEXT,
 
     CONSTRAINT "Bank_pkey" PRIMARY KEY ("id")
@@ -123,9 +179,9 @@ CREATE TABLE "CartItem" (
 -- CreateTable
 CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
-    "code" TEXT,
     "userId" TEXT NOT NULL,
-    "status" "OrderStatus" NOT NULL DEFAULT 'PENDING_BANK_REVIEW',
+    "code" TEXT,
+    "status" "OrderStatus" NOT NULL DEFAULT 'AWAITING_PAYMENT',
     "subtotal" DECIMAL(18,2) NOT NULL,
     "shipping" DECIMAL(18,2) NOT NULL DEFAULT 0,
     "total" DECIMAL(18,2) NOT NULL,
@@ -150,6 +206,9 @@ CREATE TABLE "OrderedItem" (
     "quantity" INTEGER NOT NULL,
     "unitPrice" DECIMAL(18,2) NOT NULL,
     "lineTotal" DECIMAL(18,2) NOT NULL,
+    "hederaTokenId" TEXT,
+    "hederaSerials" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    "nftStatus" "NFTStatus" NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -160,10 +219,10 @@ CREATE TABLE "OrderedItem" (
 CREATE TABLE "Document" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "orderId" TEXT,
     "filename" TEXT NOT NULL,
     "cid" TEXT NOT NULL,
     "url" TEXT NOT NULL,
+    "orderId" TEXT,
     "category" TEXT,
     "documentType" "DocumentType",
     "status" "DocumentStatus" NOT NULL DEFAULT 'PENDING',
@@ -190,6 +249,18 @@ CREATE TABLE "PaymentRelease" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "PaymentRelease_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PaymentApproval" (
+    "id" TEXT NOT NULL,
+    "paymentReleaseId" TEXT NOT NULL,
+    "actorId" TEXT NOT NULL,
+    "action" "PaymentAction" NOT NULL,
+    "comments" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PaymentApproval_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -226,6 +297,18 @@ CREATE UNIQUE INDEX "User_accountId_key" ON "User"("accountId");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "BankAccount_userId_idx" ON "BankAccount"("userId");
+
+-- CreateIndex
+CREATE INDEX "BankAccount_bankCode_idx" ON "BankAccount"("bankCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserBank_email_key" ON "UserBank"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Bank_code_key" ON "Bank"("code");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "DID_userId_key" ON "DID"("userId");
 
 -- CreateIndex
@@ -249,8 +332,23 @@ CREATE INDEX "OrderedItem_orderId_idx" ON "OrderedItem"("orderId");
 -- CreateIndex
 CREATE INDEX "OrderedItem_productId_idx" ON "OrderedItem"("productId");
 
+-- CreateIndex
+CREATE INDEX "PaymentApproval_paymentReleaseId_idx" ON "PaymentApproval"("paymentReleaseId");
+
+-- CreateIndex
+CREATE INDEX "PaymentApproval_actorId_idx" ON "PaymentApproval"("actorId");
+
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_bankId_fkey" FOREIGN KEY ("bankId") REFERENCES "Bank"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "BankAccount" ADD CONSTRAINT "BankAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BankAccount" ADD CONSTRAINT "BankAccount_bankId_fkey" FOREIGN KEY ("bankId") REFERENCES "Bank"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBank" ADD CONSTRAINT "UserBank_bankId_fkey" FOREIGN KEY ("bankId") REFERENCES "Bank"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BankAuthSession" ADD CONSTRAINT "BankAuthSession_userBankId_fkey" FOREIGN KEY ("userBankId") REFERENCES "UserBank"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuthSession" ADD CONSTRAINT "AuthSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -287,6 +385,12 @@ ALTER TABLE "Document" ADD CONSTRAINT "Document_orderId_fkey" FOREIGN KEY ("orde
 
 -- AddForeignKey
 ALTER TABLE "PaymentRelease" ADD CONSTRAINT "PaymentRelease_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PaymentApproval" ADD CONSTRAINT "PaymentApproval_paymentReleaseId_fkey" FOREIGN KEY ("paymentReleaseId") REFERENCES "PaymentRelease"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PaymentApproval" ADD CONSTRAINT "PaymentApproval_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "UserBank"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "KycReview" ADD CONSTRAINT "KycReview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
