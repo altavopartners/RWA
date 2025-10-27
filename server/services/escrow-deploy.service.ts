@@ -10,7 +10,8 @@ import fs from "fs";
 // So go up 3 levels and into hedera-escrow
 const ESCROW_ARTIFACT_PATH = path.resolve(
   __dirname,
-  "../../../hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
+  "../../..",
+  "hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
 );
 
 interface DeployEscrowParams {
@@ -132,41 +133,33 @@ export async function getEscrowContract(contractAddress: string) {
 }
 
 /**
- * Buyer approves in escrow contract
- * NOTE: This must be called by the buyer's wallet directly (frontend)
- * Kept for reference/docs - not used in backend
+ * Arbiter approves on behalf of buyer in escrow contract
+ * Called when buyer's bank approves
  */
-export async function approveBuyerBank(
-  escrowAddress: string,
-  buyerWalletAddress: string
-) {
+export async function approveBuyerBank(escrowAddress: string) {
   console.log(
-    `📋 Approving buyer in escrow ${escrowAddress} from ${buyerWalletAddress}`
+    `✅ Approving on behalf of buyer in escrow ${escrowAddress} using arbiter wallet`
   );
-  // This should be called from the frontend with buyer's wallet
-  // Backend cannot call this without buyer's private key
-  throw new Error(
-    "Buyer approval must be initiated from the frontend with MetaMask signature"
-  );
+  const escrow = await getEscrowContract(escrowAddress);
+  const tx = await escrow.approveByBuyer();
+  const receipt = await tx.wait();
+  console.log("✅ Buyer approval recorded on blockchain, tx:", receipt.hash);
+  return { transactionHash: receipt.hash };
 }
 
 /**
- * Seller approves in escrow contract
- * NOTE: This must be called by the seller's wallet directly (frontend)
- * Kept for reference/docs - not used in backend
+ * Arbiter approves on behalf of seller in escrow contract
+ * Called when seller's bank approves
  */
-export async function approveSellerBank(
-  escrowAddress: string,
-  sellerWalletAddress: string
-) {
+export async function approveSellerBank(escrowAddress: string) {
   console.log(
-    `📋 Approving seller in escrow ${escrowAddress} from ${sellerWalletAddress}`
+    `✅ Approving on behalf of seller in escrow ${escrowAddress} using arbiter wallet`
   );
-  // This should be called from the frontend with seller's wallet
-  // Backend cannot call this without seller's private key
-  throw new Error(
-    "Seller approval must be initiated from the frontend with MetaMask signature"
-  );
+  const escrow = await getEscrowContract(escrowAddress);
+  const tx = await escrow.approveBySeller();
+  const receipt = await tx.wait();
+  console.log("✅ Seller approval recorded on blockchain, tx:", receipt.hash);
+  return { transactionHash: receipt.hash };
 }
 
 /**

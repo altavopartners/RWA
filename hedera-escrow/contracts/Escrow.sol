@@ -11,6 +11,8 @@ contract Escrow {
 
     bool public buyerApproved;
     bool public sellerApproved;
+    bool public buyerApprovedDelivery;
+    bool public sellerApprovedDelivery;
     bool public shipmentConfirmed;
     bool public deliveryConfirmed;
 
@@ -23,12 +25,12 @@ contract Escrow {
     }
 
     modifier onlyBuyer() {
-        require(msg.sender == buyer, "Only buyer");
+        require(msg.sender == buyer || msg.sender == arbiter, "Only buyer or arbiter");
         _;
     }
 
     modifier onlySeller() {
-        require(msg.sender == seller, "Only seller");
+        require(msg.sender == seller || msg.sender == arbiter, "Only seller or arbiter");
         _;
     }
 
@@ -45,6 +47,16 @@ contract Escrow {
         sellerApproved = true;
     }
 
+    function approveByBuyerDelivery() external onlyBuyer {
+        require(shipmentConfirmed, "Shipment must be confirmed first");
+        buyerApprovedDelivery = true;
+    }
+
+    function approveBySellerDelivery() external onlySeller {
+        require(shipmentConfirmed, "Shipment must be confirmed first");
+        sellerApprovedDelivery = true;
+    }
+
     function confirmShipment() external onlyArbiter {
         require(buyerApproved && sellerApproved, "Approvals required");
         require(!shipmentConfirmed, "Already confirmed");
@@ -54,6 +66,7 @@ contract Escrow {
 
     function confirmDelivery() external onlyArbiter {
         require(shipmentConfirmed, "Shipment must be confirmed");
+        require(buyerApprovedDelivery && sellerApprovedDelivery, "Delivery approvals required");
         require(!deliveryConfirmed, "Already confirmed");
         deliveryConfirmed = true;
         _release( totalAmount - releasedAmount ); // release remaining

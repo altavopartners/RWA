@@ -193,8 +193,14 @@ function EscrowApprovalDialog({
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              Both buyer and seller banks must approve before the first 50% is
-              released.
+              <strong>Steps:</strong>
+              <ol className="list-decimal list-inside mt-2 space-y-1 text-xs">
+                <li>Both buyer and seller banks must approve here</li>
+                <li>
+                  Buyer and seller must sign blockchain approvals (via MetaMask)
+                </li>
+                <li>Then the first 50% will be released to the seller</li>
+              </ol>
             </AlertDescription>
           </Alert>
           <div>

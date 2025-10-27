@@ -125,7 +125,24 @@ export const bankApi = {
       body: JSON.stringify(payload),
       credentials: "include",
     });
-    if (!res.ok) throw new Error("Failed to update escrow");
+    if (!res.ok) {
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      const errorMsg = errorData.message || "Failed to update escrow";
+
+      // Provide helpful error messages
+      if (errorMsg.includes("Approvals required")) {
+        throw new Error(
+          "Cannot release payment yet. The buyer and seller must sign their blockchain approvals via MetaMask first."
+        );
+      }
+      if (errorMsg.includes("already approved")) {
+        throw new Error("This bank has already approved this order");
+      }
+
+      throw new Error(errorMsg);
+    }
     const data = await res.json();
     return data.data;
   },

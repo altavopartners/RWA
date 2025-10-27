@@ -1,6 +1,10 @@
 import { prisma } from "../utils/prisma";
 import { Decimal } from "@prisma/client/runtime";
-import { releaseFirstPayment } from "./escrow-deploy.service";
+import {
+  releaseFirstPayment,
+  approveBuyerBank,
+  approveSellerBank,
+} from "./escrow-deploy.service";
 
 /** ---------- CLIENT / KYC ---------- */
 
@@ -199,7 +203,8 @@ export async function approveOrderByBankService(
   bankType: "buyer" | "seller",
   comments?: string
 ) {
-  return prisma.$transaction(async (tx: any) => {
+  // First, do the fast DB operations in a transaction
+  const updatedOrder = await prisma.$transaction(async (tx: any) => {
     // Fetch order first
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) throw new Error("Order not found");
@@ -222,20 +227,15 @@ export async function approveOrderByBankService(
     if (bankType === "buyer") updates.buyerBankApproved = true;
     if (bankType === "seller") updates.sellerBankApproved = true;
 
-    // NOTE: Buyer and seller approvals are handled by the frontend/wallet
-    // The bank is just recording their approval for the transaction
-    console.log(
-      `✅ Bank approval recorded for ${bankType} on order ${orderId}`
-    );
-    console.log(
-      "📝 Note: Actual blockchain approvals must be signed by buyer/seller wallets"
-    );
-
     // Determine future approval state
     const willBeBuyerApproved =
       bankType === "buyer" ? true : order.buyerBankApproved;
     const willBeSellerApproved =
       bankType === "seller" ? true : order.sellerBankApproved;
+
+    console.log(
+      `✅ Bank approval recorded for ${bankType} on order ${orderId}`
+    );
 
     // If both banks are approved and order is not yet in transit
     if (
@@ -244,51 +244,80 @@ export async function approveOrderByBankService(
       order.status !== "IN_TRANSIT"
     ) {
       updates.status = "IN_TRANSIT";
-
-      // Release first 50% payment on blockchain
-      if (order.escrowAddress) {
-        console.log(
-          "Both banks approved - releasing first payment on blockchain"
-        );
-        try {
-          const txResult = await releaseFirstPayment(order.escrowAddress);
-          console.log(
-            "First payment released on blockchain:",
-            txResult.transactionHash
-          );
-
-          // Create payment release record with transaction hash
-          await tx.paymentRelease.create({
-            data: {
-              orderId,
-              type: "PARTIAL50",
-              amount: order.total.div(2),
-              released: true,
-              releasedAt: new Date(),
-              transactionId: txResult.transactionHash,
-            },
-          });
-        } catch (err) {
-          console.error("Failed to release first payment on blockchain:", err);
-          throw new Error(`Failed to release first payment: ${err}`);
-        }
-      } else {
-        // No escrow address - just create DB record
-        await tx.paymentRelease.create({
-          data: {
-            orderId,
-            type: "PARTIAL50",
-            amount: order.total.div(2),
-            released: true,
-            releasedAt: new Date(),
-          },
-        });
-      }
     }
 
     // Update order
     return tx.order.update({ where: { id: orderId }, data: updates });
   });
+
+  // Now handle long-running blockchain operations OUTSIDE the transaction
+  if (updatedOrder.status === "IN_TRANSIT" && updatedOrder.escrowAddress) {
+    console.log(
+      "Both banks approved - attempting to release first 50% payment on blockchain"
+    );
+    try {
+      // Try to call approvals first (for new contracts that support arbiter approval)
+      let approvalsSucceeded = false;
+      try {
+        console.log("Attempting to call approveByBuyer on blockchain...");
+        await approveBuyerBank(updatedOrder.escrowAddress);
+        console.log("✅ Buyer approval succeeded");
+        approvalsSucceeded = true;
+      } catch (approvalErr: any) {
+        console.log("ℹ️  Buyer approval not supported (old contract)");
+      }
+
+      try {
+        console.log("Attempting to call approveBySeller on blockchain...");
+        await approveSellerBank(updatedOrder.escrowAddress);
+        console.log("✅ Seller approval succeeded");
+        approvalsSucceeded = true;
+      } catch (approvalErr: any) {
+        console.log("ℹ️  Seller approval not supported (old contract)");
+      }
+
+      // Now try to release first 50% payment
+      console.log("Calling confirmShipment to release 50% payment...");
+      const txResult = await releaseFirstPayment(updatedOrder.escrowAddress);
+      console.log(
+        "✅ First payment released on blockchain:",
+        txResult.transactionHash
+      );
+
+      // Create payment release record AFTER blockchain call
+      await prisma.paymentRelease.create({
+        data: {
+          orderId,
+          type: "PARTIAL50",
+          amount: updatedOrder.total.div(2),
+          released: true,
+          releasedAt: new Date(),
+          transactionId: txResult.transactionHash,
+        },
+      });
+      console.log("✅ Payment release recorded in database");
+    } catch (err: any) {
+      console.error("❌ Failed to release payment on blockchain:", err.message);
+      // Log but don't throw - payment release attempt failed but order is marked IN_TRANSIT
+      // This allows manual retry or investigation
+    }
+  } else if (
+    updatedOrder.status === "IN_TRANSIT" &&
+    !updatedOrder.escrowAddress
+  ) {
+    // No escrow address - just create DB record
+    await prisma.paymentRelease.create({
+      data: {
+        orderId,
+        type: "PARTIAL50",
+        amount: updatedOrder.total.div(2),
+        released: true,
+        releasedAt: new Date(),
+      },
+    });
+  }
+
+  return updatedOrder;
 }
 
 /** ---------- ORDERS ---------- */
