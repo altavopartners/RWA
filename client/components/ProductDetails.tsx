@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Coins, AlertTriangle } from "lucide-react";
+import { constructApiUrl, constructImageUrl } from "@/config/api";
 
 type Product = {
   id: string | number;
@@ -55,7 +56,7 @@ function listifyMedia<T extends { path: string; originalName?: string }>(
 ) {
   if (!arr || arr.length === 0) return [];
   return arr.map((f) => ({
-    url: `http://localhost:4000${f.path}`,
+    url: constructImageUrl(f.path),
     name: f.originalName ?? f.path.split("/").pop(),
   }));
 }
@@ -71,7 +72,7 @@ export default function ProductDetails({ id }: { id: string }) {
     async function load() {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:4000/api/products/${id}`);
+        const res = await fetch(constructApiUrl(`/api/products/${id}`));
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         const data = (await res.json()) as Product;
         if (!cancelled) setProduct(data);

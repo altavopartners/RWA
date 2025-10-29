@@ -21,9 +21,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { constructApiUrl } from "@/config/api";
 
 export default function Navigation() {
-  const API_BASE = "http://localhost:4000";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [count, setCount] = useState(0);
 
@@ -67,7 +67,7 @@ export default function Navigation() {
         return;
       }
 
-      const res = await fetch(`${API_BASE}/api/carts/getmycartcount`, {
+      const res = await fetch(constructApiUrl("/api/carts/getmycartcount"), {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -112,7 +112,7 @@ export default function Navigation() {
     } catch {
       setCount(0);
     }
-  }, [API_BASE, isConnected, user?.id]);
+  }, [isConnected, user?.id]);
 
   useEffect(() => {
     if (isConnected && user?.id) {

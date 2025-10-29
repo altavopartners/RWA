@@ -55,9 +55,6 @@ export const bankApi = {
       reviewedBy: string;
     }
   ): Promise<Dispute> => {
-    console.log("API: Updating dispute", disputeId, payload);
-    console.log("API: Backend URL:", BACKEND_URL);
-
     const res = await fetch(`${BACKEND_URL}/api/bank/disputes/${disputeId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -65,16 +62,13 @@ export const bankApi = {
       credentials: "include",
     });
 
-    console.log("API: Response status:", res.status);
-
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("API: Error response:", errorText);
+      console.error("Failed to update dispute:", errorText);
       throw new Error(`Failed to update dispute (${res.status}): ${errorText}`);
     }
 
     const data = await res.json();
-    console.log("API: Success response:", data);
     return data.data;
   },
 

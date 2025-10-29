@@ -5,6 +5,7 @@ import {
   approveBuyerBank,
   approveSellerBank,
 } from "./escrow-deploy.service";
+import debug from "../utils/debug";
 
 /** ---------- CLIENT / KYC ---------- */
 
@@ -233,8 +234,9 @@ export async function approveOrderByBankService(
     const willBeSellerApproved =
       bankType === "seller" ? true : order.sellerBankApproved;
 
-    console.log(
-      `✅ Bank approval recorded for ${bankType} on order ${orderId}`
+    debug.service(
+      "BankService",
+      `Bank approval recorded for ${bankType} on order ${orderId}`
     );
 
     // If both banks are approved and order is not yet in transit
@@ -252,35 +254,33 @@ export async function approveOrderByBankService(
 
   // Now handle long-running blockchain operations OUTSIDE the transaction
   if (updatedOrder.status === "IN_TRANSIT" && updatedOrder.escrowAddress) {
-    console.log(
-      "Both banks approved - attempting to release first 50% payment on blockchain"
-    );
+    debug.transaction("Both banks approved - attempting 50% release");
     try {
       // Try to call approvals first (for new contracts that support arbiter approval)
       let approvalsSucceeded = false;
       try {
-        console.log("Attempting to call approveByBuyer on blockchain...");
+        debug.transaction("Calling approveByBuyer...");
         await approveBuyerBank(updatedOrder.escrowAddress);
-        console.log("✅ Buyer approval succeeded");
+        debug.transaction("✅ Buyer approval succeeded");
         approvalsSucceeded = true;
       } catch (approvalErr: any) {
-        console.log("ℹ️  Buyer approval not supported (old contract)");
+        debug.info("Buyer approval not supported (likely old contract)");
       }
 
       try {
-        console.log("Attempting to call approveBySeller on blockchain...");
+        debug.transaction("Calling approveBySeller...");
         await approveSellerBank(updatedOrder.escrowAddress);
-        console.log("✅ Seller approval succeeded");
+        debug.transaction("✅ Seller approval succeeded");
         approvalsSucceeded = true;
       } catch (approvalErr: any) {
-        console.log("ℹ️  Seller approval not supported (old contract)");
+        debug.info("Seller approval not supported (likely old contract)");
       }
 
       // Now try to release first 50% payment
-      console.log("Calling confirmShipment to release 50% payment...");
+      debug.transaction("Calling confirmShipment to release 50% payment...");
       const txResult = await releaseFirstPayment(updatedOrder.escrowAddress);
-      console.log(
-        "✅ First payment released on blockchain:",
+      debug.transaction(
+        "✅ First payment released - tx:",
         txResult.transactionHash
       );
 
@@ -295,9 +295,9 @@ export async function approveOrderByBankService(
           transactionId: txResult.transactionHash,
         },
       });
-      console.log("✅ Payment release recorded in database");
+      debug.service("BankService", "Payment release recorded in database");
     } catch (err: any) {
-      console.error("❌ Failed to release payment on blockchain:", err.message);
+      debug.error("Failed to release payment on blockchain", err.message);
       // Log but don't throw - payment release attempt failed but order is marked IN_TRANSIT
       // This allows manual retry or investigation
     }

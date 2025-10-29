@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { debug } from "@/lib/debug";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye, FileText } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { useBankData } from "@/hooks/useBankData";
 import { bankApi } from "@/lib/api";
 import { BankHeader } from "@/components/bank-header";
@@ -244,7 +245,7 @@ export default function DocumentsPage() {
             <SelectItem value="all">All Categories</SelectItem>
             {uniqueCategories.map((cat) => (
               <SelectItem key={cat} value={cat}>
-                {(categoryLabels as any)[cat] || cat}
+                {categoryLabels[cat] || cat}
               </SelectItem>
             ))}
           </SelectContent>
@@ -258,7 +259,7 @@ export default function DocumentsPage() {
             <SelectItem value="all">All Types</SelectItem>
             {uniqueTypes.map((type) => (
               <SelectItem key={type} value={type}>
-                {(documentTypeLabels as any)[type] || type}
+                {documentTypeLabels[type] || type}
               </SelectItem>
             ))}
           </SelectContent>
@@ -495,7 +496,7 @@ export default function DocumentsPage() {
                                       {doc.filename}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {(documentTypeLabels as any)[
+                                      {documentTypeLabels[
                                         doc.documentType || ""
                                       ] ||
                                         doc.documentType ||
@@ -609,7 +610,7 @@ function DocumentValidationDialog({
       setComments("");
       onSuccess();
     } catch (err) {
-      console.error("Failed to update document:", err);
+      debug.error("Failed to update document:", err);
       alert("Failed to update document. Please try again.");
     } finally {
       setSubmitting(false);

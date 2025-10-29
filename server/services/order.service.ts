@@ -2,6 +2,7 @@
 import prisma from "../lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
 import { deployEscrowContract } from "./escrow-deploy.service";
+import debug from "../utils/debug";
 
 class CheckoutError extends Error {
   status: number;
@@ -243,10 +244,6 @@ export async function passOrderService({
       // (If HEDERA_PRIVATE_KEY is not set or escrow artifact is missing, skip)
       const escrowEnabled = !!process.env.HEDERA_PRIVATE_KEY;
 
-      console.log(
-        `📋 Escrow deployment check for order ${order.id}: enabled=${escrowEnabled}`
-      );
-
       if (escrowEnabled) {
         try {
           const buyerUser = await tx.user.findUnique({
@@ -256,20 +253,16 @@ export async function passOrderService({
 
           const sellerWalletAddress = producerWalletIds[0];
 
-          console.log(`   Buyer wallet: ${buyerUser?.walletAddress}`);
-          console.log(`   Seller wallet: ${sellerWalletAddress}`);
-
           if (!buyerUser?.walletAddress) {
-            console.warn(
-              `⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`
+            debug.warn(
+              `Order ${order.id}: Buyer wallet not found, skipping escrow deployment`
             );
           } else if (!sellerWalletAddress) {
-            console.warn(
-              `⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`
+            debug.warn(
+              `Order ${order.id}: Seller wallet not found, skipping escrow deployment`
             );
           } else {
-            console.log(`🚀 Deploying escrow for order ${order.id}...`);
-            console.log(`   Total amount: ${total.toString()}`);
+            debug.deploy(`Deploying escrow for order ${order.id}`);
 
             const escrowResult = await deployEscrowContract({
               buyerAddress: buyerUser.walletAddress,
@@ -277,7 +270,9 @@ export async function passOrderService({
               totalAmount: total.toString(),
             });
 
-            console.log(`✅ Escrow result:`, escrowResult);
+            debug.deploy(
+              `Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`
+            );
 
             // Save escrow address to order
             await tx.order.update({
@@ -287,23 +282,15 @@ export async function passOrderService({
                 hederaTransactionId: escrowResult.transactionHash,
               },
             });
-
-            console.log(
-              `✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`
-            );
           }
         } catch (escrowError: any) {
           // Log error but don't fail order creation
-          console.error(
-            `❌ Failed to deploy escrow for order ${order.id}:`,
+          debug.error(
+            `Failed to deploy escrow for order ${order.id}:`,
             escrowError
           );
           // Order is still created, escrow can be deployed manually later
         }
-      } else {
-        console.warn(
-          `ℹ️  Order ${order.id}: Escrow deployment skipped (HEDERA_PRIVATE_KEY not configured)`
-        );
       }
 
       return order;
@@ -366,16 +353,12 @@ export async function updateOrderStatusService({
   status: OrderStatus;
   userId: string;
 }) {
-  // TEMP: log for debugging
-  console.log("Service: updateOrderStatusService", { orderId, userId, status });
-
   // Verify order belongs to user
   const order = await prisma.order.findFirst({
     where: { id: orderId, userId },
   });
 
   if (!order) {
-    console.log("Order not found or user mismatch in DB");
     throw new CheckoutError("Order not found.", 404);
   }
 

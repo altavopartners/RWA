@@ -12,6 +12,7 @@ exports.getMyOrderByIdService = getMyOrderByIdService;
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const client_1 = require("@prisma/client");
 const escrow_deploy_service_1 = require("./escrow-deploy.service");
+const debug_1 = __importDefault(require("../utils/debug"));
 class CheckoutError extends Error {
     constructor(message, status = 400) {
         super(message);
@@ -182,7 +183,6 @@ async function passOrderService({ userId, shipping = 5.0, }) {
         // Deploy escrow contract for this order
         // (If HEDERA_PRIVATE_KEY is not set or escrow artifact is missing, skip)
         const escrowEnabled = !!process.env.HEDERA_PRIVATE_KEY;
-        console.log(`📋 Escrow deployment check for order ${order.id}: enabled=${escrowEnabled}`);
         if (escrowEnabled) {
             try {
                 const buyerUser = await tx.user.findUnique({
@@ -190,23 +190,20 @@ async function passOrderService({ userId, shipping = 5.0, }) {
                     select: { walletAddress: true },
                 });
                 const sellerWalletAddress = producerWalletIds[0];
-                console.log(`   Buyer wallet: ${buyerUser?.walletAddress}`);
-                console.log(`   Seller wallet: ${sellerWalletAddress}`);
                 if (!buyerUser?.walletAddress) {
-                    console.warn(`⚠️  Order ${order.id}: Buyer wallet not found, skipping escrow deployment`);
+                    debug_1.default.warn(`Order ${order.id}: Buyer wallet not found, skipping escrow deployment`);
                 }
                 else if (!sellerWalletAddress) {
-                    console.warn(`⚠️  Order ${order.id}: Seller wallet not found, skipping escrow deployment`);
+                    debug_1.default.warn(`Order ${order.id}: Seller wallet not found, skipping escrow deployment`);
                 }
                 else {
-                    console.log(`🚀 Deploying escrow for order ${order.id}...`);
-                    console.log(`   Total amount: ${total.toString()}`);
+                    debug_1.default.deploy(`Deploying escrow for order ${order.id}`);
                     const escrowResult = await (0, escrow_deploy_service_1.deployEscrowContract)({
                         buyerAddress: buyerUser.walletAddress,
                         sellerAddress: sellerWalletAddress,
                         totalAmount: total.toString(),
                     });
-                    console.log(`✅ Escrow result:`, escrowResult);
+                    debug_1.default.deploy(`Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`);
                     // Save escrow address to order
                     await tx.order.update({
                         where: { id: order.id },
@@ -215,17 +212,13 @@ async function passOrderService({ userId, shipping = 5.0, }) {
                             hederaTransactionId: escrowResult.transactionHash,
                         },
                     });
-                    console.log(`✅ Escrow deployed at ${escrowResult.contractAddress} for order ${order.id}`);
                 }
             }
             catch (escrowError) {
                 // Log error but don't fail order creation
-                console.error(`❌ Failed to deploy escrow for order ${order.id}:`, escrowError);
+                debug_1.default.error(`Failed to deploy escrow for order ${order.id}:`, escrowError);
                 // Order is still created, escrow can be deployed manually later
             }
-        }
-        else {
-            console.warn(`ℹ️  Order ${order.id}: Escrow deployment skipped (HEDERA_PRIVATE_KEY not configured)`);
         }
         return order;
     }, {
@@ -259,14 +252,11 @@ async function getAllMyOrdersService({ userId, page = 1, pageSize = 20, status, 
 }
 // ---------- Update Order Status ----------
 async function updateOrderStatusService({ orderId, status, userId, }) {
-    // TEMP: log for debugging
-    console.log("Service: updateOrderStatusService", { orderId, userId, status });
     // Verify order belongs to user
     const order = await prisma_1.default.order.findFirst({
         where: { id: orderId, userId },
     });
     if (!order) {
-        console.log("Order not found or user mismatch in DB");
         throw new CheckoutError("Order not found.", 404);
     }
     const updatedOrder = await prisma_1.default.order.update({

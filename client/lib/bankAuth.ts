@@ -33,15 +33,9 @@ async function safeFetch<T>(
         typeof data.message === "string"
           ? data.message
           : null) || `HTTP ${res.status} ${res.statusText}`;
-      console.log("❌ [bankAuth] Request failed", {
-        url,
-        status: res.status,
-        body: data,
-      });
       throw new Error(`${msg} — ${url}`);
     }
 
-    console.info("✅ [bankAuth] Success", { url, status: res.status });
     return (data as T) ?? ({} as T);
   } catch (err: unknown) {
     // This is where connection refused, DNS, or CORS shows up
@@ -50,7 +44,6 @@ async function safeFetch<T>(
       error?.message?.includes("Failed to fetch") || error?.name === "TypeError"
         ? "Connection refused or CORS blocked"
         : "Network error";
-    console.log("💥 [bankAuth] Network error", { url, error: err, hint });
     throw new Error(`${hint}: ${url} — ${error?.message || "unknown error"}`);
   }
 }

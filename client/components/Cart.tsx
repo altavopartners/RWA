@@ -138,8 +138,6 @@ function CartContent() {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
 
-      console.log("🛒 Creating order and deploying escrow...");
-
       const res = await fetch(`${API_BASE}/api/orders/pass-order`, {
         method: "GET",
         headers: {
@@ -182,9 +180,7 @@ function CartContent() {
         order.escrowAddress || (order.order && order.order.escrowAddress);
 
       if (!escrowAddress) {
-        console.warn(
-          "⚠️  Order created but escrow contract not deployed yet. Waiting 2 seconds and retrying..."
-        );
+        // Order created but escrow contract not deployed yet. Waiting 2 seconds and retrying...
         // Wait a bit and retry once
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -209,19 +205,16 @@ function CartContent() {
               !checkData.escrowAddress &&
               !(checkData.order && checkData.order.escrowAddress)
             ) {
-              console.warn(
-                "⚠️  Escrow still not deployed. Proceeding anyway - you can pay once it deploys."
-              );
+              // Escrow still not deployed. Proceeding anyway - can pay once it deploys.
             }
           }
         }
       } else {
-        console.log("✅ Escrow contract deployed at:", escrowAddress);
+        // Escrow contract deployed successfully
       }
 
       setItems([]);
       window.dispatchEvent(new Event("cart:updated"));
-      console.log("✅ Order confirmed! Redirecting to payment...");
       router.push("/order-flow");
     } catch (e: unknown) {
       console.error("❌ Order error:", e);
@@ -274,7 +267,6 @@ function CartContent() {
         throw new Error(message);
       }
 
-      console.log("Cart data from server:", data);
       const normalized = normalizeFromBackend(data);
       setItems(normalized);
       setLastFetchedAt(Date.now());

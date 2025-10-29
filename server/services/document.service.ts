@@ -8,18 +8,45 @@ async function getW3() {
 }
 
 export async function saveDocumentForUser(
-userId: string, filename: string, buffer: Buffer, mimeType?: string, categoryKey?: any, typeKey?: any, orderId?: any) {
-  const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
-  const { w3Upload, gatewayUrl } = await getW3();
+  userId: string,
+  filename: string,
+  buffer: Buffer,
+  mimeType?: string,
+  categoryKey?: any,
+  typeKey?: any,
+  orderId?: any
+) {
+  try {
+    const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
+    const { w3Upload, gatewayUrl } = await getW3();
 
-  const cid = await w3Upload(buffer, filename, mimeType);
-  const url = await gatewayUrl(cid);
+    console.log("Starting W3 upload for file:", {
+      filename,
+      size: buffer?.length,
+      mime: mimeType,
+    });
+    const cid = await w3Upload(buffer, filename, mimeType);
+    console.log("W3 upload succeeded, CID:", cid);
 
-  const doc = await prisma.document.create({
-    data: { userId, filename, cid, url, category: categoryKey, documentType: typeKey, orderId },
-  });
+    const url = await gatewayUrl(cid);
 
-  return { doc, cid, url, sha256 };
+    const doc = await prisma.document.create({
+      data: {
+        userId,
+        filename,
+        cid,
+        url,
+        category: categoryKey,
+        documentType: typeKey,
+        orderId,
+      },
+    });
+
+    return { doc, cid, url, sha256 };
+  } catch (error: any) {
+    console.error("Failed to save document:", error?.message || error);
+    throw error;
+  }
 }
 
 export async function fetchDocumentBytes(cid: string) {

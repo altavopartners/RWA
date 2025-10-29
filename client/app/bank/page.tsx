@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useBankData } from "@/hooks/useBankData";
 import { bankApi } from "@/lib/api";
+import { debug } from "@/lib/debug";
 import type { BankOrder, OrderStatus } from "@/types/bank";
 import {
   Dialog,
@@ -36,10 +37,12 @@ import {
 // ------------------------------
 // Status mapping
 // ------------------------------
-const statusColorMap: Partial<Record<OrderStatus, string>> = {
-  BANK_REVIEW: "warning",
-  IN_TRANSIT: "info",
-  DELIVERED: "success",
+const statusColorMap: Partial<
+  Record<OrderStatus, "default" | "secondary" | "destructive" | "outline">
+> = {
+  BANK_REVIEW: "secondary",
+  IN_TRANSIT: "default",
+  DELIVERED: "default",
   DISPUTED: "destructive",
   CANCELLED: "destructive",
 };
@@ -275,7 +278,7 @@ export default function BankOrdersPage() {
       });
       refetch();
     } catch (err) {
-      console.error(err);
+      debug.error("Failed to approve bank:", err);
     }
   };
 
@@ -288,7 +291,7 @@ export default function BankOrdersPage() {
       });
       refetch();
     } catch (err) {
-      console.error(err);
+      debug.error("Failed to release escrow:", err);
     }
   };
 
@@ -313,7 +316,7 @@ export default function BankOrdersPage() {
       alert(`Document request sent to ${requestTo}`);
       refetch();
     } catch (err) {
-      console.error(err);
+      debug.error("Failed to request documents:", err);
       alert("Failed to request documents");
     }
   };
@@ -349,7 +352,7 @@ export default function BankOrdersPage() {
                   {order.code || order.id}
                 </span>
                 <Badge
-                  variant={(statusColorMap[order.status] as any) ?? "secondary"}
+                  variant={statusColorMap[order.status] || "secondary"}
                   className="flex items-center gap-1"
                 >
                   {statusIconMap[order.status]}

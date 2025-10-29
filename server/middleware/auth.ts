@@ -9,6 +9,7 @@
 import { NextFunction, Request, Response } from "express";
 import { verifyToken } from "../utils/jwt";
 import { AuthenticatedRequest } from "../types/auth";
+import { debug } from "../utils/debug";
 
 export const verifyJWT = (
   req: Request,
@@ -49,8 +50,8 @@ export const verifyJWT = (
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Invalid token";
 
-    // Log suspicious activity (optional but useful in production)
-    console.warn(`[Auth] JWT verification failed: ${message}`, {
+    // Log at debug level since expired tokens are expected before login
+    debug.info(`[Auth] JWT verification failed: ${message}`, {
       ip: req.ip,
       url: req.originalUrl,
       userAgent: req.get("User-Agent"),

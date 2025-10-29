@@ -4,14 +4,13 @@ import path from "path";
 import fs from "fs";
 
 // Load compiled contract artifact
-// From source: server/services/escrow-deploy.service.ts
-// When compiled: server/dist/services/escrow-deploy.service.js
-// __dirname will be: ...server/dist/services
-// So go up 3 levels and into hedera-escrow
+// Works with both ts-node (source) and compiled (dist) versions
+// For ts-node: __dirname = ...server/services, go up 2 levels to RWA, then into hedera-escrow
+// For compiled: __dirname = ...server/dist/services, go up 3 levels to RWA, then into hedera-escrow
+// Solution: resolve from project root using process.cwd()
 const ESCROW_ARTIFACT_PATH = path.resolve(
-  __dirname,
-  "../../..",
-  "hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
+  process.cwd(),
+  "../hedera-escrow/artifacts/contracts/Escrow.sol/Escrow.json"
 );
 
 interface DeployEscrowParams {

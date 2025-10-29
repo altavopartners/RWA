@@ -58,42 +58,26 @@ export class HederaEscrowService {
   }
 
   async initiateEscrow(order: EscrowOrder): Promise<string> {
-    console.log(`[v0] Initiating Hedera escrow for order: ${order.orderId}`);
+    // Mock: Initiate escrow for order
+    void order; // Use config or order data as needed
     const transactionId = `0.0.${Date.now()}@${Date.now()}.${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    await this.simulateContractDeployment(order, transactionId);
+    await this.simulateContractDeployment();
     return transactionId;
   }
 
-  private async simulateContractDeployment(
-    order: EscrowOrder,
-    transactionId: string
-  ) {
-    console.log(`[v0] Deploying escrow contract for order ${order.orderId}`);
-    console.log(`[v0] Total amount: ${order.amount} ${order.currency}`);
-    console.log(`[v0] Release schedule: 50% on shipment, 50% on delivery`);
-    console.log(`[v0] Dual-bank approval required`);
-    console.log(
-      `[v0] Buyer bank: ${order.buyerBankId}, Seller bank: ${order.sellerBankId}`
-    );
-    console.log(`[v0] Contract deployed with transaction ID: ${transactionId}`);
+  private async simulateContractDeployment(): Promise<void> {
+    // Contract deployment simulation for order with dual-bank approval
+    // 50% released on shipment, 50% on delivery
   }
 
   async submitBankApproval(approval: BankApproval): Promise<string> {
-    console.log(
-      `[v0] Submitting ${approval.bankType} bank approval for order: ${approval.orderId}`
-    );
+    // Mock: Submit bank approval
+    void approval;
     const transactionId = `0.0.${Date.now()}@${Date.now()}.${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    if (approval.approved && approval.documentsVerified) {
-      console.log(`[v0] ${approval.bankType} bank approval recorded`);
-    } else {
-      console.log(
-        `[v0] ${approval.bankType} bank approval rejected or documents not verified`
-      );
-    }
     return transactionId;
   }
 
@@ -101,45 +85,38 @@ export class HederaEscrowService {
     orderId: string,
     amount: number
   ): Promise<string> {
-    console.log(
-      `[v0] Releasing 50% payment for order: ${orderId}, amount: ${amount}`
-    );
+    // Mock: Release partial payment
+    void orderId;
+    void amount;
     const transactionId = `0.0.${Date.now()}@${Date.now()}.${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    console.log(
-      `[v0] 50% payment released to seller, Transaction ID: ${transactionId}`
-    );
     return transactionId;
   }
 
   async releaseFullPayment(orderId: string, amount: number): Promise<string> {
-    console.log(
-      `[v0] Releasing final 50% payment for order: ${orderId}, amount: ${amount}`
-    );
+    // Mock: Release full payment
+    void orderId;
+    void amount;
     const transactionId = `0.0.${Date.now()}@${Date.now()}.${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    console.log(
-      `[v0] Final 50% payment released to seller, Transaction ID: ${transactionId}`
-    );
     return transactionId;
   }
 
   async cancelEscrow(orderId: string, reason: string): Promise<string> {
-    console.log(
-      `[v0] Cancelling escrow for order: ${orderId}, Reason: ${reason}`
-    );
+    // Mock: Cancel escrow
+    void orderId;
+    void reason;
     const transactionId = `0.0.${Date.now()}@${Date.now()}.${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    console.log(
-      `[v0] Escrow cancelled, funds returned to buyer, Transaction ID: ${transactionId}`
-    );
     return transactionId;
   }
 
   async getEscrowStatus(orderId: string): Promise<EscrowStatus> {
+    // Mock: Return escrow status
+    void orderId;
     const mockStatus: EscrowStatus = {
       orderId,
       status: "active",
@@ -156,7 +133,6 @@ export class HederaEscrowService {
         { type: "FULL100", amount: 50000, released: false },
       ],
     };
-    console.log(`[v0] Escrow status retrieved:`, mockStatus);
     return mockStatus;
   }
 
@@ -165,10 +141,10 @@ export class HederaEscrowService {
     signature: string,
     message: string
   ): Promise<boolean> {
+    // Mock: Verify bank signature
+    void bankId;
+    void message;
     const isValid = signature.length > 10;
-    console.log(`[v0] Signature verification for bank ${bankId}: ${isValid}`, {
-      messageHash: message.substring(0, 20),
-    });
     return isValid;
   }
 
@@ -185,7 +161,8 @@ export class HederaEscrowService {
     };
     bothApproved: boolean;
   }> {
-    console.log(`[v0] Fetching bank approval status for order: ${orderId}`);
+    // Mock: Get bank approval status
+    void orderId;
     const mockStatus = {
       buyerBank: {
         approved: true,
@@ -199,7 +176,6 @@ export class HederaEscrowService {
       },
       bothApproved: true,
     };
-    console.log(`[v0] Bank approval status:`, mockStatus);
     return mockStatus;
   }
 
@@ -208,12 +184,11 @@ export class HederaEscrowService {
     bankId: string,
     documentTypes: string[]
   ): Promise<string> {
+    // Mock: Request document verification
+    void orderId;
+    void bankId;
+    void documentTypes;
     const requestId = `doc-req-${orderId}-${Date.now()}`;
-    console.log(
-      `[v0] Document verification request created: ${requestId} for bank ${bankId}, types: ${documentTypes.join(
-        ", "
-      )}`
-    );
     return requestId;
   }
 }
@@ -224,9 +199,10 @@ export async function notifyBankOfNewOrder(
   bankEndpoint: string,
   bankType: "buyer" | "seller"
 ): Promise<void> {
-  console.log(
-    `[v0] Notifying ${bankType} bank at ${bankEndpoint} about order: ${order.orderId}`
-  );
+  // Mock: Notify bank of new order
+  void order;
+  void bankEndpoint;
+  void bankType;
 }
 
 export async function updateOrderStatus(
@@ -235,8 +211,11 @@ export async function updateOrderStatus(
   marketplaceEndpoint: string,
   additionalData?: Record<string, unknown>
 ): Promise<void> {
-  console.log(`[v0] Updating order ${orderId} status to: ${status}`);
-  if (additionalData) console.log(`[v0] Additional data:`, additionalData);
+  // Mock: Update order status
+  void orderId;
+  void status;
+  void marketplaceEndpoint;
+  void additionalData;
 }
 
 export async function notifyPartyOfStatusChange(
@@ -245,9 +224,11 @@ export async function notifyPartyOfStatusChange(
   status: string,
   message: string
 ): Promise<void> {
-  console.log(
-    `[v0] Notifying ${partyType} of status change for order ${orderId}: ${status} - ${message}`
-  );
+  // Mock: Notify party of status change
+  void orderId;
+  void partyType;
+  void status;
+  void message;
 }
 
 export async function createEscrowAuditLog(
@@ -256,8 +237,9 @@ export async function createEscrowAuditLog(
   actor: string,
   details: Record<string, unknown>
 ): Promise<void> {
-  console.log(
-    `[v0] Creating audit log for order ${orderId}: ${action} by ${actor}`,
-    details
-  );
+  // Mock: Create audit log
+  void orderId;
+  void action;
+  void actor;
+  void details;
 }

@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import { useRouter } from "next/navigation";
+import { constructApiUrl } from "@/config/api";
 
 /* --- Taxonomy --- */
 const categories = [
@@ -296,7 +297,7 @@ const ProducerAddProductPageContent = () => {
 
     try {
       setSubmitting(true);
-      const res = await fetch("http://localhost:4000/api/products", {
+      const res = await fetch(constructApiUrl("/api/products"), {
         method: "POST",
         body: fd,
       });

@@ -5,9 +5,9 @@ import { BankHeader } from "@/components/bank-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { debug } from "@/lib/debug";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +33,6 @@ import {
   Shield,
   Truck,
   Lock,
-  Unlock,
-  FileCheck,
 } from "lucide-react";
 import { useBankData } from "@/hooks/useBankData";
 import { bankApi } from "@/lib/api";
@@ -143,10 +141,8 @@ function EscrowApprovalDialog({
     escrow.status === "BANK_REVIEW" &&
     (!escrow.buyerBankApproved || !escrow.sellerBankApproved);
 
-  const buyerBankId =
-    (escrow as any).buyerBank?.id ?? escrow.buyerBankId ?? undefined;
-  const sellerBankId =
-    (escrow as any).sellerBank?.id ?? escrow.sellerBankId ?? undefined;
+  const buyerBankId = escrow.buyerBankId ?? undefined;
+  const sellerBankId = escrow.sellerBankId ?? undefined;
 
   const autoRemainingBank: "buyer" | "seller" | "" = !escrow.buyerBankApproved
     ? "buyer"
@@ -168,11 +164,9 @@ function EscrowApprovalDialog({
       });
       onApproved();
     } catch (err) {
-      console.error("Failed to approve escrow", err);
-      alert(
-        "Failed to approve escrow: " +
-          ((err as any)?.message || "Unknown error")
-      );
+      debug.error("Failed to approve escrow", err);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      alert("Failed to approve escrow: " + errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -207,7 +201,7 @@ function EscrowApprovalDialog({
             <Label>Approve as</Label>
             <Select
               value={selectedBank}
-              onValueChange={(v) => setSelectedBank(v as any)}
+              onValueChange={(v) => setSelectedBank(v as "buyer" | "seller")}
             >
               <SelectTrigger>
                 <SelectValue

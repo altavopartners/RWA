@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BankHeader } from "@/components/bank-header";
+import { debug } from "@/lib/debug";
 import {
   Card,
   CardContent,
@@ -44,7 +45,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle,
   Building2,
   User,
 } from "lucide-react";
@@ -248,7 +248,7 @@ export default function ClientsPage() {
       });
       refetch();
     } catch (err) {
-      console.error("Failed to update KYC:", err);
+      debug.error("Failed to update KYC:", err);
     }
   };
 

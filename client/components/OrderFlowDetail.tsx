@@ -210,8 +210,6 @@ export default function OrderFlowDetail({
     setPayError(null);
     setTxHash(null);
 
-    console.log("handlePay called for order:", order.id);
-
     try {
       const eth = (window as any).ethereum;
       if (!eth) throw new Error("MetaMask not detected.");
@@ -260,9 +258,7 @@ export default function OrderFlowDetail({
         body: JSON.stringify({ status: "BANK_REVIEW" }),
       });
 
-      console.log("Response status:", res.status);
       const updatedOrder = await res.json();
-      console.log("Updated order response:", updatedOrder);
 
       if (!res.ok)
         throw new Error(

@@ -24,18 +24,34 @@ export async function uploadDocumentController(
       return res.status(401).json({ success: false, message: "Unauthorized" });
     if (!req.file)
       return res.status(400).json({ success: false, message: "file required" });
+
     const { originalname, buffer, mimetype } = req.file;
+    const { categoryKey, typeKey, orderId } = req.body;
+
+    // Debug: log what we received
+    console.log("Document upload - File:", {
+      name: originalname,
+      size: buffer?.length,
+      mime: mimetype,
+    });
+    console.log("Document upload - Body fields:", {
+      categoryKey,
+      typeKey,
+      orderId,
+    });
+
     const result = await saveDocumentForUser(
       req.user.id,
       originalname,
       buffer,
       mimetype,
-      req.body.categoryKey,
-      req.body.typeKey,
-      req.body.orderId
+      categoryKey,
+      typeKey,
+      orderId
     );
     return res.json({ success: true, data: result });
   } catch (err: any) {
+    console.error("Document upload error:", err);
     return res
       .status(400)
       .json({ success: false, message: err?.message ?? "Upload failed" });
@@ -63,12 +79,10 @@ export async function getDocumentsByOrderIdController(
 
     return res.json({ success: true, documents });
   } catch (err: any) {
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: err?.message ?? "Failed to fetch documents",
-      });
+    return res.status(500).json({
+      success: false,
+      message: err?.message ?? "Failed to fetch documents",
+    });
   }
 }
 
