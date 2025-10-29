@@ -10,9 +10,11 @@ export function getHederaClient() {
   }
 
   const client =
-    network === "mainnet" ? Client.forMainnet() :
-    network === "previewnet" ? Client.forPreviewnet() :
-    Client.forTestnet();
+    network === "mainnet"
+      ? Client.forMainnet()
+      : network === "previewnet"
+      ? Client.forPreviewnet()
+      : Client.forTestnet();
 
   // Load the operator key (DER format from Hedera portal)
   const privateKey = PrivateKey.fromStringDer(operatorKeyString);
