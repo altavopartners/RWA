@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ------------------- Fetch profile from backend -------------------
   const fetchProfile = useCallback(
-    async (jwt: string) => {
+    async (jwt: string, retries = 3, delay = 1000) => {
       if (!jwt) return;
 
       if (!BACKEND_URL) {
@@ -129,36 +129,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      try {
-        const url = `${BACKEND_URL}/api/auth/profile`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const url = `${BACKEND_URL}/api/auth/profile`;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${jwt}` },
+          });
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error(
-            `❌ Failed to fetch profile (${res.status}):`,
-            errorText
-          );
-          throw new Error(
-            `Failed to fetch profile: ${res.status} ${res.statusText}`
-          );
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error(
+              `❌ Failed to fetch profile (${res.status}):`,
+              errorText
+            );
+
+            // Retry on 400/500 errors (likely database connection issues)
+            if (
+              (res.status === 400 || res.status >= 500) &&
+              attempt < retries
+            ) {
+              console.log(
+                `⏳ Retrying profile fetch (attempt ${attempt}/${retries}) in ${delay}ms...`
+              );
+              await new Promise((resolve) => setTimeout(resolve, delay));
+              continue;
+            }
+
+            throw new Error(
+              `Failed to fetch profile: ${res.status} ${res.statusText}`
+            );
+          }
+
+          const data = await res.json();
+          safeSetState(() => setUser(data.data));
+          return; // Success, exit retry loop
+        } catch (err) {
+          if (attempt === retries) {
+            // Final attempt failed
+            console.error("❌ Error fetching profile after retries:", err);
+            console.error("Backend URL:", BACKEND_URL);
+            console.error("JWT token present:", !!jwt);
+
+            safeSetState(() => {
+              setUser(null);
+              setIsConnected(false);
+            });
+            localStorage.removeItem("jwtToken");
+            localStorage.removeItem("walletAddress");
+          } else {
+            // Retry on error
+            console.log(
+              `⏳ Retrying profile fetch (attempt ${attempt}/${retries}) in ${delay}ms...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
         }
-
-        const data = await res.json();
-        safeSetState(() => setUser(data.data));
-      } catch (err) {
-        console.error("❌ Error fetching profile:", err);
-        console.error("Backend URL:", BACKEND_URL);
-        console.error("JWT token present:", !!jwt);
-
-        safeSetState(() => {
-          setUser(null);
-          setIsConnected(false);
-        });
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("walletAddress");
       }
     },
     [safeSetState, setUser, setIsConnected]
@@ -172,7 +197,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (savedToken && savedAddress) {
       try {
-        // First check if MetaMask is available and connected
+        // First, wait for backend to be ready (health check)
+        let backendReady = false;
+        for (let i = 0; i < 5; i++) {
+          try {
+            const healthRes = await fetch(`${BACKEND_URL}/api/auth/health`, {
+              signal: AbortSignal.timeout(2000),
+            });
+            if (healthRes.ok) {
+              backendReady = true;
+              console.log("✅ Backend is ready");
+              break;
+            }
+          } catch {
+            console.log(`⏳ Waiting for backend... (attempt ${i + 1}/5)`);
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+
+        if (!backendReady) {
+          console.warn(
+            "⚠️  Backend not responding to health check, will retry on profile fetch"
+          );
+        }
+
+        // Check if MetaMask is available and connected
         if (window.ethereum && window.ethereum.isMetaMask) {
           const accounts = (await window.ethereum.request({
             method: "eth_accounts",

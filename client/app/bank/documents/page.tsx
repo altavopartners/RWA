@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { debug } from "@/lib/debug";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, AlertTriangle } from "lucide-react";
 import { useBankData } from "@/hooks/useBankData";
 import { bankApi } from "@/lib/api";
 import { BankHeader } from "@/components/bank-header";
@@ -452,6 +453,11 @@ export default function DocumentsPage() {
                     >
                       Reject all pending
                     </Button>
+                    <DisputeOrderDialog
+                      orderId={g.orderId}
+                      orderCode={g.orderCode}
+                      onSuccess={refetch}
+                    />
                     <Button
                       size="sm"
                       variant="ghost"
@@ -540,11 +546,33 @@ export default function DocumentsPage() {
                                     <Download className="w-4 h-4" />
                                   </Button>
                                 </div>
-                                {doc.status === "PENDING" && (
+                                {doc.status === "PENDING" ? (
                                   <DocumentValidationDialog
                                     document={doc}
                                     onSuccess={refetch}
                                   />
+                                ) : (
+                                  <div className="text-xs text-muted-foreground pt-2">
+                                    {doc.validatedAt && (
+                                      <>
+                                        <div>
+                                          Validated by:{" "}
+                                          {doc.validatedBy || "System"}
+                                        </div>
+                                        <div>
+                                          {new Date(
+                                            doc.validatedAt
+                                          ).toLocaleDateString()}
+                                        </div>
+                                      </>
+                                    )}
+                                    {doc.status === "REJECTED" &&
+                                      doc.rejectionReason && (
+                                        <div className="text-red-600 mt-1">
+                                          Reason: {doc.rejectionReason}
+                                        </div>
+                                      )}
+                                  </div>
                                 )}
                               </CardContent>
                             </Card>
@@ -581,6 +609,138 @@ export default function DocumentsPage() {
   );
 }
 
+// Dispute Order Dialog
+function DisputeOrderDialog({
+  orderId,
+  orderCode,
+  onSuccess,
+}: {
+  orderId: string;
+  orderCode: string;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [priority, setPriority] = useState<"Low" | "Medium" | "High">("Medium");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!reason.trim()) return;
+
+    setSubmitting(true);
+    try {
+      // Call the dispute endpoint with ruling containing the reason
+      await bankApi.updateDispute(orderId, {
+        action: "open",
+        ruling: {
+          reason: reason.trim(),
+          priority,
+        },
+        reviewedBy: "Bank Officer",
+      });
+
+      setIsOpen(false);
+      setReason("");
+      setPriority("Medium");
+      onSuccess();
+
+      toast({
+        title: "Dispute Created",
+        description: `Order ${orderCode} has been marked as disputed.`,
+        variant: "default",
+      });
+    } catch (err) {
+      debug.error("Failed to create dispute:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create dispute. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="destructive" size="sm">
+          <AlertTriangle className="w-4 h-4 mr-1" />
+          Dispute Order
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Initiate Dispute</DialogTitle>
+          <DialogDescription>
+            Mark order <span className="font-medium">{orderCode}</span> as
+            disputed after reviewing documents
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Dispute Reason (required)
+            </label>
+            <Textarea
+              placeholder="Describe the issue found (e.g., missing documents, incorrect amounts, inconsistent information)..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Priority</label>
+            <Select
+              value={priority}
+              onValueChange={(value) =>
+                setPriority(value as "Low" | "Medium" | "High")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              ⚠️ This will move the order to &quot;DISPUTED&quot; status and
+              require arbitration to resolve.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setIsOpen(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSubmit}
+            disabled={!reason.trim() || submitting}
+          >
+            {submitting ? "Creating Dispute..." : "Create Dispute"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DocumentValidationDialog({
   document,
   onSuccess,
@@ -588,6 +748,7 @@ function DocumentValidationDialog({
   document: BankDocument;
   onSuccess: () => void;
 }) {
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [action, setAction] = useState<"" | "approve" | "reject">("");
   const [comments, setComments] = useState("");
@@ -609,9 +770,21 @@ function DocumentValidationDialog({
       setAction("");
       setComments("");
       onSuccess();
+
+      toast({
+        title: "Document reviewed",
+        description: `Document has been ${
+          action === "approve" ? "approved" : "rejected"
+        } successfully.`,
+        variant: "default",
+      });
     } catch (err) {
       debug.error("Failed to update document:", err);
-      alert("Failed to update document. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to update document. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -663,23 +836,19 @@ function DocumentValidationDialog({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              {action === "reject"
-                ? "Rejection Reason (required)"
-                : "Comments (optional)"}
-            </label>
-            <Textarea
-              placeholder={
-                action === "reject"
-                  ? "Explain why this document is rejected"
-                  : "Add any notes"
-              }
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-              rows={3}
-            />
-          </div>
+          {action === "reject" && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Rejection Reason (required)
+              </label>
+              <Textarea
+                placeholder="Explain why this document is rejected"
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                rows={3}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>
