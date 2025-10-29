@@ -104,19 +104,18 @@ const REQUIRED_FIELDS: (keyof FormState)[] = [
 ];
 
 const initialValues: FormState = {
-  name: "Premium Cocoa Beans",
-  quantity: String(1000),
+  name: "",
+  quantity: "",
   unit: "kg",
-  pricePerUnit: String(2.5),
-  countryOfOrigin: "Ghana",
-  category: "agri",
-  subcategory: "cocoa",
-  description:
-    "High-quality fermented and sun-dried cocoa beans sourced from smallholder farms. Certified organic and fair trade.",
-  hsCode: "1801.00",
-  incoterm: "FOB",
-  minOrderQty: String(500),
-  leadTimeDays: String(14),
+  pricePerUnit: "",
+  countryOfOrigin: "",
+  category: undefined,
+  subcategory: undefined,
+  description: "",
+  hsCode: "",
+  incoterm: "",
+  minOrderQty: "",
+  leadTimeDays: "",
   images: [],
   documents: [],
 };
