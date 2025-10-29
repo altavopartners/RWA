@@ -17,44 +17,59 @@ export type CreateProductNFTInput = {
 };
 
 export async function createProductNFT(input: CreateProductNFTInput) {
-  const client = getHederaClient();
-
-  // Payer/treasury (assumes your operator is also the treasury)
-  const operatorKey = PrivateKey.fromString(process.env.HEDERA_PRIVATE_KEY!);
-  const treasuryAccountId = process.env.HEDERA_ACCOUNT_ID!;
-
-  // ------------- Supply key -------------
-  // Prefer loading from secure storage so you can mint later in another process.
-  const supplyKey = process.env.HEDERA_SUPPLY_KEY
-    ? PrivateKey.fromString(process.env.HEDERA_SUPPLY_KEY)
-    : PrivateKey.generateED25519();
-  // If you generated it here, persist it securely (KMS/secret store) for future mints.
-
-  const symbol =
-    input.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 5).toUpperCase() || "PROD";
-
-  let tokenId: string = "";
+  console.log(`[NFT] Starting NFT creation for product: ${input.name}`);
+  
   try {
+    const client = getHederaClient();
+    console.log(`[NFT] ✓ Client initialized`);
+
+    const treasuryAccountId = process.env.HEDERA_ACCOUNT_ID!;
+    console.log(`[NFT] Treasury account: ${treasuryAccountId}`);
+
+    // ------------- Supply key for minting (must be different from operator for security) -------------
+    console.log(`[NFT] Loading supply key...`);
+    const supplyKey = process.env.HEDERA_SUPPLY_KEY && process.env.HEDERA_SUPPLY_KEY.trim()
+      ? PrivateKey.fromStringED25519(process.env.HEDERA_SUPPLY_KEY)
+      : PrivateKey.generateED25519();
+    
+    console.log(`[NFT] ✓ Supply key loaded, public: ${supplyKey.publicKey.toString()}`);
+  
+    // If you generated it here, persist it securely (KMS/secret store) for future mints.
+
+    const symbol =
+      input.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 5).toUpperCase() || "PROD";
+
+    let tokenId: string = "";
+    try {
+      console.log(`[NFT] Creating token transaction...`);
+    
     const tokenCreateTx = new TokenCreateTransaction()
       .setTokenName(`${input.name} Collection`)
       .setTokenSymbol(symbol)
       .setTokenType(TokenType.NonFungibleUnique)
-      .setDecimals(0)                // NFTs must be 0
-      .setInitialSupply(0)           // NFTs must start at 0
+      .setDecimals(0)
+      .setInitialSupply(0)
       .setTreasuryAccountId(treasuryAccountId)
       .setSupplyType(TokenSupplyType.Finite)
       .setMaxSupply(Math.max(1, input.quantity))
-      .setSupplyKey(supplyKey.publicKey)       // REQUIRED for NFTs (use publicKey here)
-      .setMaxTransactionFee(new Hbar(20))
-      .freezeWith(client);
-
-    // Sign by payer/treasury (operator). Supply key not required on create.
-    const signedCreateTx = await tokenCreateTx.sign(operatorKey);
-    const createSubmit = await signedCreateTx.execute(client);
+      .setSupplyKey(supplyKey.publicKey)
+      .setMaxTransactionFee(new Hbar(50));  // Increased fee to ensure it's not a fee issue
+    
+    console.log(`[NFT] Freezing transaction with client...`);
+    const frozenTx = await tokenCreateTx.freezeWith(client);
+    console.log(`[NFT] ✓ Transaction frozen`);
+    
+    console.log(`[NFT] Executing transaction...`);
+    const createSubmit = await frozenTx.execute(client);
+    console.log(`[NFT] ✓ Transaction submitted with ID:`, createSubmit.transactionId?.toString());
+    
+    console.log(`[NFT] Waiting for receipt (this may take 5-10 seconds)...`);
     const createReceipt = await createSubmit.getReceipt(client);
     tokenId = createReceipt.tokenId!.toString();
+    
+    console.log(`[NFT] ✅ Token created successfully: ${tokenId}`);
   } catch (err) {
-    console.error("Error during token creation:", err);
+    console.error("[NFT] ❌ Error during token creation:", err instanceof Error ? err.message : JSON.stringify(err));
     throw err;
   }
 
@@ -154,10 +169,7 @@ export async function createProductNFT(input: CreateProductNFTInput) {
   const mintCount = Math.max(1, input.quantity);
   const chunkSize = 10; // Hedera allows up to 10 metadata entries per mint
 
-  // for (let i = 0; i < mintCount; i += chunkSize) {
-  //   const batch = Array.from({ length: Math.min(chunkSize, mintCount - i) }, (_, k) =>
-  //     makeMetadata(i + k)
-  //   );
+  console.log(`[NFT] Starting minting loop: ${mintCount} NFTs in batches of ${chunkSize}`);
 
   // Restored loop using the new makeTextMetadata builder (keeps comments above intact)
   for (let i = 0; i < mintCount; i += chunkSize) {
@@ -167,26 +179,40 @@ export async function createProductNFT(input: CreateProductNFTInput) {
     );
 
     try {
+      console.log(`[NFT] Minting batch [${i}-${Math.min(i + chunkSize - 1, mintCount - 1)}]...`);
+      
       const mintTx = new TokenMintTransaction()
         .setTokenId(tokenId)
         .setMetadata(batch)
         .setMaxTransactionFee(new Hbar(20)) // ensure enough fee for batch mints
         .freezeWith(client);
 
-      // // IMPORTANT: sign mint with supplyKey (payer signature via operator is added by the Client)
+      // IMPORTANT: sign mint with supplyKey (payer signature via operator is added by the Client)
+      const signedMintTx = await mintTx.sign(supplyKey);
+      const mintSubmit = await signedMintTx.execute(client);
+      const mintReceipt = await mintSubmit.getReceipt(client);
 
-      // Activate the signing/receipt logic (comments preserved above)
-      // const signedMintTx = await mintTx.sign(supplyKey);
-      // const mintSubmit = await signedMintTx.execute(client);
-      // const mintReceipt = await mintSubmit.getReceipt(client);
+      // Collect all minted serial numbers
+      for (const s of mintReceipt.serials) {
+        serials.push(Number(s.toString()));
+      }
 
-      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
-      // for (const s of mintReceipt.serials) serials.push(Number(s.toString()));
+      console.log(
+        `✅ Minted batch [${i}-${Math.min(i + chunkSize - 1, mintCount - 1)}] for token ${tokenId}. Serials: ${serials.join(", ")}`
+      );
     } catch (err) {
-      console.error(`Error during minting batch starting at index ${i}:`, err);
+      console.error(`❌ Error during minting batch starting at index ${i}:`, err instanceof Error ? err.message : JSON.stringify(err));
       throw err;
     }
   }
 
+  console.log(`[NFT] ✅ NFT creation complete! Token: ${tokenId}, Serials: ${serials.join(", ")}`);
   return { tokenId, serials };
+  } catch (err) {
+    console.error(`[NFT] ❌ FATAL ERROR in createProductNFT:`, err instanceof Error ? err.message : JSON.stringify(err));
+    if (err instanceof Error) {
+      console.error(`[NFT] Stack:`, err.stack);
+    }
+    throw err;
+  }
 }
