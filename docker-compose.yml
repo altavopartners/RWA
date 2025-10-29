@@ -1,39 +1,78 @@
 services:
-  backend:
-    build: ./server
-    ports:
-      - "4000:4000"
-    environment:
-      - NODE_ENV=development
-      - PORT=4000
-      - HEDERA_OPERATOR_ID=${HEDERA_OPERATOR_ID}
-      - HEDERA_OPERATOR_KEY=${HEDERA_OPERATOR_KEY}
-      - WEB3STORAGE_API_TOKEN=${WEB3STORAGE_API_TOKEN}
-    volumes:
-      - ./server:/app
-    command: npm run dev
-
-  frontend:
-    build: ./client
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - ./client:/app
-    command: npm run dev
-
   postgres:
     image: postgres:15
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: examplepassword
-      POSTGRES_DB: hexport
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./server
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - postgres
+
+  frontend:
+    build: ./client
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      CHOKIDAR_USEPOLLING: "true" # enables hot reload in Docker
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - backend
+    develop:
+      watch:
+        - action: sync
+          path: ./client
+          target: /app
+          ignore:
+            - node_modules/
+  #ipfs:
+  #image: ipfs/kubo:latest
+  #container_name: hexport-ipfs
+  #restart: always
+  #ports:
+  #- "4001:4001" # swarm
+  #- "5001:5001" # API
+  #- "8082:8080" # gateway
+  #volumes:
+  #- ipfs_data:/data/ipfs
+  #command: daemon --migrate=true
+  #healthcheck:
+  #test: ["CMD", "ipfs", "swarm", "peers"]
+  #interval: 30s
+  #timeout: 10s
+  #retries: 3
 
 volumes:
   postgres_data:
+  #ipfs_data:

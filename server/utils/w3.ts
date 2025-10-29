@@ -1,0 +1,149 @@
+// server/utils/w3.ts
+import axios from "axios";
+
+const nativeImport = (s: string) =>
+  Function("s", "return import(s)")(s) as Promise<any>;
+
+let _client: any | null = null;
+
+// ---- CONFIG (read from env or fallback to hardcoded) ----
+const STORACHA_SEED_HEX =
+  process.env.STORACHA_SEED_HEX ||
+  "f6f147f53afefa05cfc6be2ec5cc9bdd31736357dfb60087cf788c3cc11b2d9b";
+const EXPECTED_AGENT_DID =
+  process.env.EXPECTED_AGENT_DID ||
+  "did:key:z6Mkvo1JewWRDxx3byA2VJMc5PHpW4YZAebudSP5bKqFJHNx";
+// W3_PROOF_BASE64 from env (delegation proof for the agent DID)
+const PROOF_B64 =
+  process.env.W3_PROOF_BASE64 ||
+  "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";
+
+// -------- helpers (tolerate SDK shape differences) --------
+function extractDidFromClient(c: any): string | undefined {
+  try {
+    if (c?.agent?.did)
+      return typeof c.agent.did === "function" ? c.agent.did() : c.agent.did;
+    if (c?.did) return typeof c.did === "function" ? c.did() : c.did;
+  } catch {}
+  return undefined;
+}
+
+function extractDidFromAud(aud: any): string | undefined {
+  try {
+    if (!aud) return undefined;
+    if (typeof aud === "string") return aud;
+    if (aud.did) return typeof aud.did === "function" ? aud.did() : aud.did;
+  } catch {}
+  return undefined;
+}
+
+async function polyfillStreamsAndFile() {
+  try {
+    const web = await nativeImport("node:stream/web");
+    Object.assign(globalThis as any, {
+      ReadableStream: web.ReadableStream,
+      WritableStream: web.WritableStream,
+      TransformStream: web.TransformStream,
+    });
+  } catch {}
+  (globalThis as any).Blob ??= (await nativeImport("buffer")).Blob;
+  (globalThis as any).File ??= (await nativeImport("undici")).File;
+}
+
+// -----------------------------------------------------------
+
+export async function getW3Client() {
+  if (_client) return _client;
+
+  await polyfillStreamsAndFile();
+
+  const Client = await nativeImport("@storacha/client");
+  const Proof = await nativeImport("@storacha/client/proof");
+
+  // Create deterministic client from fixed seed
+  const seed = Buffer.from(STORACHA_SEED_HEX, "hex");
+  _client = await Client.create({ seed } as any);
+
+  // Read agent DID (robust to SDK differences)
+  const agentDid = extractDidFromClient(_client);
+  if (!agentDid) {
+    // Show structure to help debugging locally
+    console.error("Storacha client shape:", Object.keys(_client || {}));
+    throw new Error(
+      "Unable to read agent DID from client (agent/did undefined)."
+    );
+  }
+  console.log("agent DID (derived from seed):", agentDid);
+
+  if (EXPECTED_AGENT_DID && agentDid !== EXPECTED_AGENT_DID) {
+    console.warn(
+      `⚠️ Agent DID derived from seed != EXPECTED_AGENT_DID\n` +
+        `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
+    );
+  }
+
+  // Add/select space from proof
+  const parsed = await Proof.parse(PROOF_B64);
+  const space = await _client.addSpace(parsed);
+  // space.did can be func or string
+  const spaceDid = typeof space?.did === "function" ? space.did() : space?.did;
+  if (!spaceDid) {
+    console.warn(
+      "Space object has no .did(); space keys:",
+      Object.keys(space || {})
+    );
+  }
+  await _client.setCurrentSpace(spaceDid ?? space);
+
+  // Validate proof audience matches agent
+  const audDid = extractDidFromAud(parsed?.aud);
+  if (!audDid) {
+    console.warn(
+      "Proof 'aud' has unexpected shape; parsed keys:",
+      Object.keys(parsed || {})
+    );
+  } else if (audDid !== agentDid) {
+    throw new Error(
+      `UCAN audience DID mismatch: proof.aud=${audDid} vs agent=${agentDid}`
+    );
+  }
+
+  return _client;
+}
+
+export function gatewayUrl(cid: string) {
+  const gateway = process.env.IPFS_GATEWAY_URL || "https://w3s.link";
+  const base = gateway.replace(/\/+$/, "");
+  return `${base}/ipfs/${cid}`;
+}
+
+export async function w3Upload(
+  buffer: Buffer,
+  filename: string,
+  mime?: string
+) {
+  try {
+    console.log("Getting W3 client...");
+    const c = await getW3Client();
+    console.log("Creating File object for upload...");
+    const file = new File([buffer], filename, mime ? { type: mime } : {});
+    console.log("Uploading file to Storacha...", {
+      name: filename,
+      size: file.size,
+    });
+    const cid = await c.uploadFile(file);
+    console.log("Upload successful, CID:", cid.toString());
+    return cid.toString();
+  } catch (error: any) {
+    console.error("W3 upload failed:", error?.message || error);
+    throw error;
+  }
+}
+
+export async function w3FetchBytes(cid: string): Promise<Buffer> {
+  const url = gatewayUrl(cid);
+  const res = await axios.get<ArrayBuffer>(url, {
+    responseType: "arraybuffer",
+  });
+  return Buffer.from(res.data);
+}

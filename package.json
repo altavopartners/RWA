@@ -1,0 +1,8 @@
+{
+  "devDependencies": {},
+  "dependencies": {
+    "@storacha/client": "^1.7.10",
+    "@web3-storage/w3up-client": "^17.3.0",
+    "web-file-polyfill": "^1.0.4"
+  }
+}
