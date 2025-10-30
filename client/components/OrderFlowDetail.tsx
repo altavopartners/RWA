@@ -13,10 +13,11 @@ import {
   AlertCircle,
   Lock,
   HandCoins,
+  FileCheck,
 } from "lucide-react";
 import type { Order } from "./OrderFlow";
 import DocumentCenter, { DocumentItem } from "./DocumentCenter";
-import { useAuth } from "@/hooks/useAuth"; // ✅ import auth hook
+import { useAuth } from "@/hooks/useAuth";
 
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000").replace(
@@ -79,7 +80,7 @@ function money(n: number, w: number = 4) {
         className={`inline-block w-${w} h-${w} bg-contain bg-no-repeat flex-shrink-0`}
         style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
       />
-      <span style={{ fontWeight: "normal", color: "black" }}>BAR</span>
+      <span style={{ fontWeight: "normal" }}>BAR</span>
     </span>
   );
 }
@@ -93,7 +94,7 @@ type Props = {
     meta: { categoryKey: string; typeKey: string; orderId: string }
   ) => Promise<DocumentItem>;
   onDeleteDoc?: (doc: DocumentItem) => Promise<void>;
-  onOrderUpdate?: (order: Order) => void; // ✅ add this
+  onOrderUpdate?: (order: Order) => void;
 };
 
 export default function OrderFlowDetail({
@@ -109,7 +110,6 @@ export default function OrderFlowDetail({
   const { token: contextToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
 
-  // Sync token from context or localStorage
   useEffect(() => {
     if (contextToken) setToken(contextToken);
     else {
@@ -118,7 +118,6 @@ export default function OrderFlowDetail({
     }
   }, [contextToken]);
 
-  // ✅ Reset payment state when order changes
   useEffect(() => {
     setPaying(false);
     setTxHash(null);
@@ -127,38 +126,35 @@ export default function OrderFlowDetail({
   }, [order.id, order.status]);
 
   const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "AWAITING_PAYMENT":
-        return "bg-gray-400";
-      case "BANK_REVIEW":
-        return "bg-yellow-500";
-      case "IN_TRANSIT":
-        return "bg-sky-500";
-      case "DELIVERED":
-        return "bg-green-600";
-      case "DISPUTED":
-        return "bg-red-600";
-      case "CANCELLED":
-        return "bg-gray-700";
+    switch (status) {
+      case "awaiting_payment":
+        return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+      case "bank_review":
+      case "in_transit":
+        return "bg-[#88CEDC]/20 text-[#5BA8B8] border-[#88CEDC]/30";
+      case "delivered":
+        return "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30";
+      case "disputed":
+      case "cancelled":
+        return "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30";
       default:
-        return "bg-muted";
+        return "bg-gray-500/20 text-gray-700 dark:text-gray-300 border-gray-500/30";
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "AWAITING_PAYMENT":
-        return HandCoins;
-      case "BANK_REVIEW":
+    switch (status) {
+      case "awaiting_payment":
         return Shield;
-      case "IN_TRANSIT":
+      case "bank_review":
+        return FileCheck;
+      case "in_transit":
         return Truck;
-      case "DELIVERED":
+      case "delivered":
         return CheckCircle;
-      case "DISPUTED":
+      case "disputed":
+      case "cancelled":
         return AlertCircle;
-      case "CANCELLED":
-        return Clock;
       default:
         return Clock;
     }
@@ -171,18 +167,18 @@ export default function OrderFlowDetail({
   };
 
   const getProgressValue = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "AWAITING_PAYMENT":
-        return 0;
-      case "BANK_REVIEW":
-        return 25;
-      case "IN_TRANSIT":
-        return 65;
-      case "DELIVERED":
+    switch (status) {
+      case "awaiting_payment":
+        return 10;
+      case "bank_review":
+        return 40;
+      case "in_transit":
+        return 70;
+      case "delivered":
         return 100;
-      case "DISPUTED":
+      case "disputed":
         return 50;
-      case "CANCELLED":
+      case "cancelled":
         return 0;
       default:
         return 0;
@@ -190,20 +186,23 @@ export default function OrderFlowDetail({
   };
 
   const getEscrowStatus = (status: string) => {
-    const upper = status.toUpperCase();
-    if (upper === "BANK_REVIEW")
+    if (status === "bank_review")
       return {
         text: "Pending Bank Approval",
-        color: "text-yellow-500",
+        color: "text-yellow-600 dark:text-yellow-400",
         icon: Clock,
       };
-    if (["IN_TRANSIT", "DELIVERED"].includes(upper))
+    if (["in_transit", "delivered"].includes(status))
       return {
         text: "Funds Secured & Active",
-        color: "text-green-600",
+        color: "text-green-600 dark:text-green-400",
         icon: Lock,
       };
-    return { text: "Pending Payment", color: "text-gray-400", icon: HandCoins };
+    return {
+      text: "Pending Payment",
+      color: "text-gray-600 dark:text-gray-400",
+      icon: HandCoins,
+    };
   };
 
   const handlePay = async () => {
@@ -211,11 +210,11 @@ export default function OrderFlowDetail({
     setTxHash(null);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const eth = (window as any).ethereum;
       if (!eth) throw new Error("MetaMask not detected.");
       if (!token) throw new Error("User not authenticated");
 
-      // Use order-specific escrow address (deployed by backend)
       const contractAddress = order.escrowAddress;
       if (!contractAddress) {
         throw new Error(
@@ -247,7 +246,6 @@ export default function OrderFlowDetail({
         throw new Error("Transaction failed - no hash returned");
       setTxHash(txHashLocal);
 
-      // ✅ Update backend DB status with JWT
       const url = `${API_BASE}/orders/${order.id}/status`;
       const res = await fetch(url, {
         method: "PUT",
@@ -266,8 +264,6 @@ export default function OrderFlowDetail({
         );
 
       setCurrentStatus(updatedOrder.order.status);
-
-      // ✅ tell parent about the update
       onOrderUpdate?.(updatedOrder.order);
     } catch (e: unknown) {
       console.error("Payment error:", e);
@@ -281,8 +277,8 @@ export default function OrderFlowDetail({
   const itemsCount = order.items?.length || 0;
   const paymentSchedule = {
     onApproval: 0,
-    onShipment: 0,
-    onDelivery: 0,
+    onShipment: 50,
+    onDelivery: 50,
   };
   const escrow = getEscrowStatus(currentStatus);
 
@@ -298,20 +294,17 @@ export default function OrderFlowDetail({
       </div>
 
       <div className="xl:col-span-2 space-y-6">
-        <Card className="glass border-border/50 p-6 transition-all duration-500">
+        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold mb-1">{order.code}</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                {order.code}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {itemsCount} item{itemsCount > 1 ? "s" : ""}
               </p>
             </div>
-            <Badge
-              variant="outline"
-              className={`${getStatusColor(
-                currentStatus
-              )} transition-colors duration-500`}
-            >
+            <Badge variant="outline" className={`${getStatusColor(currentStatus)} border`}>
               <StatusIcon className="w-4 h-4 mr-2" />
               {labelFor(currentStatus)}
             </Badge>
@@ -319,33 +312,31 @@ export default function OrderFlowDetail({
 
           <Progress
             value={getProgressValue(currentStatus)}
-            className="mb-4 transition-all duration-500"
+            className="mb-6 h-2"
           />
 
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-4">
             <Button
               variant="default"
-              disabled={
-                paying || currentStatus.toUpperCase() !== "AWAITING_PAYMENT"
-              }
-              className={`cursor-pointer bg-green-600/60 text-lg rounded-xl ${
-                paying ? "blink" : ""
+              disabled={paying || currentStatus !== "awaiting_payment"}
+              className={`w-full bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] hover:from-[#7BC0CF] hover:to-[#4A97A7] text-white text-lg py-6 rounded-xl ${
+                paying ? "animate-pulse" : ""
               }`}
               onClick={handlePay}
             >
               <HandCoins className="w-6 h-6 mr-3" />
               {paying
                 ? "Processing..."
-                : currentStatus.toUpperCase() === "AWAITING_PAYMENT"
+                : currentStatus === "awaiting_payment"
                 ? "Proceed to Pay"
                 : "Payment Done"}
             </Button>
 
             {txHash && (
-              <p className="text-sm">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Payment sent:{" "}
                 <a
-                  className="underline"
+                  className="text-[#88CEDC] hover:text-[#5BA8B8] underline"
                   href={`https://hashscan.io/testnet/tx/${txHash}`}
                   target="_blank"
                   rel="noreferrer"
@@ -354,48 +345,54 @@ export default function OrderFlowDetail({
                 </a>
               </p>
             )}
-            {payError && <p className="text-xs text-destructive">{payError}</p>}
+            {payError && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {payError}
+                </p>
+              </div>
+            )}
           </div>
         </Card>
       </div>
 
       <div className="space-y-6">
-        <Card className="glass border-border/50 p-6 transition-all duration-500">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Shield className="w-5 h-5 mr-2" />
+        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2 text-[#88CEDC]" />
             Hedera Escrow Details
           </h3>
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Total Escrow Amount
               </p>
-              <p className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {money(order.totalAmount, 6)}
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 Payment Schedule
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>On Bank Approval:</span>
-                  <span className="font-medium">
+                  <span className="text-gray-600 dark:text-gray-400">On Bank Approval:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {paymentSchedule.onApproval}%
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>On Shipment:</span>
-                  <span className="font-medium text-yellow-500">
+                  <span className="text-gray-600 dark:text-gray-400">On Shipment:</span>
+                  <span className="font-medium text-yellow-600 dark:text-yellow-400">
                     {paymentSchedule.onShipment}%
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>On Delivery:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="text-gray-600 dark:text-gray-400">On Delivery:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">
                     {paymentSchedule.onDelivery}%
                   </span>
                 </div>
@@ -403,10 +400,12 @@ export default function OrderFlowDetail({
             </div>
 
             <div>
-              <p className="text-sm text-muted-foreground">Escrow Status</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Escrow Status</p>
               <div className="flex items-center gap-2">
                 <escrow.icon className={`w-4 h-4 ${escrow.color}`} />
-                <span className={`text-sm ${escrow.color}`}>{escrow.text}</span>
+                <span className={`text-sm font-medium ${escrow.color}`}>
+                  {escrow.text}
+                </span>
               </div>
             </div>
           </div>
