@@ -155,16 +155,10 @@ export async function passOrderService({
         );
       }
 
-      // Assign banks: use any configured bank (demo-friendly fallback)
+      // Assign banks: use any configured bank if available (optional for now)
       const anyBank = await tx.bank.findFirst();
-      if (!anyBank) {
-        throw new CheckoutError(
-          "No banks configured. Please seed or create at least one bank.",
-          500
-        );
-      }
-      const buyerBankIdToUse = anyBank.id;
-      const sellerBankIdToUse = anyBank.id;
+      const buyerBankIdToUse = anyBank?.id || null;
+      const sellerBankIdToUse = anyBank?.id || null;
 
       const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
       const subtotal = cartItems.reduce(
@@ -302,25 +296,30 @@ export async function passOrderService({
   );
 
   // Log HCS events in background after transaction completes (non-blocking)
-  if (order && order.id) {
+  if (order && order.id && order.code) {
+    const orderId = order.id;
+    const orderCode = order.code;
     const sellerId = order.userId; // Get actual seller from order
+    const escrowAddress = order.escrowAddress;
+    const hederaTxId = order.hederaTransactionId;
+
     (async () => {
       try {
         await logOrderCreated(
-          order.id,
-          order.code,
+          orderId,
+          orderCode,
           userId,
           sellerId,
           parseFloat(order.total.toString())
         );
 
         // If order has escrow, log escrow deployment
-        if (order.escrowAddress && order.hederaTransactionId) {
+        if (escrowAddress && hederaTxId) {
           await logEscrowDeployed(
-            order.id,
-            order.code,
-            order.escrowAddress,
-            order.hederaTransactionId
+            orderId,
+            orderCode,
+            escrowAddress,
+            hederaTxId
           );
         }
       } catch (hcsError) {
