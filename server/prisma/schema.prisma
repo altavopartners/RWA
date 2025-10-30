@@ -387,8 +387,8 @@ model BankReview {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id])
 
-  bankId String
-  bank   Bank   @relation("BankReviews", fields: [bankId], references: [id])
+  bankId String?
+  bank   Bank?   @relation("BankReviews", fields: [bankId], references: [id])
 
   action    String
   comments  String?

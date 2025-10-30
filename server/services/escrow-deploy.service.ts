@@ -46,15 +46,15 @@ export async function deployEscrowContract(
   // Load environment
   const HEDERA_RPC =
     process.env.HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api";
-  const HEDERA_PRIVATE_KEY = process.env.HEDERA_PRIVATE_KEY;
+  const ESCROW_PRIVATE_KEY = process.env.ESCROW_PRIVATE_KEY;
 
-  if (!HEDERA_PRIVATE_KEY) {
-    throw new Error("HEDERA_PRIVATE_KEY not configured in environment");
+  if (!ESCROW_PRIVATE_KEY) {
+    throw new Error("ESCROW_PRIVATE_KEY not configured in environment");
   }
 
   // Setup provider and wallet (arbiter = platform)
   const provider = new ethers.JsonRpcProvider(HEDERA_RPC);
-  const wallet = new ethers.Wallet(HEDERA_PRIVATE_KEY, provider);
+  const wallet = new ethers.Wallet(ESCROW_PRIVATE_KEY, provider);
   const arbiterAddress = wallet.address;
 
   // Load contract artifact
@@ -116,14 +116,14 @@ export async function deployEscrowContract(
 export async function getEscrowContract(contractAddress: string) {
   const HEDERA_RPC =
     process.env.HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api";
-  const HEDERA_PRIVATE_KEY = process.env.HEDERA_PRIVATE_KEY;
+  const ESCROW_PRIVATE_KEY = process.env.ESCROW_PRIVATE_KEY;
 
-  if (!HEDERA_PRIVATE_KEY) {
-    throw new Error("HEDERA_PRIVATE_KEY not configured");
+  if (!ESCROW_PRIVATE_KEY) {
+    throw new Error("ESCROW_PRIVATE_KEY not configured");
   }
 
   const provider = new ethers.JsonRpcProvider(HEDERA_RPC);
-  const wallet = new ethers.Wallet(HEDERA_PRIVATE_KEY, provider);
+  const wallet = new ethers.Wallet(ESCROW_PRIVATE_KEY, provider);
 
   const artifact = JSON.parse(fs.readFileSync(ESCROW_ARTIFACT_PATH, "utf-8"));
   const { abi } = artifact;

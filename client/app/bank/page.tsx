@@ -123,6 +123,7 @@ function OrderApprovalDialog({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedBank, setSelectedBank] = useState<"buyer" | "seller" | "">("");
+  const [isApproving, setIsApproving] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -167,22 +168,34 @@ function OrderApprovalDialog({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      onRequestDocs("buyer");
-                      setIsOpen(false);
+                    disabled={isApproving}
+                    onClick={async () => {
+                      setIsApproving(true);
+                      try {
+                        onRequestDocs("buyer");
+                        setIsOpen(false);
+                      } finally {
+                        setIsApproving(false);
+                      }
                     }}
                   >
-                    From Buyer
+                    {isApproving ? "Sending..." : "From Buyer"}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      onRequestDocs("seller");
-                      setIsOpen(false);
+                    disabled={isApproving}
+                    onClick={async () => {
+                      setIsApproving(true);
+                      try {
+                        onRequestDocs("seller");
+                        setIsOpen(false);
+                      } finally {
+                        setIsApproving(false);
+                      }
                     }}
                   >
-                    From Seller
+                    {isApproving ? "Sending..." : "From Seller"}
                   </Button>
                 </div>
               </div>
@@ -197,27 +210,29 @@ function OrderApprovalDialog({
                   <SelectValue placeholder="Select your bank type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="buyer" disabled={!order.buyerBankId}>
-                    {order.buyerBankId
-                      ? "Buyer Bank"
-                      : "Buyer Bank (not assigned)"}
+                  <SelectItem value="buyer">
+                    Buyer Bank {order.buyerBankId ? "✓" : "(no bank assigned)"}
                   </SelectItem>
-                  <SelectItem value="seller" disabled={!order.sellerBankId}>
-                    {order.sellerBankId
-                      ? "Seller Bank"
-                      : "Seller Bank (not assigned)"}
+                  <SelectItem value="seller">
+                    Seller Bank{" "}
+                    {order.sellerBankId ? "✓" : "(no bank assigned)"}
                   </SelectItem>
                 </SelectContent>
               </Select>
               <Button
                 className="w-full mt-2"
-                disabled={!selectedBank}
-                onClick={() => {
-                  onApprove(selectedBank as "buyer" | "seller");
-                  setIsOpen(false);
+                disabled={!selectedBank || isApproving}
+                onClick={async () => {
+                  setIsApproving(true);
+                  try {
+                    onApprove(selectedBank as "buyer" | "seller");
+                    setIsOpen(false);
+                  } finally {
+                    setIsApproving(false);
+                  }
                 }}
               >
-                Approve Order
+                {isApproving ? "Approving..." : "Approve Order"}
               </Button>
             </>
           )}
@@ -226,12 +241,20 @@ function OrderApprovalDialog({
             <Button
               className="w-full mt-2"
               variant="secondary"
-              onClick={() => {
-                onReleaseEscrow();
-                setIsOpen(false);
+              disabled={isApproving}
+              onClick={async () => {
+                setIsApproving(true);
+                try {
+                  onReleaseEscrow();
+                  setIsOpen(false);
+                } finally {
+                  setIsApproving(false);
+                }
               }}
             >
-              Release Remaining 50% to Seller
+              {isApproving
+                ? "Processing..."
+                : "Release Remaining 50% to Seller"}
             </Button>
           )}
 
@@ -267,12 +290,9 @@ export default function BankOrdersPage() {
     try {
       const bankId =
         bankType === "buyer" ? order.buyerBankId : order.sellerBankId;
-      if (!bankId) {
-        throw new Error(`Missing ${bankType} bank id on order`);
-      }
       // Use escrow endpoint which records bank approval and triggers 50% release once both approve
       await bankApi.updateEscrow(order.id, {
-        bankId,
+        bankId: bankId || undefined, // Allow null bank IDs for future bank setup
         bankType,
         comments: "Approved by bank",
       });
@@ -302,12 +322,9 @@ export default function BankOrdersPage() {
     try {
       const bankId =
         requestTo === "buyer" ? order.buyerBankId : order.sellerBankId;
-      if (!bankId) {
-        alert(`No ${requestTo} bank assigned to this order`);
-        return;
-      }
+      // Allow proceeding even without bank assigned (for future bank setup)
       await bankApi.requestDocuments(order.id, {
-        bankId,
+        bankId: bankId || undefined,
         requestTo,
         comments: `Please submit required documents for order ${
           order.code || order.id

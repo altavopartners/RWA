@@ -7,7 +7,11 @@
     "dev": "nodemon server.ts && node scripts/copy-w3-esm.cjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:reset:hackathon": "npx prisma migrate reset --force && npx prisma db seed --name seed-hackathon",
+    "db:seed": "npx prisma db seed",
+    "db:studio": "npx prisma studio"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

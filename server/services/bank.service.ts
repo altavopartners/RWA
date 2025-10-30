@@ -235,18 +235,23 @@ export async function updateDocument(
 /** Request documents from bank */
 export async function requestDocumentsFromBank(
   orderId: string,
-  bankId: string,
+  bankId: string | null,
   comments: string
 ) {
-  return prisma.bankReview.create({
-    data: { orderId, bankId, action: "request_docs", comments },
-  });
+  const data: any = {
+    orderId,
+    action: "request_docs",
+    comments,
+  };
+  if (bankId) data.bankId = bankId;
+
+  return prisma.bankReview.create({ data });
 }
 
 /** Approve order by bank and handle partial escrow release */
 export async function approveOrderByBankService(
   orderId: string,
-  bankId: string,
+  bankId: string | null,
   bankType: "buyer" | "seller",
   comments?: string
 ) {
@@ -265,9 +270,14 @@ export async function approveOrderByBankService(
     }
 
     // Record bank review
-    await tx.bankReview.create({
-      data: { orderId, bankId, action: "approve", comments },
-    });
+    const reviewData: any = {
+      orderId,
+      action: "approve",
+      comments,
+    };
+    if (bankId) reviewData.bankId = bankId;
+
+    await tx.bankReview.create({ data: reviewData });
 
     // Prepare updates
     const updates: Partial<typeof order> = { updatedAt: new Date() };
