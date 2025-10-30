@@ -2,6 +2,7 @@
 import prisma from "../lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
 import { deployEscrowContract } from "./escrow-deploy.service";
+import { logOrderCreated, logEscrowDeployed } from "./hcs.service";
 import debug from "../utils/debug";
 
 class CheckoutError extends Error {
@@ -40,7 +41,7 @@ export async function passOrderService({
   userId,
   shipping = 5.0,
 }: PassOrderOptions) {
-  return prisma.$transaction(
+  const order = await prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
       const cartItems = await tx.cartItem.findMany({
         where: { userId },
@@ -299,6 +300,36 @@ export async function passOrderService({
       timeout: 60000, // 60 seconds for escrow deployment
     }
   );
+
+  // Log HCS events in background after transaction completes (non-blocking)
+  if (order && order.id) {
+    const sellerId = order.userId; // Get actual seller from order
+    (async () => {
+      try {
+        await logOrderCreated(
+          order.id,
+          order.code,
+          userId,
+          sellerId,
+          parseFloat(order.total.toString())
+        );
+
+        // If order has escrow, log escrow deployment
+        if (order.escrowAddress && order.hederaTransactionId) {
+          await logEscrowDeployed(
+            order.id,
+            order.code,
+            order.escrowAddress,
+            order.hederaTransactionId
+          );
+        }
+      } catch (hcsError) {
+        debug.warn(`Background HCS logging warning: ${hcsError}`);
+      }
+    })();
+  }
+
+  return order;
 }
 
 // ---------- Get All My Orders ----------

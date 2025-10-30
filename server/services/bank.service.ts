@@ -5,6 +5,12 @@ import {
   approveBuyerBank,
   approveSellerBank,
 } from "./escrow-deploy.service";
+import {
+  logDocumentValidated,
+  logDisputeCreated,
+  logDisputeResolved,
+  logPaymentReleased,
+} from "./hcs.service";
 import debug from "../utils/debug";
 
 /** ---------- CLIENT / KYC ---------- */
@@ -119,6 +125,31 @@ export async function updateDispute(
     updatedOrder.id,
     updatedOrder.status
   );
+
+  // Log dispute event to HCS
+  if (data.action === "open") {
+    // Log dispute creation
+    await logDisputeCreated(
+      updatedOrder.id,
+      updatedOrder.code || "",
+      disputeId,
+      data.ruling?.reason || "No reason provided",
+      data.ruling?.priority || "Medium",
+      data.reviewedBy
+    );
+  } else if (data.action === "resolve") {
+    // Log dispute resolution
+    await logDisputeResolved(
+      updatedOrder.id,
+      updatedOrder.code || "",
+      disputeId,
+      typeof data.ruling === "string"
+        ? data.ruling
+        : JSON.stringify(data.ruling),
+      data.reviewedBy
+    );
+  }
+
   return updatedOrder;
 }
 
@@ -172,7 +203,7 @@ export async function updateDocument(
     approve: "VALIDATED",
     reject: "REJECTED",
   };
-  return prisma.document.update({
+  const updatedDoc = await prisma.document.update({
     where: { id: documentId },
     data: {
       status: statusMap[data.status],
@@ -181,7 +212,22 @@ export async function updateDocument(
       rejectionReason: data.rejectionReason,
       updatedAt: new Date(),
     },
+    include: { order: true },
   });
+
+  // Log document validation to HCS
+  if (updatedDoc.order) {
+    await logDocumentValidated(
+      updatedDoc.orderId || "",
+      updatedDoc.order.code || "",
+      documentId,
+      statusMap[data.status] as "VALIDATED" | "REJECTED",
+      data.validatedBy,
+      data.rejectionReason
+    );
+  }
+
+  return updatedDoc;
 }
 
 /** ---------- BANK REVIEWS & ESCROW ---------- */
@@ -296,6 +342,15 @@ export async function approveOrderByBankService(
         },
       });
       debug.service("BankService", "Payment release recorded in database");
+
+      // Log payment release to HCS
+      await logPaymentReleased(
+        orderId,
+        updatedOrder.code || "",
+        "FIFTY_PERCENT",
+        parseFloat(updatedOrder.total.div(2).toString()),
+        new Date().toISOString()
+      );
     } catch (err: any) {
       debug.error("Failed to release payment on blockchain", err.message);
       // Log but don't throw - payment release attempt failed but order is marked IN_TRANSIT
@@ -315,6 +370,15 @@ export async function approveOrderByBankService(
         releasedAt: new Date(),
       },
     });
+
+    // Log payment release to HCS
+    await logPaymentReleased(
+      orderId,
+      updatedOrder.code || "",
+      "FIFTY_PERCENT",
+      parseFloat(updatedOrder.total.div(2).toString()),
+      new Date().toISOString()
+    );
   }
 
   return updatedOrder;
