@@ -203,6 +203,26 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+  const diamonds = await prisma.product.create({
+    data: {
+      name: "Diamonds",
+      quantity: 500,
+      unit: "carat",
+      pricePerUnit: 1500.0,
+      countryOfOrigin: "Botswana",
+      category: "raw",
+      subcategory: "gemstone",
+      description: "High-quality cut diamonds sourced ethically.",
+      hsCode: "7102.00",
+      incoterm: "FOB",
+      minOrderQty: 50,
+      leadTimeDays: 20,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/7.jpg", filename: "7.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
+
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
