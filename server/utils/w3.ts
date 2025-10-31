@@ -100,3 +100,4 @@ let store: any | null = null;
     console.error("Storacha client shape:", Object.keys(_client || {}));
     throw new Error("Unable to read agent DID from client (agent/did undefined).");
   }
+  console.log("agent DID (from principal):", agentDid);
