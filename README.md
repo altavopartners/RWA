@@ -130,7 +130,7 @@ git checkout develop
 ```env
 # Server Configuration
 NODE_ENV=development
-PORT=5000
+PORT=4000
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hexport
 
 # Authentication
@@ -154,7 +154,7 @@ CORS_ORIGIN=http://localhost:3000
 ```env
 # Frontend Configuration
 NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_API_URL=http://localhost:4000
 
 # Hedera Configuration
 NEXT_PUBLIC_HEDERA_NETWORK=testnet
@@ -198,7 +198,7 @@ npm run dev
 **Expected Output:**
 
 ```
-✅ Server running on port 5000
+✅ Server running on port 4000
 ✅ HCS Topic subscribed successfully
 ✅ PostgreSQL connected
 ```
@@ -224,7 +224,7 @@ npm run dev
 | Component          | URL/Location            | Tech                            |
 | ------------------ | ----------------------- | ------------------------------- |
 | **Frontend**       | `http://localhost:3000` | React 19 + Next.js 15           |
-| **Backend API**    | `http://localhost:5000` | Express.js + TypeScript         |
+| **Backend API**    | `http://localhost:4000` | Express.js + TypeScript         |
 | **Database**       | `localhost:5432`        | PostgreSQL 15 (Docker)          |
 | **Hedera Network** | Testnet RPC             | `https://testnet.hashio.io/api` |
 
@@ -323,7 +323,7 @@ User places order
 ```env
 # Server
 NODE_ENV=development
-PORT=5000
+PORT=4000
 DATABASE_URL=postgresql://user:password@localhost:5432/hexport
 
 # JWT (minimum 32 characters)
@@ -349,7 +349,7 @@ CORS_ORIGIN=http://localhost:3000
 ```env
 # Frontend
 NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_API_URL=http://localhost:4000
 
 # Hedera Configuration
 NEXT_PUBLIC_HEDERA_NETWORK=testnet
@@ -465,7 +465,7 @@ After setup, verify everything works:
 
 ```bash
 # Terminal 1: Backend should show
-✅ Server running on port 5000
+✅ Server running on port 4000
 ✅ HCS Topic subscribed successfully
 
 # Terminal 2: Frontend should show
@@ -496,7 +496,7 @@ After setup, verify everything works:
 - [ ] Checkout: `git checkout develop`
 - [ ] Create `.env` from credentials provided in submission portal
 - [ ] Start database: `docker-compose up -d postgres`
-- [ ] Backend: `cd server && npm install && npm run dev` (port 5000)
+- [ ] Backend: `cd server && npm install && npm run dev` (port 4000)
 - [ ] Frontend: `cd client && npm install && npm run dev` (port 3000)
 - [ ] Verify: Access `http://localhost:3000` → See marketplace
 - [ ] Check logs: Backend shows `HCS Topic subscribed successfully`
