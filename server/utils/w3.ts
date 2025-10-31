@@ -171,16 +171,19 @@ export async function getW3Client() {
 
   return _client;
 }
+
 export function gatewayUrl(cid: string) {
   const base = "https://w3s.link".replace(/\/+$/, "");
   return `${base}/ipfs/${cid}`;
 }
+
 export async function w3Upload(buffer: Buffer, filename: string, mime?: string) {
-    const c = await getW3Client();
-    const file = new File([buffer], filename, mime ? { type: mime } : {});
-    const cid = await c.uploadFile(file);
+  const c = await getW3Client();
+  const file = new File([buffer], filename, mime ? { type: mime } : {});
+  const cid = await c.uploadFile(file);
   return cid.toString();
 }
+
 export async function w3FetchBytes(cid: string): Promise<Buffer> {
   const url = gatewayUrl(cid);
   const res = await axios.get<ArrayBuffer>(url, { responseType: "arraybuffer" });
