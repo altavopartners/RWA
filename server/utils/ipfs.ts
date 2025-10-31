@@ -99,3 +99,5 @@ export async function uploadJSONToIPFS(obj: object): Promise<string> {
  */
 export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
   const text = await getFromIPFS(cid);
+  return JSON.parse(text) as T;
+}
