@@ -23,5 +23,16 @@ function extractDidFromAud(aud: any): string | undefined {
   return undefined;
 }
 
-async function polyfillStreamsAndFile() {}
+async function polyfillStreamsAndFile() {
+  try {
+    const web = await nativeImport("node:stream/web");
+    Object.assign(globalThis as any, {
+      ReadableStream: web.ReadableStream,
+      WritableStream: web.WritableStream,
+      TransformStream: web.TransformStream,
+    });
+  } catch {}
+  (globalThis as any).Blob ??= (await nativeImport("buffer")).Blob;
+  (globalThis as any).File ??= (await nativeImport("undici")).File;
+}
 export async function getW3Client() { ... }
