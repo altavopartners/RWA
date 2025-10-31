@@ -143,6 +143,26 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
+  const tea = await prisma.product.create({
+    data: {
+      name: "Tea",
+      quantity: 1000,
+      unit: "kg",
+      pricePerUnit: 2.0,
+      countryOfOrigin: "India",
+      category: "agri",
+      subcategory: "tea",
+      description: "High-quality black tea leaves, carefully selected and processed.",
+      hsCode: "0902.00",
+      incoterm: "FOB",
+      minOrderQty: 500,
+      leadTimeDays: 14,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/3.jpg", filename: "3.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
