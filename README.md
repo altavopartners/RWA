@@ -504,19 +504,20 @@ After setup, verify everything works:
 
 We are proud to collaborate with:
 
-**[TABC (Tunisian African Business Council)]([https://drive.google.com/file/d/your_drive_file_id/view?usp=sharing](https://drive.google.com/file/d/1UKR1JpHS3gtb_3Y60LT7VRCyLmk5-Lws/view?usp=sharing))**  
+**[TABC (Tunisian African Business Council)](https://drive.google.com/file/d/1UKR1JpHS3gtb_3Y60LT7VRCyLmk5-Lws/view?usp=sharing)**  
 
 You can learn more about our partnership or access shared documents through the link above.
 
 ## 💼 Pitch Deck
 
 You can view our full **Pitch Deck** presentation here:  
-📎 [Open Pitch Deck (Google Drive)]([https://drive.google.com/file/d/your_pitchdeck_id/view?usp=sharing](https://drive.google.com/file/d/1iTYF3wwBd72DxAcwHa6943T5vhf4-jPr/view?usp=sharing))
+📎 [Open Pitch Deck (Google Drive)](https://drive.google.com/file/d/1iTYF3wwBd72DxAcwHa6943T5vhf4-jPr/view?usp=sharing)
 
 ## 🎥 Demo Video
 
 Watch our live demo on YouTube:  
-👉 [Click here to watch the demo]((https://www.youtube.com/watch?v=F2wRcFhlHmg))
+👉 [Click here to watch the demo](https://www.youtube.com/watch?v=F2wRcFhlHmg)
+
 
 ## ✅ Submission Checklist for Judges
 
