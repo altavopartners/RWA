@@ -114,4 +114,6 @@ let store: any | null = null;
     });
     const space = await _client.addSpace(parsed);
      const spaceDid = typeof space?.did === "function" ? space.did() : space?.did;
-    
+    if (!spaceDid) {
+      console.warn("Space object has no .did(); space keys:", Object.keys(space || {}));
+    }
