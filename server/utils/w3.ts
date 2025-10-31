@@ -177,3 +177,5 @@ export function gatewayUrl(cid: string) {
 }
 export async function w3Upload(buffer: Buffer, filename: string, mime?: string) {
     const c = await getW3Client();
+    const file = new File([buffer], filename, mime ? { type: mime } : {});
+  
