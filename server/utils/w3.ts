@@ -13,4 +13,12 @@ function extractDidFromClient(c: any): string | undefined {
   return undefined;
 }
 
-function extractDidFromAud(aud: any): string | undefined { ... }
+
+function extractDidFromAud(aud: any): string | undefined {
+  try {
+    if (!aud) return undefined;
+    if (typeof aud === "string") return aud;
+    if (aud?.did) return typeof aud.did === "function" ? aud.did() : aud.did;
+  } catch {}
+  return undefined;
+}
