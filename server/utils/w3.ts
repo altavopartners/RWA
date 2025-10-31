@@ -89,4 +89,4 @@ let store: any | null = null;
       );
     }
     const root = path.join(os.tmpdir(), `w3up-store-${randomUUID()}`);
-    
+    store = new FSStore({ root });
