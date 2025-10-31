@@ -119,3 +119,6 @@ let store: any | null = null;
     }
     await _client.setCurrentSpace(spaceDid ?? space);
     const audDid = extractDidFromAud(parsed?.aud);
+    if (!audDid) {
+      console.warn("Proof 'aud' has unexpected shape; parsed keys:", Object.keys(parsed || {}));
+    }
