@@ -108,3 +108,4 @@ let store: any | null = null;
         `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
     );
   }
+  if (PROOF_B64) {
