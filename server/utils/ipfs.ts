@@ -97,3 +97,4 @@ export async function uploadJSONToIPFS(obj: object): Promise<string> {
  * @param cid - CID string
  * @returns Parsed JSON object
  */
+export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
