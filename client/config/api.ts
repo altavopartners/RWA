@@ -15,7 +15,7 @@ export const getApiBaseUrl = (): string => {
 export const API_BASE_URL = getApiBaseUrl();
 
 /**
- * Helper to construct API endpoints
+ * Helper to construct API endpoints 
  * @example constructApiUrl('/api/products') → 'http://localhost:4000/api/products'
  */
 export const constructApiUrl = (endpoint: string): string => {
