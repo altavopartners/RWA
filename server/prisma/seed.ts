@@ -103,6 +103,26 @@ async function main() {
   // ----- Products (ONLY the 10 PSQL-mirrored products) -----
   console.log("📦 Creating products...");
 
+  const cocoa = await prisma.product.create({
+    data: {
+      name: "Cocoa",
+      quantity: 1000,
+      unit: "kg",
+      pricePerUnit: 2.5,
+      countryOfOrigin: "Ghana",
+      category: "agri",
+      subcategory: "cocoa",
+      description:
+        "High-quality fermented and sun-dried cocoa beans sourced from smallholder farms. Certified organic and fair trade.",
+      hsCode: "1801.00",
+      incoterm: "FOB",
+      minOrderQty: 500,
+      leadTimeDays: 14,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/1.jpg", filename: "1.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
