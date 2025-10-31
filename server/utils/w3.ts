@@ -62,3 +62,9 @@ export async function getW3Client() {
       "Missing STORACHA_PRINCIPAL_B64. Generate one with `w3 key create --json` and paste the `key` value."
     ); 
 }
+
+  // Create principal and verify DID
+  const principal = EdSigner.Signer.parse(STORACHA_PRINCIPAL_B64);
+  const principalDid =
+    typeof principal.did === "function" ? principal.did() : principal.did;
+  console.log("principal DID (from STORACHA_PRINCIPAL_B64):", principalDid);
