@@ -121,4 +121,6 @@ let store: any | null = null;
     const audDid = extractDidFromAud(parsed?.aud);
     if (!audDid) {
       console.warn("Proof 'aud' has unexpected shape; parsed keys:", Object.keys(parsed || {}));
+    }else if (audDid !== agentDid) {
+      throw new Error(`UCAN audience DID mismatch: proof.aud=${audDid} vs agent=${agentDid}`);
     }
