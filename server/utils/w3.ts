@@ -117,3 +117,4 @@ let store: any | null = null;
     if (!spaceDid) {
       console.warn("Space object has no .did(); space keys:", Object.keys(space || {}));
     }
+    await _client.setCurrentSpace(spaceDid ?? space);
