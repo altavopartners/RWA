@@ -107,3 +107,4 @@ let store: any | null = null;
       `⚠️ Agent DID from principal != EXPECTED_AGENT_DID\n` +
         `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
     );
+  }
