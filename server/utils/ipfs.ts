@@ -92,3 +92,8 @@ export async function uploadJSONToIPFS(obj: object): Promise<string> {
   const jsonString = JSON.stringify(obj);
   return uploadToIPFS(jsonString);
 }
+/**
+ * Fetch JSON from IPFS and parse it
+ * @param cid - CID string
+ * @returns Parsed JSON object
+ */
