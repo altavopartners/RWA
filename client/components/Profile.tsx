@@ -8,20 +8,63 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Mail, Camera, Phone, User, Building2, Edit3, Save, X, Wallet, Package, ShoppingCart, TrendingUp, Shield } from "lucide-react";
+import {
+  MapPin,
+  Mail,
+  Camera,
+  Phone,
+  User,
+  Building2,
+  Edit3,
+  Save,
+  X,
+  Wallet,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Shield,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
+import Footer from "@/components/Footer";
 
 const Profile = () => {
   const { isConnected } = useAuth();
   const { triggerConnect } = useWalletConnect();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
 
   useEffect(() => {
-    if (!isConnected) {
-      triggerConnect();
-    }
-  }, [isConnected, triggerConnect]);
+    const checkConnection = async () => {
+      // Small delay to allow state to rehydrate
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
+      if (!isConnected && !hasCheckedOnce) {
+        setHasCheckedOnce(true);
+        await triggerConnect();
+      }
+
+      setIsChecking(false);
+    };
+
+    checkConnection();
+  }, [isConnected, triggerConnect, hasCheckedOnce]);
+
+  // Show loading state while checking
+  if (isChecking) {
+    return (
+      <div className="pt-32 min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-[#88CEDC] mx-auto mb-4"></div>
+          <p className="text-gray-700 dark:text-gray-300 font-medium">
+            Checking connection...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Wallet not connected
   if (!isConnected) {
     return (
       <div className="pt-32 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
@@ -36,7 +79,7 @@ const Profile = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Please connect your wallet to view and edit your profile.
             </p>
-            <Button 
+            <Button
               onClick={triggerConnect}
               className="bg-[#88CEDC] hover:bg-[#7BC0CF] text-white"
             >
@@ -44,10 +87,12 @@ const Profile = () => {
             </Button>
           </Card>
         </div>
+        <Footer />
       </div>
     );
   }
 
+  // Wallet connected → show profile content
   return <ProfileContent />;
 };
 
@@ -108,6 +153,13 @@ function ProfileContent() {
     };
     reader.readAsDataURL(file);
   };
+
+  const stats = [
+    { icon: Package, label: "Products Listed", value: "12", color: "from-blue-500 to-blue-600" },
+    { icon: ShoppingCart, label: "Orders Placed", value: "8", color: "from-green-500 to-green-600" },
+    { icon: TrendingUp, label: "Total Sales", value: "2.5K HBAR", color: "from-purple-500 to-purple-600" },
+    { icon: Shield, label: "Account Status", value: "Verified", color: "from-[#88CEDC] to-[#5BA8B8]" },
+  ];
 
   return (
     <div className="pt-32 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 [&_::selection]:bg-[#88CEDC]/30 [&_::selection]:text-gray-900 dark:[&_::selection]:bg-[#88CEDC]/50 dark:[&_::selection]:text-white">
@@ -200,7 +252,6 @@ function ProfileContent() {
             </Button>
           </div>
         </Card>
-
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information Card */}
@@ -408,6 +459,7 @@ function ProfileContent() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

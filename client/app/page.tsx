@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Coins, Shield, Globe, Truck, FileCheck, Wallet } from "lucide-react";
 import FeaturedProducts from "@/components/FeaturedProducts";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <div className="min-h-screen bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] -mt-16">
+      <div className=" pt-16 min-h-screen bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] -mt-16">
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
           {/* Globe Image */}
           <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-90 hidden lg:block">
@@ -72,7 +73,7 @@ export default function HomePage() {
 
             <div className="max-w-3xl">
               
-             <h1 className="text-6xl md:text-8xl font-bold mb-6 text-white animate-fade-in leading-tight" style={{ color: '#edf6f9' }} >
+             <h1 className=" text-6xl md:text-8xl font-bold mb-6 text-white animate-fade-in leading-tight" style={{ color: '#edf6f9' }} >
               Hex-Port
             </h1>
 
@@ -106,27 +107,6 @@ export default function HomePage() {
                 </Button>
               </div>
 
-              {/* Stats */}
-              {/* <div className="grid grid-cols-3 gap-8 max-w-2xl">
-                <div>
-                  <div className="text-4xl font-bold text-white mb-2">500+</div>
-                  <div className="text-sm text-white/80 font-medium">
-                    Premium Products Tokenized
-                  </div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold text-white mb-2">50+</div>
-                  <div className="text-sm text-white/80 font-medium">
-                    Verified Producers Across Africa
-                  </div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold text-white mb-2">2M+</div>
-                  <div className="text-sm text-white/80 font-medium">
-                    HBAR Securely Traded
-                  </div>
-                </div>
-              </div> */}
             </div>
           </div>
         </section>
@@ -258,101 +238,7 @@ export default function HomePage() {
         </div>
       </section>
       
- {/* Footer */}
-      <footer className="py-16 border-t border-gray-200 dark:border-gray-800 bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-12">
-            {/* Brand Column */}
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Hex-Port
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-                Connecting African excellence to the world through Web3 technology and blockchain innovation.
-              </p>
-              <div className="flex gap-4">
-                <a href="https://x.com/hex__port25" className="w-10 h-10 rounded-full bg-[#88CEDC]/10 flex items-center justify-center hover:bg-[#88CEDC]/20 transition-colors">
-                  <span className="text-[#88CEDC] text-xl">𝕏</span>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-[#88CEDC]/10 flex items-center justify-center hover:bg-[#88CEDC]/20 transition-colors">
-                  <span className="text-[#88CEDC] text-xl">in</span>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-[#88CEDC]/10 flex items-center justify-center hover:bg-[#88CEDC]/20 transition-colors">
-                  <Globe className="w-5 h-5 text-[#88CEDC]" />
-                </a>
-              </div>
-            </div>
-
-            {/* Platform Column */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Platform
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="/marketplace" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    Marketplace
-                  </a>
-                </li>
-                <li>
-                  <a href="/producer-add-product" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    Become a Producer
-                  </a>
-                </li>
-                <li>
-                  <a href="#video-demo" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    How It Works
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company Column */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Company
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                    Partners
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                © 2025 Hex-Port. All rights reserved. Powered by Hedera.
-              </p>
-              <div className="flex gap-6 text-sm">
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                  Privacy Policy
-                </a>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                  Terms of Service
-                </a>
-                <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-[#88CEDC] dark:hover:text-[#88CEDC] transition-colors">
-                  Cookie Policy
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer /> 
     </>
   );
 }

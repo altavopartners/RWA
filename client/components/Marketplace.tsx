@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-// import { useAuth } from '@/hooks/useAuth'
+import Footer from "@/components/Footer";
 import {
   Search,
   Filter,
@@ -13,6 +13,10 @@ import {
   FileCheck,
   Coins,
   PlusCircle,
+  ExternalLink,
+  Package,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import AddToCartPopup from "@/components/AddToCartPopup";
 
@@ -23,25 +27,20 @@ function money(n: number, product: { unit: string } = { unit: "unit" }) {
   }).format(n);
 
   return (
-    <span className="flex items-center gap-1">
-      <span style={{ fontWeight: "normal" }}>{formatted}</span>
+    <span className="flex items-center gap-1.5">
+      <span className="text-2xl font-bold bg-gradient-to-r from-[#5BA8B8] to-[#88CEDC] bg-clip-text text-transparent">{formatted}</span>
       <span
-        className="inline-block w-4 h-4 bg-contain bg-no-repeat flex-shrink-0"
+        className="inline-block w-5 h-5 bg-contain bg-no-repeat flex-shrink-0"
         style={{ backgroundImage: `url(/assets/hbar_logo.png)` }}
       />
-      <span style={{ fontWeight: "normal" }}>BAR</span>
-      <span className="text-gray-500 text-sm">/{product.unit}</span>
+      <span className="text-sm text-gray-600 dark:text-gray-400">/{product.unit}</span>
     </span>
   );
 }
 
-
-// =====================
-// 1) API types (from your example)
-// =====================
 export type APIImage = {
   mime: string;
-  path: string; // e.g. "/uploads/images/....png"
+  path: string;
   size: number;
   filename: string;
   originalName: string;
@@ -58,16 +57,16 @@ export type APIDocument = {
 export type APIProduct = {
   id: number;
   name: string;
-  quantity: number; // e.g. 10030
-  unit: string; // e.g. "kg"
-  pricePerUnit: number; // e.g. 2.5
-  countryOfOrigin: string; // e.g. "Ghana"
-  category: string; // e.g. "agri"
-  subcategory: string; // e.g. "cocoa"
+  quantity: number;
+  unit: string;
+  pricePerUnit: number;
+  countryOfOrigin: string;
+  category: string;
+  subcategory: string;
   description: string;
   hsCode?: string;
-  incoterm?: string; // e.g. "FOB"
-  hederaTokenId?: string; // e.g. "0.0.12345"
+  incoterm?: string;
+  hederaTokenId?: string;
   minOrderQty?: number;
   leadTimeDays?: number;
   images: APIImage[];
@@ -80,14 +79,11 @@ export type APIResponse = {
   data: APIProduct[];
 };
 
-// =====================
-// 2) Category/subcategory filters (as before)
-// =====================
 const categories = [
-  { id: "agri", label: "Agricultural Products" },
-  { id: "raw", label: "Raw Materials" },
-  { id: "processed", label: "Processed Goods" },
-  { id: "manufactured", label: "Manufactured Items" },
+  { id: "agri", label: "Agricultural", icon: "🌾" },
+  { id: "raw", label: "Raw Materials", icon: "⛏️" },
+  { id: "processed", label: "Processed", icon: "🏭" },
+  { id: "manufactured", label: "Manufactured", icon: "📦" },
 ];
 
 const subcategories: Record<string, { id: string; label: string }[]> = {
@@ -126,40 +122,27 @@ const subcategories: Record<string, { id: string; label: string }[]> = {
   ],
 };
 
-// =====================
-// 3) Helpers
-// =====================
 function apiBase() {
-  // Configure in .env as NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
   return process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 }
 
 function buildAssetUrl(path: string | undefined) {
   if (!path) return undefined;
-  // Most backends serve uploads under the same origin as the API base
-  // e.g. http://localhost:4000/uploads/...
   const base = apiBase().replace(/\/$/, "");
-  if (path.startsWith("http")) return path; // already absolute
+  if (path.startsWith("http")) return path;
   return `${base}${path.startsWith("/") ? path : "/" + path}`;
 }
 
-// =====================
-// 4) Component
-// =====================
 const Marketplace = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<"all" | string>(
-    "all"
-  );
-  const [selectedSubcategory, setSelectedSubcategory] = useState<
-    "all" | string
-  >("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | string>("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<"all" | string>("all");
 
   const [products, setProducts] = useState<APIProduct[]>([]);
-  const [loading, setLoading] = useState(false); // Start with false instead of true
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasLoaded, setHasLoaded] = useState(false); // Track if data has been loaded
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -183,7 +166,6 @@ const Marketplace = () => {
   };
 
   useEffect(() => {
-    // Auto-load products when marketplace component mounts (user navigated to marketplace)
     if (!hasLoaded) {
       loadProducts();
     }
@@ -218,259 +200,298 @@ const Marketplace = () => {
     selectedCategory !== "all" ? subcategories[selectedCategory] ?? [] : [];
 
   return (
-    <div className="pt-20 min-h-screen">
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Global Marketplace</h1>
-          <p className="text-muted-foreground">
-            Discover authentic African products from verified producers
-          </p>
+    <div className=" min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 -mt-16">
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] pt-32 pb-28 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-[#88CEDC] rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-white rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] rounded-full blur-3xl opacity-30" />
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search products, countries, descriptions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" className="md:w-auto bg-transparent">
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-            </Button>
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px'
+        }} />
+
+        <div className="pt-20 relative z-10 container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white leading-tight" style={{ color: '#edf6f9' }}>
+              Global Marketplace
+            </h1>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
+              Discover authentic African products from verified producers worldwide
+            </p>
           </div>
 
-          {/* Category Pills */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              key="all"
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleSelectCategory("all")}
-              className="transition-smooth"
+          {/* Search Bar */}
+          <div className="max-w-3xl mx-auto">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="relative">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                <Input
+                  placeholder="Search products, countries, or descriptions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-14 pr-6 py-7 text-lg rounded-2xl border-0 shadow-2xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 -mt-12 relative z-20">
+        {/* Category Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-16">
+          <div
+            onClick={() => handleSelectCategory("all")}
+            className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-300 group ${
+              selectedCategory === "all"
+                ? "bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] text-white shadow-2xl shadow-[#88CEDC]/30"
+                : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-xl border border-gray-200/50 dark:border-gray-800/50"
+            }`}
+          >
+            <div className="text-center relative z-10">
+              <div className={`text-4xl mb-3 ${selectedCategory === "all" ? "drop-shadow-lg" : ""}`}>✨</div>
+              <h3 className="font-bold text-sm mb-1">All Products</h3>
+              <p className={`text-xs opacity-80 ${selectedCategory === "all" ? "text-white" : "text-gray-500 dark:text-gray-400"}`}>
+                {products.length} items
+              </p>
+            </div>
+            {selectedCategory !== "all" && (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#88CEDC]/0 to-[#5BA8B8]/0 group-hover:from-[#88CEDC]/5 group-hover:to-[#5BA8B8]/5 rounded-2xl transition-all duration-300" />
+            )}
+          </div>
+
+          {categories.map((category) => (
+            <div
+              key={category.id}
+              onClick={() => handleSelectCategory(category.id)}
+              className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-300 group ${
+                selectedCategory === category.id
+                  ? "bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] text-white shadow-2xl shadow-[#88CEDC]/30"
+                  : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-xl border border-gray-200/50 dark:border-gray-800/50"
+              }`}
             >
-              All Categories
-            </Button>
-
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={
-                  selectedCategory === category.id ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => handleSelectCategory(category.id)}
-                className="transition-smooth"
-              >
-                {category.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Subcategory Pills */}
-          {selectedCategory !== "all" && activeSubcats.length > 0 && (
-            <div className="space-y-2 animate-fade-in">
-              <div className="text-sm text-muted-foreground">
-                Refine: Subcategories
+              <div className="text-center relative z-10">
+                <div className={`text-4xl mb-3 ${selectedCategory === category.id ? "drop-shadow-lg" : ""}`}>
+                  {category.icon}
+                </div>
+                <h3 className="font-bold text-sm">{category.label}</h3>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  key="all-sub"
-                  variant={
-                    selectedSubcategory === "all" ? "secondary" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => setSelectedSubcategory("all")}
-                  className="transition-smooth"
-                >
-                  All Subcategories
-                </Button>
-
-                {activeSubcats.map((sub) => (
-                  <Button
-                    key={sub.id}
-                    variant={
-                      selectedSubcategory === sub.id ? "secondary" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setSelectedSubcategory(sub.id)}
-                    className="transition-smooth"
-                  >
-                    {sub.label}
-                  </Button>
-                ))}
-              </div>
+              {selectedCategory !== category.id && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#88CEDC]/0 to-[#5BA8B8]/0 group-hover:from-[#88CEDC]/5 group-hover:to-[#5BA8B8]/5 rounded-2xl transition-all duration-300" />
+              )}
             </div>
-          )}
+          ))}
         </div>
 
-        {/* Results Count / States */}
-        <div className="mb-6">
+        {/* Subcategory Pills */}
+        {selectedCategory !== "all" && activeSubcats.length > 0 && (
+          <div className="mb-12 animate-fade-in">
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Badge
+                onClick={() => setSelectedSubcategory("all")}
+                className={`px-6 py-2.5 cursor-pointer text-sm transition-all duration-300 rounded-full ${
+                  selectedSubcategory === "all"
+                    ? "bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] text-white shadow-lg shadow-[#88CEDC]/30 scale-105"
+                    : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-gray-700 dark:text-gray-300 hover:scale-105 border border-gray-200/50 dark:border-gray-800/50"
+                }`}
+              >
+                All
+              </Badge>
+
+              {activeSubcats.map((sub) => (
+                <Badge
+                  key={sub.id}
+                  onClick={() => setSelectedSubcategory(sub.id)}
+                  className={`px-6 py-2.5 cursor-pointer text-sm transition-all duration-300 rounded-full ${
+                    selectedSubcategory === sub.id
+                      ? "bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] text-white shadow-lg shadow-[#88CEDC]/30 scale-105"
+                      : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-gray-700 dark:text-gray-300 hover:scale-105 border border-gray-200/50 dark:border-gray-800/50"
+                  }`}
+                >
+                  {sub.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Results Count */}
+        <div className="mb-10">
           {loading && (
-            <p className="text-sm text-muted-foreground">Loading products…</p>
+            <div className="text-center py-16">
+              <div className="inline-block w-12 h-12 rounded-full border-4 border-[#88CEDC]/20 border-t-[#88CEDC] animate-spin"></div>
+              <p className="text-gray-600 dark:text-gray-400 mt-6 font-medium">Loading premium products...</p>
+            </div>
           )}
           {error && (
-            <div className="space-y-2">
-              <p className="text-sm text-red-500">
-                {error} — check API is running at{" "}
-                <code>{apiBase()}/api/products</code> and CORS.
-              </p>
-              <Button variant="outline" size="sm" onClick={loadProducts}>
+            <div className="relative p-8 text-center rounded-2xl bg-red-50/80 dark:bg-red-950/20 backdrop-blur-xl border border-red-200/50 dark:border-red-900/50">
+              <p className="text-red-600 dark:text-red-400 mb-4 font-medium">{error}</p>
+              <Button onClick={loadProducts} className="bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] hover:from-[#7BC0CF] hover:to-[#4A97A7] text-white shadow-lg">
                 Retry Loading
               </Button>
             </div>
           )}
           {!loading && !error && hasLoaded && (
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredProducts.length} products
-            </p>
-          )}
-          {!hasLoaded && !loading && !error && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                Ready to browse products
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50">
+              <p className="text-gray-600 dark:text-gray-400">
+                <span className="font-bold text-lg bg-gradient-to-r from-[#5BA8B8] to-[#88CEDC] bg-clip-text text-transparent">{filteredProducts.length}</span>
+                <span className="ml-2">premium products</span>
               </p>
-              <Button onClick={loadProducts}>Load Products</Button>
+              <Button variant="outline" size="sm" className="gap-2 backdrop-blur-xl bg-white/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50">
+                <Filter className="w-4 h-4" />
+                Filters
+              </Button>
             </div>
           )}
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
           {filteredProducts.map((product, index) => {
             const firstImage = buildAssetUrl(product.images?.[0]?.path);
             return (
-              <Card
+              <div
                 key={product.id}
-                className="overflow-hidden glass border-border/50 hover:border-primary/50 transition-smooth group hover:shadow-card animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group relative animate-fade-in"
+                style={{ animationDelay: `${index * 30}ms` }}
               >
-                {/* Product Image */}
-                <div className="aspect-video bg-muted relative overflow-hidden">
-                  {firstImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={firstImage || "/placeholder.svg"}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No image
-                    </div>
-                  )}
+                {/* Glow effect on hover */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500" />
+                
+                <Card className="relative overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 hover:border-[#88CEDC]/50 dark:hover:border-[#88CEDC]/50 transition-all duration-500 group-hover:shadow-2xl rounded-3xl">
+                  {/* Product Image */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
+                    {firstImage ? (
+                      <img
+                        src={firstImage || "/placeholder.svg"}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-16 h-16 text-gray-400" />
+                      </div>
+                    )}
 
-                  <div className="absolute top-4 left-4">
-                    <Badge variant="secondary" className="glass">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {product.category}/{product.subcategory}
-                    </Badge>
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                  {product.incoterm && (
-                    <div className="absolute top-4 right-4">
-                      <Badge variant="default" className="bg-success">
-                        <FileCheck className="w-3 h-3 mr-1" />
-                        {product.incoterm}
+                    <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
+                      <Badge className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl text-gray-900 dark:text-white border-0 shadow-lg">
+                        <Coins className="w-3 h-3 mr-1" />
+                        {product.category}/{product.subcategory}
                       </Badge>
-                    </div>
-                  )}
-                </div>
 
-                {/* Product Info */}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg line-clamp-1">
-                      {product.name}
-                    </h3>
+                      {product.incoterm && (
+                        <Badge className="bg-green-500 text-white border-0 shadow-lg">
+                          <FileCheck className="w-3 h-3 mr-1" />
+                          {product.incoterm}
+                        </Badge>
+                      )}
+                    </div>
+
                     {product.hsCode && (
-                      <Badge variant="outline">HS {product.hsCode}</Badge>
+                      <div className="absolute bottom-4 left-4">
+                        <Badge className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-0 shadow-lg text-gray-900 dark:text-white">
+                          HS {product.hsCode}
+                        </Badge>
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex items-center text-sm text-muted-foreground mb-3">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span>{product.countryOfOrigin}</span>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  <div className="flex items-center justify-between mb-4">
+                  {/* Product Info */}
+                  <div className="p-6 space-y-4">
                     <div>
-                      <span className="font-bold">
-                        {money(product.pricePerUnit, { unit: product.unit })}
-                      </span>
-                     
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        {product.quantity} {product.unit} available
+                      <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white line-clamp-1 group-hover:bg-gradient-to-r group-hover:from-[#5BA8B8] group-hover:to-[#88CEDC] group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+                        {product.name}
+                      </h3>
+
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <MapPin className="w-4 h-4 mr-1.5 text-[#88CEDC]" />
+                        <span className="font-medium">{product.countryOfOrigin}</span>
+                      </div>
+
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        {product.description}
                       </p>
-                      {product.minOrderQty ? (
-                        <p className="text-xs text-muted-foreground">
-                          Min. order {product.minOrderQty}
-                          {product.unit}
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-200/50 dark:border-gray-800/50">
+                      <div className="flex items-end justify-between mb-4">
+                        <div>
+                          {money(product.pricePerUnit, { unit: product.unit })}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">
+                            {product.quantity.toLocaleString()} {product.unit}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            available
+                          </p>
+                        </div>
+                      </div>
+
+                      {product.minOrderQty && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 px-3 py-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl inline-block">
+                          Min. order: {product.minOrderQty} {product.unit}
                         </p>
-                      ) : null}
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 hover:bg-gray-100 dark:hover:bg-gray-800 backdrop-blur-xl rounded-xl"
+                          onClick={() => router.push(`/product-details/${product.id}`)}
+                        >
+                          View Details
+                        </Button>
+
+                        <AddToCartPopup product={product} />
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        className="w-full mt-2 text-[#5BA8B8] hover:text-[#88CEDC] hover:bg-[#88CEDC]/10 rounded-xl"
+                        onClick={() =>
+                          window.open(
+                            `https://hashscan.io/testnet/token/${product.hederaTokenId}`,
+                            "_blank",
+                            "noopener,noreferrer"
+                          )
+                        }
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View on HashScan
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 cursor-pointer bg-transparent"
-                      onClick={() =>
-                        router.push(`/product-details/${product.id}`)
-                      }
-                    >
-                      View Details
-                    </Button>
-                  
-
-                    <AddToCartPopup product={product} />
-                  </div>
-                  
-                  <div className="flex gap-4 mt-2 ml-4 mr-4">
-                    <Button
-                      variant="outline"
-                      className="flex-1 cursor-pointer bg-transparent"
-                      onClick={() =>
-                        window.open(
-                          `https://hashscan.io/testnet/token/${product.hederaTokenId}`,
-                          "_blank", // ensures it opens in a new tab/window
-                          "noopener,noreferrer" // security best practices
-                        )}
-                    >
-                      View on hashscan.io
-                    </Button>
-                  
-
-                  </div>
-                    
-                </div>
-              </Card>
+                </Card>
+              </div>
             );
           })}
         </div>
 
-        {/* Load More (placeholder) */}
+        {/* Load More */}
         {hasLoaded && filteredProducts.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Load More Products
-            </Button>
+          <div className="text-center pb-20">
+            <div className="relative inline-block group">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
+              <Button size="lg" className="relative bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] hover:from-[#7BC0CF] hover:to-[#4A97A7] text-white shadow-2xl rounded-2xl px-8 py-6 text-base">
+                <PlusCircle className="w-5 h-5 mr-2" />
+                Load More Products
+              </Button>
+            </div>
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 };

@@ -32,6 +32,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import OrderFlowDetail from "./BankOrderDetail";
+import Footer from "@/components/Footer";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000").replace(/\/$/, "");
 
@@ -390,7 +391,6 @@ export default function OrderFlow() {
     fetchOrders();
   }, [isConnected, triggerConnect, fetchOrders]);
 
-
   useEffect(() => {
     const handler = () => fetchOrders();
     window.addEventListener("order:updated", handler);
@@ -400,24 +400,24 @@ export default function OrderFlow() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "awaiting_payment":
-        return "bg-warning";
+        return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
       case "paid":
       case "ready_for_shipment":
       case "in_transit":
-        return "bg-info";
+        return "bg-[#88CEDC]/20 text-[#5BA8B8] border-[#88CEDC]/30";
       case "delivered":
       case "fulfilled":
-        return "bg-success";
+        return "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30";
       case "partially_fulfilled":
-        return "bg-info";
+        return "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30";
       case "canceled":
       case "refunded":
       case "disputed":
-        return "bg-destructive";
+        return "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30";
       case "pending":
-        return "bg-muted";
+        return "bg-gray-500/20 text-gray-700 dark:text-gray-300 border-gray-500/30";
       default:
-        return "bg-muted";
+        return "bg-gray-500/20 text-gray-700 dark:text-gray-300 border-gray-500/30";
     }
   };
 
@@ -463,11 +463,18 @@ export default function OrderFlow() {
 
   if (!isConnected) {
     return (
-      <div className="pt-20 min-h-screen">
+      <div className="pt-20 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-[#0C171B] dark:via-[#1a2930] dark:to-[#0C171B]">
         <div className="container mx-auto px-6 py-8">
-          <Card className="p-8 text-center">
+          <Card className="p-8 text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
+            <Shield className="w-16 h-16 mx-auto mb-4 text-[#88CEDC]" />
             <h2 className="text-2xl font-bold mb-2">Orders Access Required</h2>
-            <p className="text-muted-foreground">Please connect your wallet to view your orders.</p>
+            <p className="text-muted-foreground mb-6">Please connect your wallet to view your orders.</p>
+            <Button 
+              onClick={triggerConnect}
+              className="bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] hover:from-[#7BC0CF] hover:to-[#4A97A7] text-white"
+            >
+              Connect Wallet
+            </Button>
           </Card>
         </div>
       </div>
@@ -488,7 +495,6 @@ export default function OrderFlow() {
       });
 
       if (res.ok) {
-        // If the deleted order was selected, clear the selection
         setSelectedId((prev) => (prev === id ? null : prev));
         fetchOrders();
       }
@@ -501,59 +507,78 @@ export default function OrderFlow() {
   };
 
   return (
-    <div className="pt-20 min-h-screen">
+    <div className="pt-20 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-[#0C171B] dark:via-[#1a2930] dark:to-[#0C171B]">
+      {/* Header */}
+      <div className="container mx-auto px-6 pt-8 pb-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+          My Orders
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Track and manage all your export orders
+        </p>
+      </div>
+
       {/* Stats Cards */}
-      <div className="container mx-auto  grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 glass border-border/50">
+      <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Orders</p>
-              <p className="text-2xl font-bold">{orders?.length ?? 0}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{orders?.length ?? 0}</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-success" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
           </div>
         </Card>
 
-        <Card className="p-6 glass border-border/50">
+        <Card className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Products</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {(orders ?? []).reduce((sum, o) => sum + (o.items?.length ?? 0), 0)}
               </p>
             </div>
-            <Package className="w-8 h-8 text-primary" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <Package className="w-6 h-6 text-white" />
+            </div>
           </div>
         </Card>
 
-        <Card className="p-6 glass border-border/50">
+        <Card className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-2xl font-bold">
-                {money((orders ?? []).reduce((sum, o) => sum + (o.totalAmount ?? 0), 0), 6)}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Amount</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {money((orders ?? []).reduce((sum, o) => sum + (o.totalAmount ?? 0), 0), 5)}
               </p>
             </div>
-            <Coins className="w-8 h-8 text-accent" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+              <Coins className="w-6 h-6 text-white" />
+            </div>
           </div>
         </Card>
 
-        <Card className="p-6 glass border-border/50">
+        <Card className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Orders Shipped</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Orders Shipped</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {(orders ?? []).filter((o) => (o.status ?? "") === "delivered").length}
               </p>
             </div>
-            <FileCheck className="w-8 h-8 text-warning" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+              <FileCheck className="w-6 h-6 text-white" />
+            </div>
           </div>
         </Card>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 pb-12">
         {error && (
-          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="w-4 h-4 inline mr-2" />
             {error}
           </div>
         )}
@@ -561,19 +586,32 @@ export default function OrderFlow() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Orders List */}
           <div className="lg:col-span-1">
-            <Card className="glass border-border/50 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
-
-                <Button variant="outline" onClick={fetchOrders} disabled={loading}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
+            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Orders</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={fetchOrders} 
+                  disabled={loading}
+                  className="border-[#88CEDC] text-[#88CEDC] hover:bg-[#88CEDC] hover:text-white"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
               </div>
+
               {loading ? (
-                <p className="text-muted-foreground text-sm">Loading orders…</p>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                  ))}
+                </div>
               ) : sortedOrders.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No orders yet.</p>
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">No orders yet.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {visibleOrders.map((order) => {
@@ -587,14 +625,14 @@ export default function OrderFlow() {
                           setSelectedId(order.id);
                           fetchOrderDetail(order.id);
                         }}
-                        className={`p-4 rounded-lg cursor-pointer transition-smooth border ${
+                        className={`p-4 rounded-lg cursor-pointer transition-all border ${
                           selectedId === order.id
-                            ? "border-primary bg-primary/10"
-                            : "border-border/50 hover:border-primary/50"
+                            ? "border-[#88CEDC] bg-[#88CEDC]/10 shadow-md"
+                            : "border-gray-200 dark:border-gray-700 hover:border-[#88CEDC]/50 hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{order.code}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{order.code}</span>
 
                           {canDelete && (
                             <AlertDialog open={deleteOpen && deleteId === order.id} onOpenChange={setDeleteOpen}>
@@ -602,7 +640,7 @@ export default function OrderFlow() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setDeleteId(order.id);
@@ -647,34 +685,39 @@ export default function OrderFlow() {
                           )}
                         </div>
 
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
                           {order.productName}
                           {extra > 0 ? ` + ${extra} more` : ""}
                         </p>
 
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={getStatusColor(order.status)}>
+                          <Badge variant="outline" className={`${getStatusColor(order.status)} border`}>
                             <StatusIcon className="w-3.5 h-3.5 mr-1" />
                             {labelFor(order.status)}
                           </Badge>
-                          <span className="text-sm font-medium">{money(order.totalAmount)}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{money(order.totalAmount)}</span>
                         </div>
                       </div>
                     );
                   })}
 
-                  {/* Load more control */}
                   {canLoadMore && (
                     <div className="pt-2">
-                      <Button variant="secondary" className="w-full" onClick={() => setVisibleCount((c) => c + 10)}>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800" 
+                        onClick={() => setVisibleCount((c) => c + 10)}
+                      >
                         <Plus className="w-4 h-4 mr-2" />
-                        load more
+                        Load more
                       </Button>
                     </div>
                   )}
 
                   {lastFetchedAt && (
-                    <div className="text-xs text-muted-foreground">Last updated: {new Date(lastFetchedAt).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500 pt-2">
+                      Last updated: {new Date(lastFetchedAt).toLocaleTimeString()}
+                    </div>
                   )}
                 </div>
               )}
@@ -684,8 +727,9 @@ export default function OrderFlow() {
           {/* Order Details */}
           <div className="lg:col-span-3">
             {!currentOrder ? (
-              <Card className="glass border-border/50 p-6">
-                <p className="text-muted-foreground text-sm">Select an order to view details.</p>
+              <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-400">Select an order to view details.</p>
               </Card>
             ) : (
               <OrderFlowDetail order={currentOrder} loadingDetail={loadingDetail} />
@@ -693,6 +737,7 @@ export default function OrderFlow() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

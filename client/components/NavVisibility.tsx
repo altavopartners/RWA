@@ -10,7 +10,7 @@ export default function NavVisibility({ children }: { children: React.ReactNode 
   return (
     <>
       {!hideNav && <NavClient />}
-      <main className={!hideNav ? "pt-16" : "pt-0"}>{children}</main>
+      {children}
     </>
   );
 }
