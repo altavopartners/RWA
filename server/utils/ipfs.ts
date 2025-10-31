@@ -108,3 +108,9 @@ export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
 export async function pinCID(cid: string): Promise<void> {
   await axios.post(`${IPFS_API}/pin/add?arg=${cid}`);
 }
+
+/**
+ * Check if a CID exists on the gateway
+ * @param cid - CID string
+ * @returns true if accessible
+ */
