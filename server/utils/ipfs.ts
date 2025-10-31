@@ -105,3 +105,4 @@ export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
  * Pin a CID to the IPFS node (if supported)
  * @param cid - CID string
  */
+export async function pinCID(cid: string): Promise<void> {
