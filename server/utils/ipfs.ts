@@ -114,3 +114,4 @@ export async function pinCID(cid: string): Promise<void> {
  * @param cid - CID string
  * @returns true if accessible
  */
+export async function checkCIDExists(cid: string): Promise<boolean> {
