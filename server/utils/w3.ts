@@ -171,3 +171,5 @@ export async function getW3Client() {
 
   return _client;
 }
+export function gatewayUrl(cid: string) {
+  const base = "https://w3s.link".replace(/\/+$/, "");
