@@ -106,3 +106,5 @@ export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
  * @param cid - CID string
  */
 export async function pinCID(cid: string): Promise<void> {
+  await axios.post(`${IPFS_API}/pin/add?arg=${cid}`);
+}
