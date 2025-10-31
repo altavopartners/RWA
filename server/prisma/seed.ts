@@ -222,6 +222,25 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+  const copper = await prisma.product.create({
+    data: {
+      name: "Copper",
+      quantity: 3000,
+      unit: "kg",
+      pricePerUnit: 8.0,
+      countryOfOrigin: "Russia",
+      category: "raw",
+      subcategory: "metal",
+      description: "Refined copper cathodes for industrial use.",
+      hsCode: "7403.00",
+      incoterm: "FOB",
+      minOrderQty: 500,
+      leadTimeDays: 15,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/8.jpg", filename: "8.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
 
   console.log("✅ Created 10 products\n");
 
