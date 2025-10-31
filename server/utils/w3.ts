@@ -184,4 +184,5 @@ export async function w3Upload(buffer: Buffer, filename: string, mime?: string) 
 export async function w3FetchBytes(cid: string): Promise<Buffer> {
   const url = gatewayUrl(cid);
   const res = await axios.get<ArrayBuffer>(url, { responseType: "arraybuffer" });
-  
+  return Buffer.from(res.data);
+}
