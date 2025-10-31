@@ -12,3 +12,5 @@ function extractDidFromClient(c: any): string | undefined {
   } catch {}
   return undefined;
 }
+
+function extractDidFromAud(aud: any): string | undefined { ... }
