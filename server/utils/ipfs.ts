@@ -91,3 +91,4 @@ export async function getBytesFromIPFS(cid: string): Promise<Buffer> {
 export async function uploadJSONToIPFS(obj: object): Promise<string> {
   const jsonString = JSON.stringify(obj);
   return uploadToIPFS(jsonString);
+}
