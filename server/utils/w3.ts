@@ -118,3 +118,4 @@ let store: any | null = null;
       console.warn("Space object has no .did(); space keys:", Object.keys(space || {}));
     }
     await _client.setCurrentSpace(spaceDid ?? space);
+    const audDid = extractDidFromAud(parsed?.aud);
