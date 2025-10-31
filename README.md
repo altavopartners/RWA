@@ -511,7 +511,7 @@ You can learn more about our partnership or access shared documents through the 
 ## 💼 Pitch Deck
 
 You can view our full **Pitch Deck** presentation here:  
-📎 [Open Pitch Deck (Google Drive)](https://drive.google.com/file/d/1iTYF3wwBd72DxAcwHa6943T5vhf4-jPr/view?usp=sharing)
+📎 [Open Pitch Deck (Google Drive)](https://drive.google.com/file/d/14E0owdIIW1CzvI-ub7RvScOyxDNuzEAH/view?usp=sharing)
 
 ## 🎥 Demo Video
 
