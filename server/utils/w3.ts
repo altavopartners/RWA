@@ -88,3 +88,5 @@ let store: any | null = null;
         "Could not resolve FSStore from @web3-storage/w3up-client/stores/fs"
       );
     }
+    const root = path.join(os.tmpdir(), `w3up-store-${randomUUID()}`);
+    
