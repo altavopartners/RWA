@@ -22,3 +22,5 @@ function extractDidFromAud(aud: any): string | undefined {
   } catch {}
   return undefined;
 }
+
+export async function getW3Client() { ... }
