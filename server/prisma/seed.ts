@@ -7,6 +7,7 @@ import {
   UserType,
   KycStatus,
 } from "@prisma/client";
+
 const prisma = new PrismaClient();
 
 // Helper to generate realistic IPFS CIDs
@@ -25,7 +26,7 @@ async function main() {
   // Use your real wallet address for all users (buyer and producer/seller)
   const REAL_WALLET = "0xdbdaeF88839e18feF4E9C148b865bcC89dD44482";
 
-  // Clean existing data
+  // Clean existing data (children → parents to avoid FK violations)
   console.log("🗑️  Cleaning existing data...");
   await prisma.document.deleteMany();
   await prisma.bankReview.deleteMany();
@@ -35,54 +36,34 @@ async function main() {
   await prisma.cartItem.deleteMany();
   await prisma.authSession.deleteMany();
   await prisma.bankAuthSession.deleteMany();
+  await prisma.userBank.deleteMany(); // delete user-bank links before users
   await prisma.user.deleteMany();
-  await prisma.userBank.deleteMany();
   await prisma.bank.deleteMany();
   console.log("✅ Database cleaned\n");
 
   // ----- Banks -----
   console.log("🏦 Creating banks...");
   const bank1 = await prisma.bank.create({
-    data: {
-      code: "AMTBUS33",
-      name: "American Trade Bank",
-      country: "USA",
-    },
+    data: { code: "AMTBUS33", name: "American Trade Bank", country: "USA" },
   });
   const bank2 = await prisma.bank.create({
-    data: {
-      code: "PACBUS44",
-      name: "Pacific Commerce Bank",
-      country: "USA",
-    },
+    data: { code: "PACBUS44", name: "Pacific Commerce Bank", country: "USA" },
   });
   const bank3 = await prisma.bank.create({
-    data: {
-      code: "DEHADE5M",
-      name: "Deutsche Handelsbank",
-      country: "Germany",
-    },
+    data: { code: "DEHADE5M", name: "Deutsche Handelsbank", country: "Germany" },
   });
   const bank4 = await prisma.bank.create({
-    data: {
-      code: "BNPAFRPP",
-      name: "Banque Commerciale",
-      country: "France",
-    },
+    data: { code: "BNPAFRPP", name: "Banque Commerciale", country: "France" },
   });
   const bank5 = await prisma.bank.create({
-    data: {
-      code: "TOTRJPJT",
-      name: "Tokyo Trading Bank",
-      country: "Japan",
-    },
+    data: { code: "TOTRJPJT", name: "Tokyo Trading Bank", country: "Japan" },
   });
   console.log("✅ Created 5 banks\n");
 
-  // ----- Users (Producers & Buyers) -----
+  // ----- Users -----
   console.log("👥 Creating users...");
 
-  // Single user with your real wallet (acts as both producer and buyer for testing)
+  // Single user with your real wallet (acts as producer/seller for the products)
   const testUser = await prisma.user.create({
     data: {
       walletAddress: REAL_WALLET,
@@ -94,7 +75,7 @@ async function main() {
     },
   });
 
-  // Create 2 more users with different wallets for producer/buyer simulation
+  // Extra users to drive sample orders
   const buyer2 = await prisma.user.create({
     data: {
       walletAddress: "0x1111111111111111111111111111111111111111",
@@ -119,162 +100,71 @@ async function main() {
 
   console.log("✅ Created 3 users\n");
 
-  // ----- Products -----
+  // ----- Products (ONLY the 10 PSQL-mirrored products) -----
   console.log("📦 Creating products...");
 
-  // All products produced by testUser (your wallet)
-  const apples = await prisma.product.create({
-    data: {
-      name: "Organic Washington Apples",
-      quantity: 5000,
-      unit: "kg",
-      pricePerUnit: 3.5,
-      countryOfOrigin: "USA",
-      category: "Fruits",
-      description: "Premium organic apples from Washington State orchards",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
+  console.log("✅ Created 10 products\n");
 
-  const oranges = await prisma.product.create({
-    data: {
-      name: "California Valencia Oranges",
-      quantity: 3000,
-      unit: "kg",
-      pricePerUnit: 2.75,
-      countryOfOrigin: "USA",
-      category: "Fruits",
-      description: "Fresh Valencia oranges, perfect for juice",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
-
-  // Meat Products (also produced by testUser)
-  const beef = await prisma.product.create({
-    data: {
-      name: "Certified Halal Beef",
-      quantity: 2000,
-      unit: "kg",
-      pricePerUnit: 15.0,
-      countryOfOrigin: "Germany",
-      category: "Meat",
-      description: "Premium Halal-certified beef cuts from Bavaria",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
-
-  const lamb = await prisma.product.create({
-    data: {
-      name: "Organic Lamb Meat",
-      quantity: 1000,
-      unit: "kg",
-      pricePerUnit: 18.5,
-      countryOfOrigin: "Germany",
-      category: "Meat",
-      description: "Free-range organic lamb from German farms",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
-
-  // Electronics Products (also produced by testUser)
-  const laptops = await prisma.product.create({
-    data: {
-      name: "Professional Laptops X1",
-      quantity: 500,
-      unit: "units",
-      pricePerUnit: 1200.0,
-      countryOfOrigin: "Japan",
-      category: "Electronics",
-      description: "High-performance business laptops",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
-
-  const tablets = await prisma.product.create({
-    data: {
-      name: "HD Tablets Pro",
-      quantity: 1000,
-      unit: "units",
-      pricePerUnit: 450.0,
-      countryOfOrigin: "Japan",
-      category: "Electronics",
-      description: "10-inch HD tablets with stylus support",
-      producerWalletId: testUser.walletAddress,
-    },
-  });
-
-  console.log("✅ Created 6 products\n");
-
-  // ----- Orders with IPFS Documents -----
+  // ----- Orders with IPFS Documents (only using the 10 products above) -----
   console.log("📝 Creating orders...\n");
-  const gatewayUrl =
-    process.env.IPFS_GATEWAY_URL || "https://up.storacha.network";
+  const gatewayUrl = process.env.IPFS_GATEWAY_URL || "https://up.storacha.network";
 
-  // Order 1: AWAITING_PAYMENT
+  // Order 1: AWAITING_PAYMENT (Coffee)
   console.log("  Order 1: AWAITING_PAYMENT");
   const order1 = await prisma.order.create({
     data: {
       code: "ORD-2025-000001",
       userId: testUser.id,
       status: OrderStatus.AWAITING_PAYMENT,
-      subtotal: 17500,
-      shipping: 500,
-      total: 18000,
+      subtotal: 1000 * 3.0,
+      shipping: 200,
+      total: 1000 * 3.0 + 200,
       buyerBankId: bank1.id,
       sellerBankId: bank2.id,
       items: {
         create: [
           {
-            productId: apples.id,
-            quantity: 5000,
-            unitPrice: 3.5,
-            lineTotal: 17500,
+            productId: coffee.id,
+            quantity: 1000,
+            unitPrice: 3.0,
+            lineTotal: 1000 * 3.0,
           },
         ],
       },
     },
   });
 
-  // Order 2: BANK_REVIEW with pending documents
+  // Order 2: BANK_REVIEW (Copper) with pending docs
   console.log("  Order 2: BANK_REVIEW");
   const order2 = await prisma.order.create({
     data: {
       code: "ORD-2025-000002",
       userId: testUser.id,
       status: OrderStatus.BANK_REVIEW,
-      subtotal: 30000,
+      subtotal: 3000 * 8.0,
       shipping: 800,
-      total: 30800,
+      total: 3000 * 8.0 + 800,
       buyerBankId: bank1.id,
       sellerBankId: bank3.id,
       items: {
         create: [
           {
-            productId: beef.id,
-            quantity: 2000,
-            unitPrice: 15.0,
-            lineTotal: 30000,
+            productId: copper.id,
+            quantity: 3000,
+            unitPrice: 8.0,
+            lineTotal: 3000 * 8.0,
           },
         ],
       },
     },
   });
 
-  // Documents for Order 2
   const order2Docs = [
-    {
-      cat: "commercial",
-      type: "commercial_invoice",
-      name: "Commercial Invoice",
-    },
+    { cat: "commercial", type: "commercial_invoice", name: "Commercial Invoice" },
     { cat: "commercial", type: "packing_list", name: "Packing List" },
     { cat: "transport", type: "bill_of_lading", name: "Bill of Lading" },
     { cat: "insurance", type: "insurance_policy", name: "Insurance Policy" },
-    {
-      cat: "origin_control",
-      type: "certificate_of_origin",
-      name: "Certificate of Origin",
-    },
+    { cat: "origin_control", type: "certificate_of_origin", name: "Certificate of Origin" },
   ];
 
   for (const doc of order2Docs) {
@@ -283,10 +173,8 @@ async function main() {
       data: {
         userId: producer2.id,
         orderId: order2.id,
-        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
-          order2.code
-        }.pdf`,
-        cid: cid,
+        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${order2.code}.pdf`,
+        cid,
         url: `${gatewayUrl}/ipfs/${cid}`,
         category: doc.cat,
         documentType: DocumentType.OTHER,
@@ -295,42 +183,39 @@ async function main() {
     });
   }
 
-  // Order 3: IN_TRANSIT with validated documents
+  // Order 3: IN_TRANSIT (Gold) with validated docs
   console.log("  Order 3: IN_TRANSIT");
   const order3 = await prisma.order.create({
     data: {
       code: "ORD-2025-000003",
       userId: buyer2.id,
       status: OrderStatus.IN_TRANSIT,
-      subtotal: 600000,
+      subtotal: 10 * 60000.0,
       shipping: 5000,
-      total: 605000,
+      total: 10 * 60000.0 + 5000,
       buyerBankId: bank1.id,
       sellerBankId: bank4.id,
       items: {
         create: [
           {
-            productId: laptops.id,
-            quantity: 500,
-            unitPrice: 1200.0,
-            lineTotal: 600000,
+            productId: gold.id,
+            quantity: 10,
+            unitPrice: 60000.0,
+            lineTotal: 10 * 60000.0,
           },
         ],
       },
     },
   });
 
-  // Validated documents for Order 3
   for (const doc of order2Docs) {
     const cid = generateMockCID();
     await prisma.document.create({
       data: {
         userId: producer2.id,
         orderId: order3.id,
-        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
-          order3.code
-        }.pdf`,
-        cid: cid,
+        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${order3.code}.pdf`,
+        cid,
         url: `${gatewayUrl}/ipfs/${cid}`,
         category: doc.cat,
         documentType: DocumentType.OTHER,
@@ -343,40 +228,30 @@ async function main() {
 
   await prisma.bankReview.createMany({
     data: [
-      {
-        orderId: order3.id,
-        bankId: bank1.id,
-        action: "approve",
-        comments: "All documents verified",
-      },
-      {
-        orderId: order3.id,
-        bankId: bank4.id,
-        action: "approve",
-        comments: "Shipment authorized",
-      },
+      { orderId: order3.id, bankId: bank1.id, action: "approve", comments: "All documents verified" },
+      { orderId: order3.id, bankId: bank4.id, action: "approve", comments: "Shipment authorized" },
     ],
   });
 
-  // Order 4: DELIVERED
+  // Order 4: DELIVERED (Tea) with validated docs
   console.log("  Order 4: DELIVERED");
   const order4 = await prisma.order.create({
     data: {
       code: "ORD-2025-000004",
       userId: testUser.id,
       status: OrderStatus.DELIVERED,
-      subtotal: 8250,
+      subtotal: 1000 * 2.0,
       shipping: 250,
-      total: 8500,
+      total: 1000 * 2.0 + 250,
       buyerBankId: bank1.id,
       sellerBankId: bank2.id,
       items: {
         create: [
           {
-            productId: oranges.id,
-            quantity: 3000,
-            unitPrice: 2.75,
-            lineTotal: 8250,
+            productId: tea.id,
+            quantity: 1000,
+            unitPrice: 2.0,
+            lineTotal: 1000 * 2.0,
           },
         ],
       },
@@ -389,10 +264,8 @@ async function main() {
       data: {
         userId: testUser.id,
         orderId: order4.id,
-        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
-          order4.code
-        }.pdf`,
-        cid: cid,
+        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${order4.code}.pdf`,
+        cid,
         url: `${gatewayUrl}/ipfs/${cid}`,
         category: doc.cat,
         documentType: DocumentType.OTHER,
@@ -405,69 +278,40 @@ async function main() {
 
   await prisma.bankReview.createMany({
     data: [
-      {
-        orderId: order4.id,
-        bankId: bank1.id,
-        action: "approve",
-        comments: "Payment released",
-      },
-      {
-        orderId: order4.id,
-        bankId: bank2.id,
-        action: "approve",
-        comments: "Transaction completed",
-      },
+      { orderId: order4.id, bankId: bank1.id, action: "approve", comments: "Payment released" },
+      { orderId: order4.id, bankId: bank2.id, action: "approve", comments: "Transaction completed" },
     ],
   });
 
-  // Order 5: DISPUTED with mixed doc statuses
+  // Order 5: DISPUTED (Diamonds) — mixed doc statuses
   console.log("  Order 5: DISPUTED");
   const order5 = await prisma.order.create({
     data: {
       code: "ORD-2025-000005",
       userId: buyer2.id,
       status: OrderStatus.DISPUTED,
-      subtotal: 450000,
+      subtotal: 300 * 1500.0,
       shipping: 3500,
-      total: 453500,
+      total: 300 * 1500.0 + 3500,
       buyerBankId: bank1.id,
       sellerBankId: bank4.id,
       items: {
         create: [
           {
-            productId: tablets.id,
-            quantity: 1000,
-            unitPrice: 450.0,
-            lineTotal: 450000,
+            productId: diamonds.id,
+            quantity: 300,
+            unitPrice: 1500.0,
+            lineTotal: 300 * 1500.0,
           },
         ],
       },
     },
   });
 
-  // Mixed status documents
   const order5Docs = [
-    {
-      cat: "commercial",
-      type: "commercial_invoice",
-      name: "Commercial Invoice",
-      status: DocumentStatus.VALIDATED,
-      reason: undefined,
-    },
-    {
-      cat: "commercial",
-      type: "packing_list",
-      name: "Packing List",
-      status: DocumentStatus.REJECTED,
-      reason: "Quantities do not match invoice",
-    },
-    {
-      cat: "transport",
-      type: "air_waybill",
-      name: "Air Waybill",
-      status: DocumentStatus.PENDING,
-      reason: undefined,
-    },
+    { cat: "commercial", type: "commercial_invoice", name: "Commercial Invoice", status: DocumentStatus.VALIDATED, reason: undefined },
+    { cat: "commercial", type: "packing_list", name: "Packing List", status: DocumentStatus.REJECTED, reason: "Quantities do not match invoice" },
+    { cat: "transport", type: "air_waybill", name: "Air Waybill", status: DocumentStatus.PENDING, reason: undefined },
   ];
 
   for (const doc of order5Docs) {
@@ -476,44 +320,40 @@ async function main() {
       data: {
         userId: producer2.id,
         orderId: order5.id,
-        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${
-          order5.code
-        }.pdf`,
-        cid: cid,
+        filename: `${doc.name.toLowerCase().replace(/ /g, "_")}_${order5.code}.pdf`,
+        cid,
         url: `${gatewayUrl}/ipfs/${cid}`,
         category: doc.cat,
         documentType: DocumentType.OTHER,
         status: doc.status,
-        validatedBy:
-          doc.status !== DocumentStatus.PENDING ? "John Smith" : undefined,
-        validatedAt:
-          doc.status !== DocumentStatus.PENDING
-            ? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-            : undefined,
+        validatedBy: doc.status !== DocumentStatus.PENDING ? "John Smith" : undefined,
+        validatedAt: doc.status !== DocumentStatus.PENDING
+          ? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+          : undefined,
         rejectionReason: doc.reason,
       },
     });
   }
 
-  // Order 6: CANCELLED
+  // Order 6: CANCELLED (Kente)
   console.log("  Order 6: CANCELLED");
   await prisma.order.create({
     data: {
       code: "ORD-2025-000006",
       userId: buyer2.id,
       status: OrderStatus.CANCELLED,
-      subtotal: 18500,
+      subtotal: 740 * 25.0,
       shipping: 600,
-      total: 19100,
+      total: 740 * 25.0 + 600,
       buyerBankId: bank3.id,
       sellerBankId: bank3.id,
       items: {
         create: [
           {
-            productId: lamb.id,
-            quantity: 1000,
-            unitPrice: 18.5,
-            lineTotal: 18500,
+            productId: kente.id,
+            quantity: 740,
+            unitPrice: 25.0,
+            lineTotal: 740 * 25.0,
           },
         ],
       },
@@ -524,7 +364,7 @@ async function main() {
   console.log("\n📊 Summary:");
   console.log("  • 5 Banks");
   console.log("  • 3 Users");
-  console.log("  • 6 Products");
+  console.log("  • 10 Products");
   console.log("  • 6 Orders (all statuses)");
   console.log("  • 20+ Documents with IPFS CIDs");
   console.log(`  • Gateway: ${gatewayUrl}`);
@@ -532,7 +372,10 @@ async function main() {
 }
 
 main()
-  .catch((e) => console.error(e))
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
   .finally(async () => {
     await prisma.$disconnect();
   });
