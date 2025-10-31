@@ -23,4 +23,5 @@ function extractDidFromAud(aud: any): string | undefined {
   return undefined;
 }
 
+async function polyfillStreamsAndFile() {}
 export async function getW3Client() { ... }
