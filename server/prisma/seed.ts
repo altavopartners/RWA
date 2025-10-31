@@ -163,6 +163,7 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
   const cloves = await prisma.product.create({
     data: {
       name: "Cloves",
@@ -203,6 +204,7 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
   const diamonds = await prisma.product.create({
     data: {
       name: "Diamonds",
@@ -222,6 +224,7 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
   const copper = await prisma.product.create({
     data: {
       name: "Copper",
