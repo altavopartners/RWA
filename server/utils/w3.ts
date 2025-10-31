@@ -109,3 +109,4 @@ let store: any | null = null;
     );
   }
   if (PROOF_B64) {
+    const parsed = await parseProof(PROOF_B64).catch((e: any) => {
