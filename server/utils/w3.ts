@@ -60,11 +60,19 @@ export async function getW3Client() {
   if (!STORACHA_PRINCIPAL_B64) {
     throw new Error(
       "Missing STORACHA_PRINCIPAL_B64. Generate one with `w3 key create --json` and paste the `key` value."
-    ); 
-}
+    ); }
+let store: any | null = null;
 
-  // Create principal and verify DID
-  const principal = EdSigner.Signer.parse(STORACHA_PRINCIPAL_B64);
-  const principalDid =
-    typeof principal.did === "function" ? principal.did() : principal.did;
-  console.log("principal DID (from STORACHA_PRINCIPAL_B64):", principalDid);
+  try {
+    const MemStoreMod = await nativeImport("@web3-storage/w3up-client/stores/memory");
+    const MemoryStore =
+      MemStoreMod?.MemoryStore ?? MemStoreMod?.StoreMemory ?? MemStoreMod?.default ?? null;
+    if (typeof MemoryStore === "function") {
+      store = new MemoryStore(); // ✅ clean, in-memory (no persisted identity)
+      console.log("[w3] Using MemoryStore (in-memory)");
+    } else {
+      console.warn("[w3] MemoryStore symbol not found, will fall back to FS store.");
+    }
+  } catch (e) {
+    console.warn("[w3] MemoryStore module not available, will fall back to FS store.");
+  }
