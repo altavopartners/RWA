@@ -111,7 +111,11 @@ export const bankApi = {
   /** Bank approval (triggers 50% release when both banks approved) */
   updateEscrow: async (
     orderId: string,
-    payload: { bankId: string; bankType: "buyer" | "seller"; comments?: string }
+    payload: {
+      bankId?: string | null;
+      bankType: "buyer" | "seller";
+      comments?: string;
+    }
   ): Promise<BankOrder> => {
     const res = await fetch(`${BACKEND_URL}/api/bank/escrows/${orderId}`, {
       method: "PUT",
@@ -227,11 +231,11 @@ export const bankApi = {
   requestDocuments: async (
     orderId: string,
     payload: {
-      bankId: string;
+      bankId?: string | null;
       requestTo: "buyer" | "seller";
       comments?: string;
     }
-  ): Promise<any> => {
+  ): Promise<{ success: boolean }> => {
     const res = await fetch(
       `${BACKEND_URL}/api/bank/orders/${orderId}/request-documents`,
       {
@@ -258,7 +262,7 @@ export const documentApi = {
       orderId?: string;
     },
     token?: string
-  ): Promise<any> => {
+  ): Promise<{ cid: string; url: string }> => {
     const formData = new FormData();
     formData.append("file", file);
     if (metadata.categoryKey)

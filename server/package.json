@@ -7,7 +7,11 @@
     "dev": "nodemon server.ts && node scripts/copy-w3-esm.cjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:reset:hackathon": "npx prisma migrate reset --force && npx prisma db seed --name seed-hackathon",
+    "db:seed": "npx prisma db seed",
+    "db:studio": "npx prisma studio"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -22,6 +26,7 @@
     "@prisma/client": "^4.16.2",
     "@storacha/cli": "^1.5.1",
     "@types/axios": "^0.9.36",
+    "@web3-storage/w3up-client": "^17.3.0",
     "axios": "^1.11.0",
     "bs58": "^6.0.0",
     "cookie-parser": "^1.4.7",

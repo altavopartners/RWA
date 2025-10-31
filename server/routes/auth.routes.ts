@@ -12,6 +12,22 @@ import {
 
 const router = Router();
 
+// Health check endpoint (no rate limit needed)
+router.get("/health", async (_req, res) => {
+  try {
+    // Try a simple database query to verify connection
+    const { prisma } = await import("../utils/prisma");
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(503).json({
+      status: "unavailable",
+      message: "Database connection failed",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // Public endpoints
 router.post("/nonce", authRateLimit, generateNonceController);
 router.post("/connect", authRateLimit, connectWalletController);

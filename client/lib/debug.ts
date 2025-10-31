@@ -30,7 +30,7 @@ export const debug = {
   /**
    * Log component lifecycle (only in DEBUG mode)
    */
-  component: (componentName: string, message: string, ...args: any[]) => {
+  component: (componentName: string, message: string, ...args: unknown[]) => {
     if (getDebugMode()) {
       console.log(`[${componentName}] ${message}`, ...args);
     }
@@ -39,7 +39,7 @@ export const debug = {
   /**
    * Log API calls (only in DEBUG mode)
    */
-  api: (endpoint: string, method: string, ...args: any[]) => {
+  api: (endpoint: string, method: string, ...args: unknown[]) => {
     if (getDebugMode()) {
       console.log(`[API] ${method} ${endpoint}`, ...args);
     }
@@ -48,7 +48,7 @@ export const debug = {
   /**
    * Log state changes (only in DEBUG mode)
    */
-  state: (message: string, state?: any) => {
+  state: (message: string, state?: unknown) => {
     if (getDebugMode()) {
       console.log(`[STATE] ${message}`, state);
     }
@@ -57,21 +57,21 @@ export const debug = {
   /**
    * Log errors (always)
    */
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: unknown) => {
     console.error(`[ERROR] ${message}`, error);
   },
 
   /**
    * Log warnings (always)
    */
-  warn: (message: string, ...args: any[]) => {
+  warn: (message: string, ...args: unknown[]) => {
     console.warn(`[WARN] ${message}`, ...args);
   },
 
   /**
    * Force log regardless of DEBUG setting
    */
-  always: (message: string, ...args: any[]) => {
+  always: (message: string, ...args: unknown[]) => {
     console.log(`[SYSTEM] ${message}`, ...args);
   },
 

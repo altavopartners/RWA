@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Mail, Camera, Phone, User, Building2, Edit3, Save, X, Wallet, Package, ShoppingCart, TrendingUp, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
+import Footer from "@/components/Footer";
 
 const Profile = () => {
   const { isConnected } = useAuth();
@@ -44,6 +45,7 @@ const Profile = () => {
             </Button>
           </Card>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -208,30 +210,6 @@ function ProfileContent() {
             </Button>
           </div>
         </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <Card
-              key={index}
-              className="p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    {stat.label}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <stat.icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information Card */}
@@ -439,6 +417,7 @@ function ProfileContent() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

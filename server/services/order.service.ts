@@ -2,6 +2,7 @@
 import prisma from "../lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
 import { deployEscrowContract } from "./escrow-deploy.service";
+import { logOrderCreated, logEscrowDeployed } from "./hcs.service";
 import debug from "../utils/debug";
 
 class CheckoutError extends Error {
@@ -40,7 +41,7 @@ export async function passOrderService({
   userId,
   shipping = 5.0,
 }: PassOrderOptions) {
-  return prisma.$transaction(
+  const order = await prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
       const cartItems = await tx.cartItem.findMany({
         where: { userId },
@@ -154,16 +155,10 @@ export async function passOrderService({
         );
       }
 
-      // Assign banks: use any configured bank (demo-friendly fallback)
+      // Assign banks: use any configured bank if available (optional for now)
       const anyBank = await tx.bank.findFirst();
-      if (!anyBank) {
-        throw new CheckoutError(
-          "No banks configured. Please seed or create at least one bank.",
-          500
-        );
-      }
-      const buyerBankIdToUse = anyBank.id;
-      const sellerBankIdToUse = anyBank.id;
+      const buyerBankIdToUse = anyBank?.id || null;
+      const sellerBankIdToUse = anyBank?.id || null;
 
       const toDecimal = (n: number | Prisma.Decimal) => new Prisma.Decimal(n);
       const subtotal = cartItems.reduce(
@@ -299,6 +294,41 @@ export async function passOrderService({
       timeout: 60000, // 60 seconds for escrow deployment
     }
   );
+
+  // Log HCS events in background after transaction completes (non-blocking)
+  if (order && order.id && order.code) {
+    const orderId = order.id;
+    const orderCode = order.code;
+    const sellerId = order.userId; // Get actual seller from order
+    const escrowAddress = order.escrowAddress;
+    const hederaTxId = order.hederaTransactionId;
+
+    (async () => {
+      try {
+        await logOrderCreated(
+          orderId,
+          orderCode,
+          userId,
+          sellerId,
+          parseFloat(order.total.toString())
+        );
+
+        // If order has escrow, log escrow deployment
+        if (escrowAddress && hederaTxId) {
+          await logEscrowDeployed(
+            orderId,
+            orderCode,
+            escrowAddress,
+            hederaTxId
+          );
+        }
+      } catch (hcsError) {
+        debug.warn(`Background HCS logging warning: ${hcsError}`);
+      }
+    })();
+  }
+
+  return order;
 }
 
 // ---------- Get All My Orders ----------

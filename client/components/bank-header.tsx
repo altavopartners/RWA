@@ -30,51 +30,66 @@ export function BankHeader({ title, description }: BankHeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-border">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
+    <header className="relative flex items-center justify-between px-8 py-6">
+      {/* Subtle gradient accent */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#88CEDC]/5 via-transparent to-[#5BA8B8]/5 pointer-events-none" />
+
+      <div className="relative">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#5BA8B8] to-[#88CEDC] bg-clip-text text-transparent">
+          {title}
+        </h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            {description}
+          </p>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="relative flex items-center gap-4">
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell className="h-5 w-5" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative h-11 w-11 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-800/80 backdrop-blur-xl transition-all duration-300 hover:scale-105 border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
+            >
+              <Bell className="h-5 w-5 text-[#5BA8B8]" />
               <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs"
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-gradient-to-r from-red-500 to-pink-500 text-white border-2 border-white dark:border-gray-900 shadow-lg"
               >
                 3
               </Badge>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
+          <DropdownMenuContent 
+            align="end" 
+            className="w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-gray-200/50 dark:border-gray-800/50 shadow-2xl rounded-2xl"
+          >
+            <DropdownMenuLabel className="text-base font-bold text-gray-900 dark:text-white">
+              Notifications
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-800/50" />
+            <DropdownMenuItem className="p-4 rounded-xl hover:bg-gradient-to-r hover:from-[#88CEDC]/10 hover:to-[#5BA8B8]/10 cursor-pointer transition-all">
               <div className="flex flex-col gap-1">
-                <p className="font-medium">KYC Approval Required</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-semibold text-gray-900 dark:text-white">KYC Approval Required</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Client ABC Corp needs verification
                 </p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem className="p-4 rounded-xl hover:bg-gradient-to-r hover:from-[#88CEDC]/10 hover:to-[#5BA8B8]/10 cursor-pointer transition-all">
               <div className="flex flex-col gap-1">
-                <p className="font-medium">Document Validation</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-semibold text-gray-900 dark:text-white">Document Validation</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   2 documents pending review
                 </p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem className="p-4 rounded-xl hover:bg-gradient-to-r hover:from-[#88CEDC]/10 hover:to-[#5BA8B8]/10 cursor-pointer transition-all">
               <div className="flex flex-col gap-1">
-                <p className="font-medium">Escrow Approval</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-semibold text-gray-900 dark:text-white">Escrow Approval</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Multisig signature required
                 </p>
               </div>
@@ -85,34 +100,47 @@ export function BankHeader({ title, description }: BankHeaderProps) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/professional-banker.jpg" />
-                <AvatarFallback>CO</AvatarFallback>
-              </Avatar>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-3 px-4 py-3 h-auto rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-800/80 backdrop-blur-xl transition-all duration-300 hover:scale-105 border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] rounded-full blur-md opacity-50" />
+                <Avatar className="relative h-10 w-10 ring-2 ring-white dark:ring-gray-900 shadow-lg">
+                  <AvatarImage src="/professional-banker.jpg" />
+                  <AvatarFallback className="bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] text-white font-bold">
+                    CO
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <div className="text-left">
-                <p className="text-sm font-medium">Compliance Officer</p>
-                <p className="text-xs text-muted-foreground">Bank ID: BNK001</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Compliance Officer</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Bank ID: BNK001</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              Profile
+          <DropdownMenuContent 
+            align="end"
+            className="w-56 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-gray-200/50 dark:border-gray-800/50 shadow-2xl rounded-2xl"
+          >
+            <DropdownMenuLabel className="text-base font-bold text-gray-900 dark:text-white">
+              My Account
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-800/50" />
+            <DropdownMenuItem className="p-3 rounded-xl hover:bg-gradient-to-r hover:from-[#88CEDC]/10 hover:to-[#5BA8B8]/10 cursor-pointer transition-all">
+              <User className="mr-3 h-5 w-5 text-[#5BA8B8]" />
+              <span className="font-medium text-gray-900 dark:text-white">Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+            <DropdownMenuItem className="p-3 rounded-xl hover:bg-gradient-to-r hover:from-[#88CEDC]/10 hover:to-[#5BA8B8]/10 cursor-pointer transition-all">
+              <Settings className="mr-3 h-5 w-5 text-[#5BA8B8]" />
+              <span className="font-medium text-gray-900 dark:text-white">Settings</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-800/50" />
             <DropdownMenuItem
-              className="text-destructive"
+              className="p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition-all text-red-600 dark:text-red-400 font-medium"
               onClick={handleLogout}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-3 h-5 w-5" />
               Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>

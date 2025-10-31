@@ -152,14 +152,14 @@ export async function updateEscrowController(req: Request, res: Response) {
     const { id } = req.params;
     const { bankId, bankType, comments } = req.body;
 
-    if (!bankId || !bankType)
+    if (!bankType)
       return res
         .status(400)
-        .json({ success: false, message: "Bank ID and type required" });
+        .json({ success: false, message: "Bank type required" });
 
     const updatedOrder = await approveOrderByBankService(
       id,
-      bankId,
+      bankId || null, // Allow null bankId for future bank setup
       bankType,
       comments
     );
@@ -176,10 +176,10 @@ export async function requestDocumentsController(req: Request, res: Response) {
     const { id } = req.params;
     const { bankId, comments, requestTo } = req.body;
 
-    if (!bankId || !requestTo)
+    if (!requestTo)
       return res.status(400).json({
         success: false,
-        message: "Bank ID and requestTo (buyer/seller) required",
+        message: "Request target (buyer/seller) required",
       });
 
     const { requestDocumentsFromBank } = await import(
@@ -187,7 +187,7 @@ export async function requestDocumentsController(req: Request, res: Response) {
     );
     const review = await requestDocumentsFromBank(
       id,
-      bankId,
+      bankId || null, // Allow null bankId for future bank setup
       comments || `Document request to ${requestTo}`
     );
     res.json({ success: true, data: review });
