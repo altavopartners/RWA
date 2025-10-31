@@ -8,29 +8,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Coins,
-  Upload,
-  Camera,
-  FileCheck,
-  AlertTriangle,
-  CheckCircle2,
-  X,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Coins, Upload, Camera, FileCheck, AlertTriangle, CheckCircle2, X, Package, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import { useRouter } from "next/navigation";
 import { constructApiUrl } from "@/config/api";
+import Footer from "@/components/Footer";
 
-/* --- Taxonomy --- */
+const africanCountries = [
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cameroon", "Cape Verde",
+  "Central African Republic", "Chad", "Comoros", "Congo", "Democratic Republic of the Congo",
+  "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia",
+  "Ghana", "Guinea", "Guinea-Bissau", "Ivory Coast", "Kenya", "Lesotho", "Liberia", "Libya",
+  "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia",
+  "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone",
+  "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda",
+  "Zambia", "Zimbabwe"
+];
+
 const categories = [
   { id: "agri", label: "Agricultural Products" },
   { id: "raw", label: "Raw Materials" },
@@ -123,47 +119,80 @@ const initialValues: FormState = {
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 };
 
-const RequiredLabel = ({
-  htmlFor,
-  children,
-}: {
-  htmlFor?: string;
-  children: React.ReactNode;
-}) => (
-  <Label htmlFor={htmlFor} className="flex items-center gap-1">
+const RequiredLabel = ({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) => (
+  <Label htmlFor={htmlFor} className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
     <span>{children}</span>
-    <span className="text-red-600">*</span>
+    <span className="text-[#88CEDC]">*</span>
   </Label>
 );
 
 const ProducerAddProductPage = () => {
   const { isConnected } = useAuth();
   const { triggerConnect } = useWalletConnect();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
 
   useEffect(() => {
-    if (!isConnected) {
-      triggerConnect();
-    }
-  }, [isConnected, triggerConnect]);
+    const checkConnection = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!isConnected && !hasCheckedOnce) {
+        setHasCheckedOnce(true);
+        await triggerConnect();
+      }
+      setIsChecking(false);
+    };
+    
+    checkConnection();
+  }, [isConnected, triggerConnect, hasCheckedOnce]);
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-950 -mt-16">
+        <div className="relative bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] pt-32 pb-20">
+          <div className="relative z-10 container mx-auto px-6 pt-12">
+            <Card className="p-12 text-center max-w-md mx-auto bg-white dark:bg-gray-900">
+              <div className="w-20 h-20 bg-[#88CEDC]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-[#88CEDC] animate-pulse" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
+                Checking Connection...
+              </h2>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (
-      <div className="pt-20 min-h-screen">
-        <div className="container mx-auto px-6 py-8">
-          <Card className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">
-              Producer Access Required
-            </h2>
-            <p className="text-muted-foreground">
-              Please connect your wallet to view and add a product.
-            </p>
-          </Card>
+      <div className="min-h-screen bg-white dark:bg-gray-950 -mt-16">
+        <div className="relative bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] pt-32 pb-20">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#88CEDC] rounded-full blur-3xl" />
+          </div>
+          
+          <div className="relative z-10 container mx-auto px-6 pt-12">
+            <Card className="p-12 text-center max-w-md mx-auto bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-2xl">
+              <div className="w-20 h-20 bg-[#88CEDC]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-[#88CEDC]" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">Producer Access Required</h2>
+              <p className="text-muted-foreground mb-6">Please connect your wallet to add products.</p>
+              <Button onClick={triggerConnect} className="bg-[#88CEDC] hover:bg-[#7BC0CF] text-white">
+                Connect Wallet
+              </Button>
+            </Card>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -206,7 +235,6 @@ const ProducerAddProductPageContent = () => {
       }
     }
 
-    // NEW: images required (at least 1)
     if (!f.images || f.images.length < 1) {
       e.images = "Please upload at least one image.";
     }
@@ -284,8 +312,7 @@ const ProducerAddProductPageContent = () => {
       fd.append("leadTimeDays", String(Number.parseInt(form.leadTimeDays)));
     (form.images || []).forEach((file) => fd.append("images", file));
     (form.documents || []).forEach((file) => fd.append("documents", file));
-    // Only append producerWalletId when the wallet is available in localStorage.
-    // Avoid String(null) -> "null" being saved into DB.
+    
     const wallet =
       typeof window !== "undefined"
         ? localStorage.getItem("walletAddress")
@@ -303,8 +330,8 @@ const ProducerAddProductPageContent = () => {
 
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-      setSuccessMsg("Product saved successfully.");
-      router.push("/marketplace");
+      setSuccessMsg("Product created successfully!");
+      setTimeout(() => router.push("/marketplace"), 2000);
     } catch (err: unknown) {
       setErrors((prev) => ({
         ...prev,
@@ -327,439 +354,286 @@ const ProducerAddProductPageContent = () => {
   const docFiles = form.documents || [];
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="container py-8 max-w-5xl mx-auto">
-        <Card className="p-8 glass border-border/50">
+    <div className="min-h-screen bg-white dark:bg-gray-950 -mt-16">
+      {/* Hero Header Section */}
+      <div className="relative bg-gradient-to-br from-[#486C7A] via-[#265663] to-[#0C171B] pt-32 pb-20">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#88CEDC] rounded-full blur-3xl" />
+        </div>
+
+        <div className="pt-20 relative z-10 container mx-auto px-6 text-center">
           <div ref={topRef} />
-          <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <Coins className="w-6 h-6 mr-2 text-primary" />
-            Create New Product
-          </h2>
+          <div className="inline-block p-3 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 shadow-lg">
+            <Package className="w-12 h-12 text-white" />
+          </div>
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 text-white" style={{ color: '#edf6f9' }}>
+            List Your Product
+          </h1>
+          <p className="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+            Tokenize your exports and reach global buyers through the power of Web3 ✨
+          </p>
+        </div>
+      </div>
 
-          {Object.keys(errors).length > 0 && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle>We found some issues</AlertTitle>
-              <AlertDescription>
-                Please review the highlighted fields below. All fields marked
-                with <span className="text-red-600 font-semibold">*</span> are
-                required.
-              </AlertDescription>
-            </Alert>
-          )}
+      <div className="container mx-auto max-w-7xl px-6 -mt-8 relative z-20">
+        {successMsg && (
+          <Alert className="mb-6 border-green-500/60 bg-green-50 dark:bg-green-950/30 shadow-lg">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <AlertTitle className="text-green-900 dark:text-green-100">Success!</AlertTitle>
+            <AlertDescription className="text-green-800 dark:text-green-200">{successMsg}</AlertDescription>
+          </Alert>
+        )}
 
-          {successMsg && (
-            <Alert className="mb-4 border-green-500/60">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <AlertTitle>Saved</AlertTitle>
-              <AlertDescription>{successMsg}</AlertDescription>
-            </Alert>
-          )}
+        {Object.keys(errors).length > 0 && !successMsg && (
+          <Alert variant="destructive" className="mb-6 shadow-lg">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle>Please fix the following issues</AlertTitle>
+            <AlertDescription>Check the highlighted fields below. Fields marked with <span className="text-[#88CEDC] font-semibold">*</span> are required.</AlertDescription>
+          </Alert>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <RequiredLabel htmlFor="name">Product Name</RequiredLabel>
-                <Input
-                  id="name"
-                  placeholder="e.g., Premium Cocoa Beans"
-                  value={form.name}
-                  onChange={handleChange("name")}
-                  aria-invalid={!!errors.name}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{errors.name}</p>
-                )}
-              </div>
-              <div>
-                <RequiredLabel htmlFor="quantity">Quantity</RequiredLabel>
-                <Input
-                  id="quantity"
-                  type="number"
-                  placeholder="1000"
-                  value={form.quantity}
-                  onChange={handleChange("quantity")}
-                  min={0}
-                  step="1"
-                  aria-invalid={!!errors.quantity}
-                />
-                {errors.quantity && (
-                  <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <RequiredLabel>Unit</RequiredLabel>
-                <Select
-                  value={form.unit}
-                  onValueChange={(v: FormState["unit"]) => setField("unit", v)}
-                >
-                  <SelectTrigger aria-invalid={!!errors.unit}>
-                    <SelectValue placeholder="kg / ton / piece / litre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="ton">ton</SelectItem>
-                    <SelectItem value="piece">piece</SelectItem>
-                    <SelectItem value="litre">litre</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.unit && (
-                  <p className="text-sm text-red-600 mt-1">{errors.unit}</p>
-                )}
-              </div>
-              <div>
-                <RequiredLabel htmlFor="pricePerUnit">
-                  Price per unit (HBAR)
-                </RequiredLabel>
-                <Input
-                  id="pricePerUnit"
-                  type="number"
-                  step="0.01"
-                  placeholder="2.50"
-                  value={form.pricePerUnit}
-                  onChange={handleChange("pricePerUnit")}
-                  min={0}
-                  aria-invalid={!!errors.pricePerUnit}
-                />
-                {errors.pricePerUnit && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.pricePerUnit}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <RequiredLabel htmlFor="countryOfOrigin">
-                  Country of Origin
-                </RequiredLabel>
-                <Input
-                  id="countryOfOrigin"
-                  placeholder="Ghana"
-                  value={form.countryOfOrigin}
-                  onChange={handleChange("countryOfOrigin")}
-                  aria-invalid={!!errors.countryOfOrigin}
-                />
-                {errors.countryOfOrigin && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.countryOfOrigin}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="hsCode">HS Code (optional)</Label>
-                <Input
-                  id="hsCode"
-                  placeholder="1801.00"
-                  value={form.hsCode || ""}
-                  onChange={handleChange("hsCode")}
-                  aria-invalid={!!errors.hsCode}
-                />
-                {errors.hsCode && (
-                  <p className="text-sm text-red-600 mt-1">{errors.hsCode}</p>
-                )}
-              </div>
-              <div>
-                <Label>Incoterm (optional)</Label>
-                <Select
-                  value={form.incoterm || ""}
-                  onValueChange={(v: NonNullable<FormState["incoterm"]>) =>
-                    setField("incoterm", v)
-                  }
-                >
-                  <SelectTrigger aria-invalid={!!errors.incoterm}>
-                    <SelectValue placeholder="FOB / CIF / EXW / DAP" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FOB">FOB</SelectItem>
-                    <SelectItem value="CIF">CIF</SelectItem>
-                    <SelectItem value="EXW">EXW</SelectItem>
-                    <SelectItem value="DAP">DAP</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.incoterm && (
-                  <p className="text-sm text-red-600 mt-1">{errors.incoterm}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="minOrderQty">Min Order Qty (optional)</Label>
-                <Input
-                  id="minOrderQty"
-                  type="number"
-                  placeholder="500"
-                  value={form.minOrderQty || ""}
-                  onChange={handleChange("minOrderQty")}
-                  min={0}
-                  step="1"
-                  aria-invalid={!!errors.minOrderQty}
-                />
-                {errors.minOrderQty && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.minOrderQty}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="leadTimeDays">Lead Time (days, optional)</Label>
-                <Input
-                  id="leadTimeDays"
-                  type="number"
-                  placeholder="14"
-                  value={form.leadTimeDays || ""}
-                  onChange={handleChange("leadTimeDays")}
-                  min={0}
-                  step="1"
-                  aria-invalid={!!errors.leadTimeDays}
-                />
-                {errors.leadTimeDays && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.leadTimeDays}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <RequiredLabel>Category</RequiredLabel>
-                <Select
-                  value={form.category}
-                  onValueChange={(v: string | undefined) =>
-                    setForm((s) => ({
-                      ...s,
-                      category: v as FormState["category"],
-                      subcategory: undefined,
-                    }))
-                  }
-                >
-                  <SelectTrigger aria-invalid={!!errors.category}>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.category && (
-                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
-                )}
+        <Card className="p-8 md:p-10 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Information */}
+            <div className="space-y-6">
+              <p className="text-center text-sm text-muted-foreground">
+                Fields marked with <span className="text-[#88CEDC] font-semibold">*</span> are required
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] flex items-center justify-center text-white font-bold shadow-lg">1</div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Basic Information</h2>
               </div>
 
-              <div>
-                <Label>Subcategory (optional)</Label>
-                <Select
-                  value={form.subcategory}
-                  onValueChange={(v: string) => setField("subcategory", v)}
-                  disabled={!form.category}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        form.category
-                          ? "Pick a subcategory"
-                          : "Select a category first"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(availableSubcats || []).map((sc) => (
-                      <SelectItem key={sc.id} value={sc.id}>
-                        {sc.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <RequiredLabel htmlFor="description">Description</RequiredLabel>
-              <Textarea
-                id="description"
-                rows={4}
-                placeholder="Describe your product, farming methods, certifications..."
-                value={form.description}
-                onChange={handleChange("description")}
-                aria-invalid={!!errors.description}
-              />
-              {errors.description && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.description}
-                </p>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Images (REQUIRED) */}
-            <div className="space-y-2">
-              <RequiredLabel>Product Images</RequiredLabel>
-              <input
-                ref={imagesRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) =>
-                  setField("images", Array.from(e.target.files || []))
-                }
-                aria-invalid={!!errors.images}
-              />
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                <Camera className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                <div className="flex items-center justify-center gap-2 flex-wrap mb-3">
-                  {imageFiles.length > 0 ? (
-                    <>
-                      <Badge variant="secondary" className="text-sm">
-                        {imageFiles.length} image
-                        {imageFiles.length > 1 ? "s" : ""} selected
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {imageFiles
-                          .map((f) => f.name)
-                          .slice(0, 2)
-                          .join(", ")}
-                        {imageFiles.length > 2
-                          ? ` +${imageFiles.length - 2} more`
-                          : ""}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      No files chosen yet
-                    </span>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <RequiredLabel htmlFor="name">Product Name</RequiredLabel>
+                  <Input 
+                    id="name" 
+                    placeholder="e.g., Premium Ethiopian Coffee Beans" 
+                    value={form.name} 
+                    onChange={handleChange("name")} 
+                    className={`mt-2 ${errors.name ? 'border-red-500' : ''}`} 
+                  />
+                  {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => imagesRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose Images
-                </Button>
+
+                <div>
+                  <RequiredLabel>Unit</RequiredLabel>
+                  <Select value={form.unit} onValueChange={(v: FormState["unit"]) => setField("unit", v)}>
+                    <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                      <SelectItem value="ton">Tons</SelectItem>
+                      <SelectItem value="piece">Pieces</SelectItem>
+                      <SelectItem value="litre">Litres</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <RequiredLabel htmlFor="quantity">Quantity Available</RequiredLabel>
+                  <Input 
+                    id="quantity" 
+                    type="number" 
+                    placeholder="1000" 
+                    value={form.quantity} 
+                    onChange={handleChange("quantity")} 
+                    className={`mt-2 ${errors.quantity ? 'border-red-500' : ''}`} 
+                  />
+                  {errors.quantity && <p className="text-sm text-red-600 mt-1">{errors.quantity}</p>}
+                </div>
+
+                <div>
+                  <RequiredLabel htmlFor="pricePerUnit">Price per Unit (HBAR)</RequiredLabel>
+                  <div className="relative mt-2">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input 
+                      id="pricePerUnit" 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="2.50" 
+                      value={form.pricePerUnit} 
+                      onChange={handleChange("pricePerUnit")} 
+                      className={`pl-10 ${errors.pricePerUnit ? 'border-red-500' : ''}`} 
+                    />
+                  </div>
+                  {errors.pricePerUnit && <p className="text-sm text-red-600 mt-1">{errors.pricePerUnit}</p>}
+                </div>
+
+                <div>
+                  <RequiredLabel htmlFor="countryOfOrigin">Country of Origin</RequiredLabel>
+                  <select 
+                    id="countryOfOrigin"
+                    value={form.countryOfOrigin} 
+                    onChange={(e) => setField("countryOfOrigin", e.target.value)}
+                    className={`mt-2 w-full rounded-md border ${errors.countryOfOrigin ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#88CEDC] focus:border-transparent appearance-none cursor-pointer`}
+                    style={{ 
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 0.75rem center',
+                      backgroundSize: '12px'
+                    }}
+                  >
+                    <option value="">Select your country</option>
+                    {africanCountries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.countryOfOrigin && <p className="text-sm text-red-600 mt-1">{errors.countryOfOrigin}</p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t dark:border-gray-800" />
+
+            {/* Product Details */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] flex items-center justify-center text-white font-bold shadow-lg">2</div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product Details</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <RequiredLabel>Category</RequiredLabel>
+                  <Select 
+                    value={form.category} 
+                    onValueChange={(v: string) => setForm((s) => ({ ...s, category: v as FormState["category"], subcategory: undefined }))}
+                  >
+                    <SelectTrigger className={`mt-2 ${errors.category ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+                </div>
+
+                <div>
+                  <Label>Subcategory (optional)</Label>
+                  <Select value={form.subcategory} onValueChange={(v) => setField("subcategory", v)} disabled={!form.category}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder={form.category ? "Select subcategory" : "Choose category first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSubcats.map((sc) => (
+                        <SelectItem key={sc.id} value={sc.id}>{sc.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>HS Code (optional)</Label>
+                  <Input placeholder="e.g., 1801.00" value={form.hsCode || ""} onChange={handleChange("hsCode")} className="mt-2" />
+                </div>
+
+                <div>
+                  <Label>Incoterm (optional)</Label>
+                  <Select value={form.incoterm || ""} onValueChange={(v: NonNullable<FormState["incoterm"]>) => setField("incoterm", v)}>
+                    <SelectTrigger className="mt-2"><SelectValue placeholder="Select incoterm" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FOB">FOB (Free on Board)</SelectItem>
+                      <SelectItem value="CIF">CIF (Cost, Insurance, Freight)</SelectItem>
+                      <SelectItem value="EXW">EXW (Ex Works)</SelectItem>
+                      <SelectItem value="DAP">DAP (Delivered at Place)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Min Order Quantity (optional)</Label>
+                  <Input type="number" placeholder="500" value={form.minOrderQty || ""} onChange={handleChange("minOrderQty")} className="mt-2" />
+                </div>
+
+                <div>
+                  <Label>Lead Time (days, optional)</Label>
+                  <Input type="number" placeholder="14" value={form.leadTimeDays || ""} onChange={handleChange("leadTimeDays")} className="mt-2" />
+                </div>
+
+                <div className="md:col-span-2 lg:col-span-3">
+                  <RequiredLabel htmlFor="description">Description</RequiredLabel>
+                  <Textarea 
+                    id="description" 
+                    rows={4} 
+                    placeholder="Describe your product, quality standards, certifications..." 
+                    value={form.description} 
+                    onChange={handleChange("description")} 
+                    className={`mt-2 ${errors.description ? 'border-red-500' : ''}`} 
+                  />
+                  {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t dark:border-gray-800" />
+
+            {/* Images & Documents */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#88CEDC] to-[#5BA8B8] flex items-center justify-center text-white font-bold shadow-lg">3</div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Images & Documents</h2>
+              </div>
+
+              <div>
+                <RequiredLabel>Product Images</RequiredLabel>
+                <input ref={imagesRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => setField("images", Array.from(e.target.files || []))} />
+                <div className={`mt-2 border-2 border-dashed rounded-xl p-8 text-center transition-all hover:border-[#88CEDC] dark:hover:border-[#88CEDC] bg-gray-50 dark:bg-gray-800/50 ${errors.images ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}>
+                  <Camera className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                  {imageFiles.length > 0 ? (
+                    <Badge className="bg-[#88CEDC] text-white mb-2">{imageFiles.length} image{imageFiles.length > 1 ? 's' : ''} selected</Badge>
+                  ) : (
+                    <p className="text-muted-foreground mb-4">Drag and drop or click to upload</p>
+                  )}
+                  <Button type="button" onClick={() => imagesRef.current?.click()} className="bg-[#88CEDC] hover:bg-[#7BC0CF] text-white">
+                    <Upload className="w-4 h-4 mr-2" />Choose Images
+                  </Button>
+                </div>
+                {errors.images && <p className="text-sm text-red-600 mt-1">{errors.images}</p>}
 
                 {imageFiles.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                     {imageFiles.map((file, idx) => (
-                      <div
-                        key={idx}
-                        className="relative rounded-lg overflow-hidden border"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={URL.createObjectURL(file) || "/placeholder.svg"}
-                          alt={file.name}
-                          className="aspect-video object-cover w-full h-full"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setField(
-                              "images",
-                              imageFiles.filter((_, i) => i !== idx)
-                            )
-                          }
-                          className="absolute top-1 right-1 bg-white/80 hover:bg-white rounded-full p-1 shadow"
-                          aria-label={`Remove ${file.name}`}
+                      <div key={idx} className="relative group rounded-lg overflow-hidden border">
+                        <img src={URL.createObjectURL(file)} alt={file.name} className="aspect-square object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setField("images", imageFiles.filter((_, i) => i !== idx))} 
+                          className="absolute top-2 right-2 bg-white hover:bg-red-500 text-gray-900 hover:text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all"
                         >
                           <X className="h-4 w-4" />
                         </button>
-                        <div className="absolute left-1 bottom-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded">
-                          {formatBytes(file.size)}
-                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              {errors.images && (
-                <p className="text-sm text-red-600 mt-1">{errors.images}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label>Certificates & Documentation</Label>
-              <input
-                ref={docsRef}
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                className="hidden"
-                onChange={(e) =>
-                  setField("documents", Array.from(e.target.files || []))
-                }
-              />
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                <FileCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                <div className="flex items-center justify-center gap-2 flex-wrap mb-3">
-                  {docFiles.length > 0 ? (
-                    <>
-                      <Badge variant="secondary" className="text-sm">
-                        {docFiles.length} file{docFiles.length > 1 ? "s" : ""}{" "}
-                        selected
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {docFiles
-                          .map((f) => f.name)
-                          .slice(0, 3)
-                          .join(", ")}
-                        {docFiles.length > 3
-                          ? ` +${docFiles.length - 3} more`
-                          : ""}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      No files chosen yet
-                    </span>
-                  )}
+              <div>
+                <Label>Certificates & Documentation (optional)</Label>
+                <input ref={docsRef} type="file" multiple accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" className="hidden" onChange={(e) => setField("documents", Array.from(e.target.files || []))} />
+                <div className="mt-2 border-2 border-dashed rounded-xl p-8 text-center transition-all hover:border-[#88CEDC] dark:hover:border-[#88CEDC] border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <FileCheck className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                  {docFiles.length > 0 && <Badge className="bg-[#88CEDC] text-white mb-4">{docFiles.length} document{docFiles.length > 1 ? 's' : ''}</Badge>}
+                  <Button type="button" variant="outline" onClick={() => docsRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-2" />Upload Documents
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => docsRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Documents
-                </Button>
 
                 {docFiles.length > 0 && (
-                  <ul className="mt-4 text-left text-sm">
+                  <ul className="mt-4 space-y-2">
                     {docFiles.map((f, idx) => (
-                      <li
-                        key={idx}
-                        className="flex items-center justify-between gap-2 py-1 border-b last:border-b-0"
-                      >
-                        <span className="truncate" title={f.name}>
-                          {f.name}
-                        </span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs text-muted-foreground">
-                            {formatBytes(f.size)}
-                          </span>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() =>
-                              setField(
-                                "documents",
-                                docFiles.filter((_, i) => i !== idx)
-                              )
-                            }
-                            aria-label={`Remove ${f.name}`}
-                          >
+                      <li key={idx} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <span className="truncate text-sm text-gray-900 dark:text-gray-100">{f.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">{formatBytes(f.size)}</span>
+                          <Button type="button" size="icon" variant="ghost" onClick={() => setField("documents", docFiles.filter((_, i) => i !== idx))}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -770,32 +644,40 @@ const ProducerAddProductPageContent = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              variant="default"
-              size="lg"
-              className="w-full"
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="w-full bg-gradient-to-r from-[#88CEDC] to-[#5BA8B8] hover:from-[#7BC0CF] hover:to-[#4A97A7] text-white font-bold py-6" 
               disabled={submitting || (form.images?.length ?? 0) < 1}
             >
-              {submitting ? "Saving..." : "Save Product"}
+              {submitting ? (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Your Product...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  List Product on Marketplace
+                </>
+              )}
             </Button>
 
             {errors.form && (
-              <Alert variant="destructive" className="mt-4">
+              <Alert variant="destructive">
                 <AlertTriangle className="h-5 w-5" />
-                <AlertTitle>Couldn’t save</AlertTitle>
+                <AlertTitle>Submission Failed</AlertTitle>
                 <AlertDescription>{errors.form}</AlertDescription>
               </Alert>
             )}
           </form>
-
-          <p className="mt-6 text-xs text-muted-foreground">
-            Fields marked with{" "}
-            <span className="text-red-600 font-semibold">*</span> are required.
-          </p>
         </Card>
+
+        <div className="py-12" />
       </div>
-    </main>
+
+      <Footer />
+    </div>
   );
 };
 
