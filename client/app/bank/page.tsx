@@ -393,10 +393,6 @@ export default function BankOrdersPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 flex-1">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage
-                      src="/placeholder.svg"
-                      alt={order.user.fullName}
-                    />
                     <AvatarFallback className="bg-[#88CEDC]/20 text-[#5BA8B8]">
                       {(order.user?.fullName ?? "NA")
                         .split(" ")
