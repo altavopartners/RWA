@@ -113,3 +113,5 @@ let store: any | null = null;
         throw new Error(`Failed to parse PROOF_B64: ${e?.message ?? e}`);
     });
     const space = await _client.addSpace(parsed);
+     const spaceDid = typeof space?.did === "function" ? space.did() : space?.did;
+    
