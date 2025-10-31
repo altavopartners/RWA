@@ -141,8 +141,8 @@ export default function Navigation() {
                 <Image
                   src="/assets/hexportLogo.png"
                   alt="Logo"
-                  width={56}
-                  height={56}
+                  width={708}
+                  height={257}
                   className="h-14 w-auto"
                   priority
                 />
