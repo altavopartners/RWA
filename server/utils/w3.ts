@@ -80,3 +80,4 @@ let store: any | null = null;
     // FS fallback in a unique temp dir to avoid colliding with any old identity
     const os = await nativeImport("node:os");
     const path = await nativeImport("node:path");
+    const { randomUUID } = await nativeImport("node:crypto");
