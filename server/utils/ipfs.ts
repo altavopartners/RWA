@@ -131,3 +131,7 @@ export async function checkCIDExists(cid: string): Promise<boolean> {
  * @returns CID string
  */
 export async function uploadFileFromPath(filePath: string): Promise<string> {
+  const resolvedPath = path.resolve(filePath);
+  const fileBuffer = fs.readFileSync(resolvedPath);
+  return uploadToIPFS(fileBuffer);
+}
