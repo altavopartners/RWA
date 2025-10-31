@@ -83,6 +83,7 @@ export async function getBytesFromIPFS(cid: string): Promise<Buffer> {
   
   return Buffer.from(res.data);
 }
+
 /**
  * Upload a JSON object to IPFS
  * @param obj - JSON object
@@ -92,6 +93,7 @@ export async function uploadJSONToIPFS(obj: object): Promise<string> {
   const jsonString = JSON.stringify(obj);
   return uploadToIPFS(jsonString);
 }
+
 /**
  * Fetch JSON from IPFS and parse it
  * @param cid - CID string
@@ -101,6 +103,7 @@ export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
   const text = await getFromIPFS(cid);
   return JSON.parse(text) as T;
 }
+
 /**
  * Pin a CID to the IPFS node (if supported)
  * @param cid - CID string
@@ -115,3 +118,10 @@ export async function pinCID(cid: string): Promise<void> {
  * @returns true if accessible
  */
 export async function checkCIDExists(cid: string): Promise<boolean> {
+  try {
+    await axios.head(`${IPFS_GATEWAY}/${cid}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
