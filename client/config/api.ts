@@ -5,7 +5,7 @@
 
 export const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
-    // Server-side: use NEXT_PUBLIC_API_URL
+    // Server-side: use NEXT_PUBLIC_API_URL 
     return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   }
   // Client-side
