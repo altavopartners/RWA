@@ -262,6 +262,27 @@ async function main() {
     },
   });
 
+  const kente = await prisma.product.create({
+    data: {
+      name: "Kente",
+      quantity: 1000,
+      unit: "unit",
+      pricePerUnit: 25.0,
+      countryOfOrigin: "Ghana",
+      category: "cultural",
+      subcategory: "textile",
+      description:
+        "Traditional Ghanaian Kente cloth, handwoven with colorful patterns.",
+      hsCode: "5801.00",
+      incoterm: "FOB",
+      minOrderQty: 50,
+      leadTimeDays: 25,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/10.jpg", filename: "10.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
+
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
