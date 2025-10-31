@@ -176,3 +176,4 @@ export function gatewayUrl(cid: string) {
   return `${base}/ipfs/${cid}`;
 }
 export async function w3Upload(buffer: Buffer, filename: string, mime?: string) {
+    const c = await getW3Client();
