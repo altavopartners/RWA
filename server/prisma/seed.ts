@@ -183,6 +183,26 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
+  const gold = await prisma.product.create({
+    data: {
+      name: "Gold",
+      quantity: 500,
+      unit: "kg",
+      pricePerUnit: 60000.0,
+      countryOfOrigin: "South Africa",
+      category: "raw",
+      subcategory: "metal",
+      description: "Refined gold bars suitable for investment and industry.",
+      hsCode: "7108.00",
+      incoterm: "FOB",
+      minOrderQty: 10,
+      leadTimeDays: 20,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/6.jpg", filename: "6.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
