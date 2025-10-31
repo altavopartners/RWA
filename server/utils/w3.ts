@@ -124,3 +124,7 @@ let store: any | null = null;
     }else if (audDid !== agentDid) {
       throw new Error(`UCAN audience DID mismatch: proof.aud=${audDid} vs agent=${agentDid}`);
     }
+  } else {
+    console.warn(
+      "No PROOF_B64 provided — client created without selecting a space. Uploads may fail until a valid proof is added."
+    );
