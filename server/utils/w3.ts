@@ -94,3 +94,5 @@ let store: any | null = null;
   console.log("Creating Storacha client...");
   _client = await createClient({ principal, store } as any);
   console.log("Finished creating Storacha client.");
+  // Read agent DID (robust to SDK differences)
+  const agentDid = extractDidFromClient(_client);
