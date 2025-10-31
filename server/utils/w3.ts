@@ -103,3 +103,4 @@ let store: any | null = null;
   console.log("agent DID (from principal):", agentDid);
 
   if (EXPECTED_AGENT_DID && agentDid !== EXPECTED_AGENT_DID) {
+    console.warn(
