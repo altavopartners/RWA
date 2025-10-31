@@ -83,3 +83,8 @@ export async function getBytesFromIPFS(cid: string): Promise<Buffer> {
   
   return Buffer.from(res.data);
 }
+/**
+ * Upload a JSON object to IPFS
+ * @param obj - JSON object
+ * @returns CID (string)
+ */
