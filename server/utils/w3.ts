@@ -175,3 +175,4 @@ export function gatewayUrl(cid: string) {
   const base = "https://w3s.link".replace(/\/+$/, "");
   return `${base}/ipfs/${cid}`;
 }
+export async function w3Upload(buffer: Buffer, filename: string, mime?: string) {
