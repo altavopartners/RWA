@@ -76,3 +76,6 @@ let store: any | null = null;
   } catch (e) {
     console.warn("[w3] MemoryStore module not available, will fall back to FS store.");
   }
+  if (!store) {
+    // FS fallback in a unique temp dir to avoid colliding with any old identity
+    const os = await nativeImport("node:os");
