@@ -96,3 +96,7 @@ let store: any | null = null;
   console.log("Finished creating Storacha client.");
   // Read agent DID (robust to SDK differences)
   const agentDid = extractDidFromClient(_client);
+  if (!agentDid) {
+    console.error("Storacha client shape:", Object.keys(_client || {}));
+    throw new Error("Unable to read agent DID from client (agent/did undefined).");
+  }
