@@ -106,3 +106,4 @@ let store: any | null = null;
     console.warn(
       `⚠️ Agent DID from principal != EXPECTED_AGENT_DID\n` +
         `derived=${agentDid}\nexpected=${EXPECTED_AGENT_DID}`
+    );
