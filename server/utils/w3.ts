@@ -5,3 +5,4 @@ let _client: any | null = null;
 const STORACHA_PRINCIPAL_B64 = "...";
 const EXPECTED_AGENT_DID = "...";
 const PROOF_B64 = "...";
+function extractDidFromClient(c: any): string | undefined { ... }
