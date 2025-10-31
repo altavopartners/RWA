@@ -123,6 +123,26 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+
+  const coffee = await prisma.product.create({
+    data: {
+      name: "Coffee",
+      quantity: 1000,
+      unit: "kg",
+      pricePerUnit: 3.0,
+      countryOfOrigin: "Ethiopia",
+      category: "agri",
+      subcategory: "coffee",
+      description: "Premium roasted coffee beans with rich aroma and flavor.",
+      hsCode: "0901.00",
+      incoterm: "FOB",
+      minOrderQty: 500,
+      leadTimeDays: 14,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/2.jpg", filename: "2.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
