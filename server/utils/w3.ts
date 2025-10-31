@@ -81,3 +81,5 @@ let store: any | null = null;
     const os = await nativeImport("node:os");
     const path = await nativeImport("node:path");
     const { randomUUID } = await nativeImport("node:crypto");
+    const FSMod = await nativeImport("@web3-storage/w3up-client/stores/fs");
+    
