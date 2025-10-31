@@ -130,3 +130,4 @@ export async function checkCIDExists(cid: string): Promise<boolean> {
  * @param filePath - Absolute or relative path
  * @returns CID string
  */
+export async function uploadFileFromPath(filePath: string): Promise<string> {
