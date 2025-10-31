@@ -242,6 +242,26 @@ async function main() {
     },
   });
 
+  const argan = await prisma.product.create({
+    data: {
+      name: "Argan",
+      quantity: 1000,
+      unit: "kg",
+      pricePerUnit: 15.0,
+      countryOfOrigin: "Morocco",
+      category: "agri",
+      subcategory: "oil",
+      description: "Argan nuts and oil, organic and traditional extraction.",
+      hsCode: "1515.00",
+      incoterm: "FOB",
+      minOrderQty: 200,
+      leadTimeDays: 20,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/9.jpg", filename: "9.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
+
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
