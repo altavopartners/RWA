@@ -163,6 +163,26 @@ async function main() {
       producerWalletId: testUser.walletAddress,
     },
   });
+  const cloves = await prisma.product.create({
+    data: {
+      name: "Cloves",
+      quantity: 1000,
+      unit: "kg",
+      pricePerUnit: 6.5,
+      countryOfOrigin: "Madagascar",
+      category: "agri",
+      subcategory: "spices",
+      description:
+        "Dried cloves with intense aroma and flavor, ideal for culinary and medicinal use.",
+      hsCode: "0907.00",
+      incoterm: "FOB",
+      minOrderQty: 500,
+      leadTimeDays: 14,
+      images: [{ mime: "image/jpeg", path: "/uploads/images/4.jpg", filename: "4.jpg" }],
+      updatedAt: new Date(),
+      producerWalletId: testUser.walletAddress,
+    },
+  });
   console.log("✅ Created 10 products\n");
 
   // ----- Orders with IPFS Documents (only using the 10 products above) -----
