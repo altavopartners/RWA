@@ -35,4 +35,30 @@ async function polyfillStreamsAndFile() {
   (globalThis as any).Blob ??= (await nativeImport("buffer")).Blob;
   (globalThis as any).File ??= (await nativeImport("undici")).File;
 }
-export async function getW3Client() { ... }
+export async function getW3Client() { 
+  if (_client) return _client;
+
+  await polyfillStreamsAndFile();
+
+  // Robust dynamic imports
+  const ClientMod = await nativeImport("@storacha/client");
+  const createClient =
+    ClientMod?.create ?? ClientMod?.default?.create ?? ClientMod?.default;
+  if (typeof createClient !== "function") {
+    throw new Error("Unable to resolve @storacha/client.create()");
+  }
+
+  const ProofMod = await nativeImport("@storacha/client/proof");
+  const parseProof =
+    ProofMod?.parse ?? ProofMod?.default?.parse ?? ProofMod?.default;
+  if (typeof parseProof !== "function") {
+    throw new Error("Unable to resolve @storacha/client/proof.parse()");
+  }
+
+  const EdSigner = await nativeImport("@ucanto/principal/ed25519");
+
+  if (!STORACHA_PRINCIPAL_B64) {
+    throw new Error(
+      "Missing STORACHA_PRINCIPAL_B64. Generate one with `w3 key create --json` and paste the `key` value."
+    ); 
+}
