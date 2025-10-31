@@ -181,3 +181,4 @@ export async function w3Upload(buffer: Buffer, filename: string, mime?: string) 
     const cid = await c.uploadFile(file);
   return cid.toString();
 }
+export async function w3FetchBytes(cid: string): Promise<Buffer> {
