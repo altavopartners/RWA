@@ -173,3 +173,5 @@ export async function getW3Client() {
 }
 export function gatewayUrl(cid: string) {
   const base = "https://w3s.link".replace(/\/+$/, "");
+  return `${base}/ipfs/${cid}`;
+}
