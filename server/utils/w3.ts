@@ -182,3 +182,4 @@ export async function w3Upload(buffer: Buffer, filename: string, mime?: string) 
   return cid.toString();
 }
 export async function w3FetchBytes(cid: string): Promise<Buffer> {
+  const url = gatewayUrl(cid);
