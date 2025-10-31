@@ -195,6 +195,7 @@ export async function passOrderService({
                   ),
                 })),
               },
+              escrowAddress:"0x1Bd765b88ec476875f97b288A18172E2b7e2491b",
             },
             include: { items: true },
           });

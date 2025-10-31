@@ -1,0 +1,50 @@
+NODE_ENV=development
+PORT=4000
+JWT_SECRET=dev_jwt_secret_key_minimum_32_characters_required_for_security
+#DATABASE_URL=postgresql://postgres:0000@localhost:5432/hexport
+DATABASE_URL=postgresql://postgres:0000@localhost:5432/rwa_db
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=0000
+POSTGRES_DB=hexport
+# =============================================================================
+# HEDERA HASHGRAPH CONFIGURATION
+# =============================================================================
+HEDERA_NETWORK=testnet
+# Use ED25519 account for NFT operations
+HEDERA_ACCOUNT_ID=0.0.6165826
+# ED25519 Raw 32-byte private key
+HEDERA_PRIVATE_KEY=86f618edd2cb2a43ef4f7a1e30803395b9e51dcabce98a21b224f7b55fd2b870
+HEDERA_OPERATOR_KEY=3030020100300706052b8104000a042204209cbdddc24b9dd35b70a74bca96dbed04eddb796c0d1ccb2a8675f66538e5677f 
+
+# Supply key for NFT minting (32 bytes = 64 hex chars)
+# If not provided, a new key is generated for each NFT (not recommended for production)
+# To generate: openssl rand -hex 32
+# Leave empty to auto-generate per mint
+
+HEDERA_SUPPLY_KEY=
+#For escrow use it as it is
+HEDERA_HCS_TOPIC_ID=0.0.6870936
+HEDERA_TESTNET_RPC=https://testnet.hashio.io/api
+ESCROW_ACCOUNT=0x1Bd765b88ec476875f97b288A18172E2b7e2491b
+OPERATOR_ID=0.0.7055172
+HEDERA_PRIVATE_KEY=0x69bade5b5efacdc72f836c14094ebf47e0b4d4ecee695e56dc0ed7918e750783
+HEDERA_NETWORK=testnet
+
+# Space DID from Storacha console
+W3_SPACE_DID=did:key:z6Mku9Umh1MhuE2QXrNUJsYAE13FZD5h9LiQRWudrvBLCahY
+
+# Private key (from w3 key create)
+W3_PRIVATE_KEY=MgCYsmMLS4OBJyLvwPME/eSiupSLkkDMG5xd+rrjXnBtubO0BMiONGMkce5J/UbfgDCJ2K7S7xImWskFqkbjyGXJqbyw=
+
+# Delegation proof content (from w3 delegation create ... --base64)
+W3_PROOF_BASE64=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
+
+
+# Gateway to use
+IPFS_GATEWAY_URL=https://up.storacha.network
+
+STORACHA_SEED_HEX=f6f147f53afefa05cfc6be2ec5cc9bdd31736357dfb60087cf788c3cc11b2d9b
+EXPECTED_AGENT_DID=did:key:z6Mkvo1JewWRDxx3byA2VJMc5PHpW4YZAebudSP5bKqFJHNx
