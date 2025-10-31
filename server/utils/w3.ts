@@ -112,3 +112,4 @@ let store: any | null = null;
     const parsed = await parseProof(PROOF_B64).catch((e: any) => {
         throw new Error(`Failed to parse PROOF_B64: ${e?.message ?? e}`);
     });
+    const space = await _client.addSpace(parsed);
