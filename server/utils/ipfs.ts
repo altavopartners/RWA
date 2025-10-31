@@ -125,3 +125,8 @@ export async function checkCIDExists(cid: string): Promise<boolean> {
     return false;
   }
 }
+/**
+ * Upload a local file to IPFS
+ * @param filePath - Absolute or relative path
+ * @returns CID string
+ */
