@@ -101,3 +101,5 @@ let store: any | null = null;
     throw new Error("Unable to read agent DID from client (agent/did undefined).");
   }
   console.log("agent DID (from principal):", agentDid);
+
+  if (EXPECTED_AGENT_DID && agentDid !== EXPECTED_AGENT_DID) {
