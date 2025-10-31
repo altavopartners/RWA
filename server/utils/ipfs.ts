@@ -101,3 +101,7 @@ export async function getJSONFromIPFS<T = any>(cid: string): Promise<T> {
   const text = await getFromIPFS(cid);
   return JSON.parse(text) as T;
 }
+/**
+ * Pin a CID to the IPFS node (if supported)
+ * @param cid - CID string
+ */
