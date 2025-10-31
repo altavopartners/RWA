@@ -91,3 +91,6 @@ let store: any | null = null;
     const root = path.join(os.tmpdir(), `w3up-store-${randomUUID()}`);
     store = new FSStore({ root });
     console.log("[w3] Using FS store at temp path:", root);
+  console.log("Creating Storacha client...");
+  _client = await createClient({ principal, store } as any);
+  console.log("Finished creating Storacha client.");
